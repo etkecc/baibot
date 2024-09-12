@@ -4,7 +4,7 @@
 - [🤖 Agents](./agents.md)
 - [🛠️ Configuration](./configuration/README.md)
 - [🌟 Features](./features.md)
-- [🤝 Handlers](./handlers.md)
+- [🤝 Handlers](./configuration/handlers.md)
 - [☁️ Providers](./providers.md)
 - [📖 Usage](./usage.md)
 - [🚀 Installation](./installation.md)
