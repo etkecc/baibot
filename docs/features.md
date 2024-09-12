@@ -10,8 +10,8 @@ The bot supports the following use-purposes:
 
 - [💬 text-generation](#-text-generation): communicating with you via text
 - [🦻 speech-to-text](#-speech-to-text): turning your voice messages into text
-- [🗣️ text-to-speech](#️-text-to-speech): turning bot or users text messages into voice messages
-- [🖌️ image-generation](#-image-generation): generating images based on instructions
+- [🗣️ text-to-speech](#%EF%B8%8F-text-to-speech): turning bot or users text messages into voice messages
+- [🖌️ image-generation](#%EF%B8%8F-image-generation): generating images based on instructions
 
 In a given room, each different purpose can be served by a different [☁️ provider](./providers.md) and model. This combination of provider and model configuration is called an [🤖 agent](./agents.md). Each purpose can be served by a different **handler** agent.
 
@@ -32,7 +32,7 @@ A few other features (like [🗣️ Text-to-Speech](#️-text-to-speech) and [�
 
 You may also wish to see:
 
-- [🛠️ Configuration / 💬 Text Generation](./configuration/README.md#-text-generation) for configuration options related to Text Generation
+- [🛠️ Configuration / 💬 Text Generation](./configuration/text-generation.md) for configuration options related to Text Generation
 - [📖 Usage / 💬 Text Generation](./usage.md#-text-generation) section for more details on how to use the bot for Text Generation in a room
 
 
@@ -48,7 +48,9 @@ By default, the bot **doesn't** perform text-to-speech. It can be configured for
 
 Another use-case is to have the bot operate in [Text-to-Speech-only mode](#text-to-speech-only-mode).
 
-- [🛠️ Configuration / 🗣️ Text-to-Speech](./configuration/README.md#-text-to-speech) for configuration options related to Text-to-Speech
+You may also wish to see:
+
+- [🛠️ Configuration / 🗣️ Text-to-Speech](./configuration/text-to-speech.md) for configuration options related to Text-to-Speech
 - [📖 Usage / 🗣️ Text-to-Speech](./usage.md#-text-to-speech) section for more details on how to use the bot for Text-to-Speech in a room
 
 
@@ -77,6 +79,10 @@ The default flow is shown in the screenshot above: your voice messages are trans
 
 You may also configure the bot for [Seamless voice interaction](#seamless-voice-interaction) or [Transcribe-only mode](#transcribe-only-mode), etc.
 
+You may also wish to see:
+
+- [🛠️ Configuration / 🦻 Speech-to-Text](./configuration/speech-to-text.md) for configuration options related to Speech-to-Text
+- [📖 Usage / 🦻 Speech-to-Text](./usage.md#-speech-to-text) section for more details on how to use the bot for Speech-to-Text in a room
 
 #### Seamless voice interaction
 
@@ -121,7 +127,7 @@ See a [🖼️ Screenshot of the Image Generation feature](./screenshots/image-g
 
 You may also wish to see:
 
-- [🛠️ Configuration / 🖌️ Image Generation](./configuration/README.md#-image-generation) for configuration options related to Image Generation
+- [🛠️ Configuration / 🖌️ Image Generation](./configuration/image-generation.md) for configuration options related to Image Generation
 - [📖 Usage / 🖌️ Image Generation](./usage.md#-image-generation) section for more details on how to use the bot for Image Generation in a room
 - [🫵 Sticker Generation](#-sticker-generation) - a special case of Image Generation
 

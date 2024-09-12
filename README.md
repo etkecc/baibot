@@ -19,8 +19,8 @@ It's influenced by [chaz](https://github.com/arcuru/chaz), but does **not** use 
 
   - [💬 text-generation](./docs/features.md#-text-generation): communicating with you via text
   - [🦻 speech-to-text](./docs/features.md#-speech-to-text): turning your voice messages into text
-  - [🗣️ text-to-speech](./docs/features.md#️-text-to-speech): turning bot or users text messages into voice messages
-  - [🖌️ image-generation](./docs/features.md#-image-generation): generating images based on instructions
+  - [🗣️ text-to-speech](./docs/features.md#%EF%B8%8F-text-to-speech): turning bot or users text messages into voice messages
+  - [🖌️ image-generation](./docs/features.md#%EF%B8%8F-image-generation): generating images based on instructions
 
 - 🪄 Supports [seamless voice interaction](./docs/features.md#seamless-voice-interaction) (turning user voice messages into text, answering in text, then turning that text back into voice)
 
