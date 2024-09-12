@@ -49,7 +49,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
   - create a room-local agent: `!bai agent create-room-local anthropic my-anthropic-agent`
   - create a global agent: `!bai agent create-global anthropic my-anthropic-agent`
 
-💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](../sample-provider-configs/anthropic.yml).
+💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/anthropic.yml).
 
 
 ### Groq
@@ -63,7 +63,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
   - create a room-local agent: `!bai agent create-room-local groq my-groq-agent`
   - create a global agent: `!bai agent create-global groq my-groq-agent`
 
-💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](../sample-provider-configs/groq.yml).
+💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/groq.yml).
 
 
 ### LocalAI
@@ -77,7 +77,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
   - create a room-local agent: `!bai agent create-room-local localai my-localai-agent`
   - create a global agent: `!bai agent create-global localai my-localai-agent`
 
-💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](../sample-provider-configs/localai.yml).
+💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/localai.yml).
 
 
 ### Mistral
@@ -91,7 +91,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
   - create a room-local agent: `!bai agent create-room-local mistral my-mistral-agent`
   - create a global agent: `!bai agent create-global mistral my-mistral-agent`
 
-💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](../sample-provider-configs/mistral.yml).
+💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/mistral.yml).
 
 
 ### Ollama
@@ -105,7 +105,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
   - create a room-local agent: `!bai agent create-room-local ollama my-ollama-agent`
   - create a global agent: `!bai agent create-global ollama my-ollama-agent`
 
-💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](../sample-provider-configs/ollama.yml).
+💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/ollama.yml).
 
 
 ### OpenAI
@@ -122,7 +122,7 @@ For services which are not fully compatible with the OpenAI API, consider using 
   - create a room-local agent: `!bai agent create-room-local openai my-openai-agent`
   - create a global agent: `!bai agent create-global openai my-openai-agent`
 
-💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](../sample-provider-configs/openai.yml).
+💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/openai.yml).
 
 
 ### OpenAI Compatible
@@ -139,7 +139,7 @@ This provider is just as featureful as the [OpenAI](#openai) provider, but is mo
   - create a room-local agent: `!bai agent create-room-local openai-compatible my-openai-compatible-agent`
   - create a global agent: `!bai agent create-global openai-compatible my-openai-compatible-agent`
 
-💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](../sample-provider-configs/openai-compatible.yml).
+💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/openai-compatible.yml).
 
 
 ### OpenRouter
@@ -153,7 +153,7 @@ This provider is just as featureful as the [OpenAI](#openai) provider, but is mo
   - create a room-local agent: `!bai agent create-room-local openrouter my-openrouter-agent`
   - create a global agent: `!bai agent create-global openrouter my-openrouter-agent`
 
-💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](../sample-provider-configs/openrouter.yml).
+💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/openrouter.yml).
 
 
 ### Together AI
@@ -167,4 +167,4 @@ This provider is just as featureful as the [OpenAI](#openai) provider, but is mo
   - create a room-local agent: `!bai agent create-room-local together-ai my-together-ai-agent`
   - create a global agent: `!bai agent create-global together-ai my-together-ai-agent`
 
-💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](../sample-provider-configs/together-ai.yml).
+💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/together-ai.yml).
