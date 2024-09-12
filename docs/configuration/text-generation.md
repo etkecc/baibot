@@ -23,7 +23,7 @@ To support such use-cases, the bot has a `text-generation prefix-requirement-typ
 
 - `command_prefix`: indicates that the bot would require that messages be prefixed with the command prefix (e.g. `!bai`) and would ignore all messages that are not prefixed
 
-By default, the bot is **auto-configured (upon joining a new room)** to use the `no` setting in rooms that only include 2 users (you and the bot), and `command_prefix` in rooms with more than 2 users. To prevent surprises, the bot will **not** adjust this setting subsequently. You can manually adjust it via `!bai config room set-prefix-requirement-type VALUE`.
+By default, the bot is **auto-configured (upon joining a new room)** to use the `no` setting in rooms that only include 2 users (you and the bot), and `command_prefix` in rooms with more than 2 users. To prevent surprises, the bot will **not** adjust this setting subsequently. You can manually adjust it via `!bai config room text-generation set-prefix-requirement-type VALUE`.
 
 Example: `!bai config room text-generation set-prefix-requirement-type command_prefix` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings))
 
@@ -51,7 +51,7 @@ The bot also supports ♻️ **context management**, which automatically adjusts
 
 This feature relies on [tokenization](https://en.wikipedia.org/wiki/Large_language_model#Tokenization) performed by the [tiktoken-rs](https://github.com/zurawiki/tiktoken-rs) library which is [poorly well-maintained](https://github.com/zurawiki/tiktoken-rs/issues/50) and only works well for [OpenAI](../providers.md#openai) models.
 
-This setting is **disabled by default**, but can be enabled via `!bai config room context-management-enabled true` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings)).
+This setting is **disabled by default**, but can be enabled via `!bai config room text-generation set-context-management-enabled true` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings)).
 
 
 ### ⌨️ Prompt Override
