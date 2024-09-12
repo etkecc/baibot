@@ -5,9 +5,9 @@ authors = ["Slavi Pantaleev <slavi@devture.com>"]
 repository = "https://github.com/etkecc/baibot"
 license = "AGPL-3.0-or-later"
 readme = "README.md"
-keywords = ["matrix", "chat", "LLM", "openai", "anthropic", "localai"]
+keywords = ["matrix", "chat", "bot", "AI", "LLM"]
 include = ["/etc/assets/baibot-torso-768.png", "/src", "/README.md", "/CHANGELOG.md", "/LICENSE"]
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 
 [lib]
