@@ -1,0 +1,8 @@
+base_url: https://api.mistral.ai/v1
+api_key: YOUR_API_KEY_HERE
+text_generation:
+  model_id: mistral-large-latest
+  prompt: You are a brief, but helpful bot.
+  temperature: 1.0
+  max_response_tokens: 4096
+  max_context_tokens: 128000

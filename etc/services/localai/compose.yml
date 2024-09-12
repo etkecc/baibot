@@ -1,0 +1,20 @@
+services:
+  localai:
+    image: ${SERVICE_LOCALAI_IMAGE_NAME}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/readyz"]
+      interval: 1m
+      timeout: 20m
+      retries: 5
+    ports:
+      - ${SERVICE_LOCALAI_BIND_PORT_HTTP}:8080
+    environment:
+      - DEBUG=true
+    volumes:
+      - ./localai/models:/build/models:cached
+
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true

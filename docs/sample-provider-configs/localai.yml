@@ -1,0 +1,20 @@
+base_url: http://my-localai-self-hosted-service:8080/v1
+api_key: YOUR_API_KEY_HERE
+text_generation:
+  model_id: gpt-4
+  prompt: You are a brief, but helpful bot.
+  temperature: 1.0
+  max_response_tokens: 4096
+  max_context_tokens: 128000
+speech_to_text:
+  model_id: whisper-1
+text_to_speech:
+  model_id: tts-1
+  voice: onyx
+  speed: 1.0
+  response_format: opus
+image_generation:
+  model_id: stablediffusion
+  style: vivid
+  size: 1024x1024
+  quality: standard

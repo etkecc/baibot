@@ -1,0 +1,10 @@
+base_url: ''
+api_key: YOUR_API_KEY_HERE
+text_generation:
+  model_id: some-model
+  prompt: You are a brief, but helpful bot.
+  temperature: 1.0
+  max_response_tokens: 4096
+  max_context_tokens: 128000
+speech_to_text:
+  model_id: whisper-1

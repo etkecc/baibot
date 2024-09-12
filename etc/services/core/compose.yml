@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: docker.io/postgres:16.3-alpine
+    user: ${UID}:${GID}
+    restart: unless-stopped
+    environment:
+     POSTGRES_USER: synapse
+     POSTGRES_PASSWORD: synapse-password
+     POSTGRES_DB: homeserver
+     POSTGRES_INITDB_ARGS: --lc-collate C --lc-ctype C --encoding UTF8
+    volumes:
+    - ./postgres:/var/lib/postgresql/data
+    - /etc/passwd:/etc/passwd:ro
+
+  synapse:
+    image: ghcr.io/element-hq/synapse:v1.114.0
+    user: "${UID}:${GID}"
+    restart: unless-stopped
+    entrypoint: python
+    command: "-m synapse.app.homeserver -c /config/homeserver.yaml"
+    ports:
+    - "${SERVICE_SYNAPSE_BIND_PORT_CLIENT_API}:8008"
+    - "${SERVICE_SYNAPSE_BIND_PORT_FEDERATION_API}:8008"
+    volumes:
+    - ../../etc/services/core/synapse/config:/config:ro
+    - ./synapse/media-store:/media-store
+
+  element-web:
+    image: docker.io/vectorim/element-web:v1.11.77
+    user: "${UID}:${GID}"
+    restart: unless-stopped
+    ports:
+      - "${SERVICE_ELEMENT_WEB_BIND_PORT_HTTP}:8080"
+    volumes:
+    - ../../etc/services/core/element-web/nginx.conf:/etc/nginx/nginx.conf:ro
+    - ../../etc/services/core/element-web/config.json:/app/config.json:ro
+
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true

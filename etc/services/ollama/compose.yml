@@ -1,0 +1,13 @@
+services:
+  ollama:
+    image: docker.io/ollama/ollama:0.3.9
+    restart: unless-stopped
+    ports:
+      - "${SERVICE_OLLAMA_BIND_PORT_HTTP}:11434"
+    volumes:
+      - ./ollama:/root/.ollama
+
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true

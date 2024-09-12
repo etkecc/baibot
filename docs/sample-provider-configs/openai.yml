@@ -1,0 +1,20 @@
+base_url: https://api.openai.com/v1
+api_key: YOUR_API_KEY_HERE
+text_generation:
+  model_id: gpt-4o-2024-08-06
+  prompt: You are a brief, but helpful bot.
+  temperature: 1.0
+  max_response_tokens: 16384
+  max_context_tokens: 128000
+speech_to_text:
+  model_id: whisper-1
+text_to_speech:
+  model_id: tts-1-hd
+  voice: onyx
+  speed: 1.0
+  response_format: opus
+image_generation:
+  model_id: dall-e-3
+  style: vivid
+  size: 1024x1024
+  quality: standard

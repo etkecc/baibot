@@ -1,0 +1,42 @@
+[package]
+name = "baibot"
+description = "A Matrix bot for using diffent capabilities (text-generation, text-to-speech, speech-to-text, image-generation, etc.) of AI / Large Language Models"
+authors = ["Slavi Pantaleev <slavi@devture.com>"]
+repository = "https://github.com/etkecc/baibot"
+license = "AGPL-3.0-or-later"
+readme = "README.md"
+keywords = ["matrix", "chat", "LLM", "openai", "anthropic", "localai"]
+exclude = [".editorconfig", "justfile", "docs/", "etc/", "Dockerfile", ".dockerignore", ".gitignore"]
+version = "1.0.0"
+edition = "2021"
+
+[lib]
+name = "baibot"
+path = "src/lib.rs"
+
+[dependencies]
+anthropic-rs = "0.1.*"
+anyhow = "1.0.*"
+async-openai = "0.24.*"
+base64 = "0.22.*"
+# We'd rather not depend on this, but we cannot use the ruma-events EventContent macro without it.
+matrix-sdk = { version = "0.7.1", default-features = false }
+mxidwc = "1.0.*"
+mxlink = "1.0.*"
+openai_api_rust = { git = "https://github.com/etkecc/openai_api_rust.git", branch = "next" }
+quick_cache = "0.6.*"
+regex = "1.10.*"
+serde = { version = "1.0.*", features = ["derive"], default-features = false }
+serde_json = "1.0.*"
+serde_yaml = "0.9.*"
+tempfile = "3.12.*"
+tiktoken-rs = { version = "0.5.*", features = ["async-openai"] }
+tokio = { version = "1.40.*", features = ["rt", "rt-multi-thread", "macros"] }
+tracing = "0.1.*"
+tracing-subscriber = { version = "0.3.*", features = ["env-filter"] }
+url = "2.5.*"
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = "thin"

@@ -1,0 +1,10 @@
+base_url: https://api.groq.com/openai/v1
+api_key: YOUR_API_KEY_HERE
+text_generation:
+  model_id: llama3-70b-8192
+  prompt: You are a brief, but helpful bot.
+  temperature: 1.0
+  max_response_tokens: 4096
+  max_context_tokens: 131072
+speech_to_text:
+  model_id: whisper-large-v3

@@ -1,0 +1,153 @@
+homeserver:
+  # The canonical homeserver domain name
+  server_name: synapse.127.0.0.1.nip.io
+  url: http://synapse.127.0.0.1.nip.io:42020
+
+user:
+  mxid_localpart: baibot
+  password: baibot
+
+  # The name the bot uses as a display name and when it refers to itself.
+  # Leave empty to use the default (baibot).
+  name: baibot
+
+  encryption:
+    # An optional passphrase to use for backing up and recovering the bot's encryption keys.
+    # You can use any string here.
+    #
+    # If set to null, the recovery module will not be used and losing your session/database (see persistence)
+    # will mean you lose access to old messages in encrypted room.
+    #
+    # Changing this subsequently will also cause you to lose access to old messages in encrypted rooms.
+    # If you really need to change this:
+    # - Set `encryption_recovery_reset_allowed` to `true` and adjust the passphrase
+    # - Remove your session file and database (see persistence)
+    # - Restart the bot
+    # - Then restore `encryption_recovery_reset_allowed` to `false` to prevent accidental resets in the future
+    recovery_passphrase: long-and-secure-passphrase-here
+
+    # An optional flag to reset the encryption recovery passphrase.
+    recovery_reset_allowed: false
+
+# Command prefix. Leave empty to use the default (!bai).
+command_prefix: "!bai"
+
+access:
+  # Space-separated list of MXID patterns which specify who is an admin.
+  admin_patterns:
+    - "@admin:synapse.127.0.0.1.nip.io"
+
+persistence:
+  # This is unset here, because we expect the configuration to come from an environment variable (BAIBOT_PERSISTENCE_DATA_DIR_PATH).
+  # In your setup, you may wish to set this to a directory path.
+  data_dir_path: null
+
+  # An optional secret for encrypting the bot's session data (stored in data_dir_path).
+  # This must be 32-bytes (64 characters when HEX-encoded).
+  # Generate it with: `openssl rand -hex 32`
+  # Leave null or empty to avoid using encryption.
+  # Changing this subsequently requires that you also throw away all data stored in data_dir_path.
+  session_encryption_key: 9701cd109ed56770687dd8410f7d7371a4390dd3feb8ed721f189a0756c40098
+
+  # An optional secret for encrypting bot configuration stored in Matrix's account data.
+  # This must be 32-bytes (64 characters when HEX-encoded).
+  # Generate it with: `openssl rand -hex 32`
+  # Leave null or empty to avoid using encryption.
+  # Changing this subsequently will make you lose your configuration.
+  config_encryption_key: a9f1df98d288802ead20a8be2c701a627eabd31cf3d9e2aea28867ccd7a4ded7
+
+agents:
+  # A list of statically-defined agents.
+  #
+  # Below are a few common choices on popular providers, preconfigured for development purposes (see docs/development.md).
+  # You may enable some of the ones you see below or define others.
+  # You can also leave this list empty and only define agents dynamically (via chat).
+  #
+  # Uncomment one or more of these and potentially adjust their configuration (API key, etc).
+  # Consider setting `initial_global_config.handler.*` to an agent that you enable here.
+  static_definitions:
+    # - id: openai
+    #   provider: openai
+    #   config:
+    #     base_url: https://api.openai.com/v1
+    #     api_key: ""
+    #     text_generation:
+    #       model_id: gpt-4o-2024-08-06
+    #       prompt: You are a brief, but helpful bot.
+    #       temperature: 1.0
+    #       max_response_tokens: 16384
+    #       max_context_tokens: 128000
+    #     speech_to_text:
+    #       model_id: whisper-1
+    #     text_to_speech:
+    #       model_id: tts-1-hd
+    #       voice: onyx
+    #       speed: 1.0
+    #       response_format: opus
+    #     image_generation:
+    #       model_id: dall-e-3
+    #       style: vivid
+    #       size: 1024x1024
+    #       quality: standard
+    #
+    # - id: localai
+    #   provider: localai
+    #   config:
+    #     base_url: http://127.0.0.1:42027/v1
+    #     api_key: null
+    #     text_generation:
+    #       model_id: gpt-4
+    #       prompt: You are a brief, but helpful bot.
+    #       temperature: 1.0
+    #       max_response_tokens: 16384
+    #       max_context_tokens: 128000
+    #     speech_to_text:
+    #       model_id: whisper-1
+    #     text_to_speech:
+    #       model_id: tts-1
+    #       voice: onyx
+    #       speed: 1.0
+    #       response_format: opus
+    #     image_generation:
+    #       model_id: stablediffusion
+    #       style: vivid
+    #       # Intentionally defaults to a small value to improve performance
+    #       size: 256x256
+    #       quality: standard
+    #
+    # - id: ollama
+    #   provider: ollama
+    #   config:
+    #     base_url: "http://127.0.0.1:42026/v1"
+    #     api_key: null
+    #     text_generation:
+    #       model_id: "gemma2:2b"
+    #       prompt: "You are an assistant based on the gemma2:2b model. Be brief in your responses."
+    #       temperature: 1.0
+    #       max_response_tokens: 4096
+    #       max_context_tokens: 128000
+
+# Initial global configuration. This only affects the first run of the bot.
+# Configuration is later managed at runtime.
+initial_global_config:
+  handler:
+    catch_all: null
+    text_generation: null
+    text_to_speech: null
+    speech_to_text: null
+    image_generation: null
+
+  # Space-separated list of MXID patterns which specify who can use the bot.
+  # By default, we let anyone on the homeserver use the bot.
+  user_patterns:
+    - "@*:synapse.127.0.0.1.nip.io"
+
+# Controls logging.
+#
+# Sets all tracing targets (external crates) to warn, and our own logs to debug.
+# For even more verbose logging, one may also use trace.
+#
+# matrix_sdk_crypto may be chatty and could be added with an error level.
+#
+# Learn more here: https://stackoverflow.com/a/73735203
+logging: warn,mxlink=debug,baibot=debug
