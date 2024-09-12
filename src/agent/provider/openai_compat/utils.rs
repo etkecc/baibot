@@ -1,4 +1,4 @@
-use openai_api_rust::{Message, Role};
+use etke_openai_api_rust::{Message, Role};
 
 use crate::agent::provider::openai::Config as OpenAIConfig;
 

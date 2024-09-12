@@ -303,10 +303,10 @@ dependencies = [
  "anyhow",
  "async-openai 0.24.0",
  "base64 0.22.1",
+ "etke_openai_api_rust",
  "matrix-sdk",
  "mxidwc",
  "mxlink",
- "openai_api_rust",
  "quick_cache",
  "regex",
  "serde",
@@ -917,6 +917,20 @@ checksum = "534c5cf6194dfab3db3242765c03bbe257cf92f22b38f6bc0c58d59108a820ba"
 dependencies = [
  "libc",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "etke_openai_api_rust"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1499ac61bf9b9a5973a5830894cbf2016a96a4dab9eb2dab4a526c720632c93"
+dependencies = [
+ "log",
+ "mime",
+ "rand",
+ "serde",
+ "serde_json",
+ "ureq",
 ]
 
 [[package]]
@@ -2203,19 +2217,6 @@ name = "opaque-debug"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
-
-[[package]]
-name = "openai_api_rust"
-version = "0.1.9"
-source = "git+https://github.com/etkecc/openai_api_rust.git?branch=next#a9183fc2e699c3d33c635c2aed3f9174f9d9cd74"
-dependencies = [
- "log",
- "mime",
- "rand",
- "serde",
- "serde_json",
- "ureq",
-]
 
 [[package]]
 name = "openssl"

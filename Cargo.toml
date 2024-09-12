@@ -23,7 +23,7 @@ base64 = "0.22.*"
 matrix-sdk = { version = "0.7.1", default-features = false }
 mxidwc = "1.0.*"
 mxlink = "1.0.*"
-openai_api_rust = { git = "https://github.com/etkecc/openai_api_rust.git", branch = "next" }
+etke_openai_api_rust = "0.1.*"
 quick_cache = "0.6.*"
 regex = "1.10.*"
 serde = { version = "1.0.*", features = ["derive"], default-features = false }

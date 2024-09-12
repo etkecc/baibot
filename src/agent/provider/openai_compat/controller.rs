@@ -1,7 +1,7 @@
-use openai_api_rust::audio::{AudioApi, AudioBody};
-use openai_api_rust::chat::{ChatApi, ChatBody};
-use openai_api_rust::images::{ImagesApi, ImagesBody};
-use openai_api_rust::{Auth, Message, OpenAI};
+use etke_openai_api_rust::audio::{AudioApi, AudioBody};
+use etke_openai_api_rust::chat::{ChatApi, ChatBody};
+use etke_openai_api_rust::images::{ImagesApi, ImagesBody};
+use etke_openai_api_rust::{Auth, Message, OpenAI};
 
 use super::super::ControllerTrait;
 use crate::agent::utils::base64_decode;
