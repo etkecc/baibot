@@ -5,7 +5,7 @@
 
 🤖 baibot is an [AI](https://en.wikipedia.org/wiki/Artificial_intelligence) ([Large Language Model](https://en.wikipedia.org/wiki/Large_language_model)) bot for [Matrix](https://matrix.org/) built by [etke.cc](https://etke.cc/) (managed Matrix servers).
 
-The name is pronounced 'bye' and is a play on [AI](https://en.wikipedia.org/wiki/Artificial_intelligence), referencing the fictional character [🇧🇬 Bai Ganyo](https://en.wikipedia.org/wiki/Bay_Ganyo).
+The name is pronounced 'bye'-bot and is a play on [AI](https://en.wikipedia.org/wiki/Artificial_intelligence), referencing the fictional character [🇧🇬 Bai Ganyo](https://en.wikipedia.org/wiki/Bay_Ganyo).
 
 It's designed as a more private and [featureful](#-features) alternative to [matrix-chatgpt-bot](https://github.com/matrixgpt/matrix-chatgpt-bot).
 It's influenced by [chaz](https://github.com/arcuru/chaz), but does **not** use the [AIChat](https://github.com/sigoden/aichat) CLI tool and instead does everything in-process, without forking.
