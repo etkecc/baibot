@@ -6,7 +6,7 @@ repository = "https://github.com/etkecc/baibot"
 license = "AGPL-3.0-or-later"
 readme = "README.md"
 keywords = ["matrix", "chat", "LLM", "openai", "anthropic", "localai"]
-exclude = [".editorconfig", "justfile", "docs/", "etc/", "Dockerfile", ".dockerignore", ".gitignore"]
+exclude = [".editorconfig", "justfile", "docs/", "etc/", "Dockerfile", ".dockerignore", ".gitignore", ".github/"]
 version = "1.0.0"
 edition = "2021"
 
