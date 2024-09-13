@@ -1,1 +1,8 @@
-There's nothing here yet.
+# (2024-09-13) Version 1.0.3
+
+Contains [fixes](https://github.com/etkecc/rust-mxlink/commit/f339fc85e69aa7f614394ad303d1614cd307319c) for [some](https://github.com/etkecc/baibot/issues/1) startup failures caused by partial initialization (errors during startup).
+
+
+# (2024-09-12) Version 1.0.0
+
+Initial release. 🎉
