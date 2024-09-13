@@ -18,8 +18,6 @@ pub async fn generate_and_send_tts_for_message(
     text_message_event_id: &OwnedEventId,
     text_content: &str,
 ) -> bool {
-    _ = message_context.room().typing_notice(true).await;
-
     let reaction_event_response = bot
         .reacting()
         .react_no_fail(

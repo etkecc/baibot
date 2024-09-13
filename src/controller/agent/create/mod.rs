@@ -100,8 +100,6 @@ pub async fn handle_room_local(
         return Ok(());
     };
 
-    message_context.room().typing_notice(true).await?;
-
     if !try_to_ping_agent_or_complain(bot, message_context, &parsed_config.agent).await {
         return Ok(());
     }
@@ -214,8 +212,6 @@ pub async fn handle_global(
     let Some(parsed_config) = parsed_config else {
         return Ok(());
     };
-
-    message_context.room().typing_notice(true).await?;
 
     if !try_to_ping_agent_or_complain(bot, message_context, &parsed_config.agent).await {
         return Ok(());

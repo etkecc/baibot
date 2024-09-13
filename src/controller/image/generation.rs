@@ -56,8 +56,6 @@ pub async fn handle_image(
         original_prompt.to_owned()
     };
 
-    message_context.room().typing_notice(true).await?;
-
     let span = tracing::debug_span!(
         "image_generation",
         agent_id = agent.identifier().as_string()
@@ -138,8 +136,6 @@ pub async fn handle_sticker(
     else {
         return Ok(());
     };
-
-    message_context.room().typing_notice(true).await?;
 
     let span = tracing::debug_span!(
         "sticker_generation",

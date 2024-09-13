@@ -337,8 +337,6 @@ async fn handle_stage_text_generation(
     )
     .await?;
 
-    _ = message_context.room().typing_notice(true).await;
-
     let prefixes_to_strip = match controller_type {
         ChatCompletionControllerType::ViaText { prefixes_to_strip } => prefixes_to_strip.clone(),
         ChatCompletionControllerType::ViaAudio => vec![],
@@ -497,8 +495,6 @@ async fn handle_stage_speech_to_text_actual_transcribing(
         .media()
         .get_media_content(&media_request, true)
         .await?;
-
-    _ = message_context.room().typing_notice(true).await;
 
     let span = tracing::debug_span!(
         "speech_to_text_generation",
