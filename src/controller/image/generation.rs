@@ -137,6 +137,8 @@ pub async fn handle_sticker(
         return Ok(());
     };
 
+    let _typing_notice_guard = bot.start_typing_notice(message_context.room()).await;
+
     let span = tracing::debug_span!(
         "sticker_generation",
         agent_id = agent.identifier().as_string()

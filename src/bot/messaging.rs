@@ -317,13 +317,6 @@ impl Messaging {
 
         let start_time = std::time::Instant::now();
 
-        let _typing_notice_guard = self
-            .bot
-            .matrix_link()
-            .rooms()
-            .start_typing_notice(message_context.room())
-            .await;
-
         let event_span = tracing::error_span!("message_controller", ?controller_type);
 
         crate::controller::dispatch_controller(&controller_type, &message_context, &self.bot)

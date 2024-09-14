@@ -244,13 +244,6 @@ impl Reacting {
 
         tracing::info!("Handling reaction via reaction controller");
 
-        let _typing_notice_guard = self
-            .bot
-            .matrix_link()
-            .rooms()
-            .start_typing_notice(message_context.room())
-            .await;
-
         let event_span = tracing::error_span!("reaction_controller");
 
         crate::controller::reaction::handle(

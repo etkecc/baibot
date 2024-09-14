@@ -43,6 +43,8 @@ pub async fn handle(
 ) -> anyhow::Result<()> {
     let mut original_message_is_audio = false;
 
+    let mut _typing_notice_guard: Option<mxlink::TypingNoticeGuard> = None;
+
     let speech_to_text_flow_type = message_context
         .room_config_context()
         .speech_to_text_flow_type();
@@ -71,6 +73,10 @@ pub async fn handle(
             }
         };
 
+        if _typing_notice_guard.is_none() {
+            _typing_notice_guard = Some(bot.start_typing_notice(message_context.room()).await);
+        }
+
         let Some(speech_to_text_created_event_id_result) =
             handle_stage_speech_to_text(bot, message_context, audio_content, response_type).await
         else {
@@ -96,6 +102,10 @@ pub async fn handle(
         .room_config_context()
         .should_auto_text_generate(original_message_is_audio)
     {
+        if _typing_notice_guard.is_none() {
+            _typing_notice_guard = Some(bot.start_typing_notice(message_context.room()).await);
+        }
+
         let speech_to_text_created_event_id_reaction_event_id =
             if let Some(speech_to_text_created_event_id) = speech_to_text_created_event_id {
                 let reaction_event_response = bot
@@ -213,6 +223,10 @@ pub async fn handle(
 
     match text_to_speech_stage_params {
         Some(TextToSpeechParams::Perform(text_to_speech_eligible_payload, response_type)) => {
+            if _typing_notice_guard.is_none() {
+                _typing_notice_guard = Some(bot.start_typing_notice(message_context.room()).await);
+            }
+
             let _tts_result = generate_and_send_tts_for_message(
                 bot,
                 matrix_link.clone(),

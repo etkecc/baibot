@@ -9,6 +9,7 @@ use mxlink::matrix_sdk::Room;
 
 use mxlink::{
     InitConfig, LoginConfig, LoginCredentials, LoginEncryption, MatrixLink, PersistenceConfig,
+    TypingNoticeGuard,
 };
 
 use mxlink::helpers::account_data_config::{
@@ -207,6 +208,14 @@ impl Bot {
         self.inner
             .delayed_catch_up_marker_manager
             .catch_up(event_origin_server_ts.0.into())
+            .await
+    }
+
+    pub(crate) async fn start_typing_notice(&self, room: &Room) -> TypingNoticeGuard {
+        self.inner
+            .matrix_link
+            .rooms()
+            .start_typing_notice(room)
             .await
     }
 

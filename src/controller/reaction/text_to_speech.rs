@@ -52,6 +52,8 @@ pub(super) async fn handle(
         return Ok(());
     };
 
+    let _typing_notice_guard = bot.start_typing_notice(message_context.room()).await;
+
     crate::controller::utils::text_to_speech::generate_and_send_tts_for_message(
         bot,
         matrix_link,
