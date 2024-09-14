@@ -58,11 +58,11 @@ pub async fn handle(
                 return Ok(());
             }
             SpeechToTextFlowType::TranscribeAndGenerateText => {
-                tracing::debug!("Will be trascribing and possibly generating text..");
+                tracing::debug!("Will be transcribing and possibly generating text..");
                 MessageResponseType::InThread(message_context.thread_info().clone())
             }
             SpeechToTextFlowType::OnlyTranscribe => {
-                tracing::debug!("Will only be trascribing audio to text..");
+                tracing::debug!("Will only be transcribing audio to text..");
                 if message_context.thread_info().is_thread_root_only() {
                     MessageResponseType::Reply(message_context.thread_info().root_event_id.clone())
                 } else {
