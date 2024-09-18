@@ -1,6 +1,5 @@
-// LocalAI is based on OpenAI (async-openai), because it seems to be fully compatible.
-// Moreover, openai_api_rust does not support speech-to-text, so if we wish to use this feature
-// we need to stick to async-openai.
+// At the time of testing, LocalAI can be powered by `openai`, but we use `openai_compat` for better reliability
+// in the event of future updates to `async-openai`.
 
 use super::openai_compat::Config;
 
