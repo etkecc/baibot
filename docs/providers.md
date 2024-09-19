@@ -23,17 +23,20 @@ The list of supported providers is below.
 
 ### How to choose a provider
 
-If you're not sure which provider to start with, we **recommend [OpenAI](#openai)** as it's the most popular and has the **widest range of capabilities**: [💬 text-generation](./features.md#-text-generation), [🖌️ image-generation](./features.md#️-image-generation), [🦻 speech-to-text](./features.md#-speech-to-text), [🗣️ text-to-speech](./features.md#️-text-to-speech).
+If you're not sure which provider to start with, **we recommend [OpenAI](#openai)** as it's the most popular and has the **widest range of capabilities**: [💬 text-generation](./features.md#-text-generation), [🖌️ image-generation](./features.md#️-image-generation), [🦻 speech-to-text](./features.md#-speech-to-text), [🗣️ text-to-speech](./features.md#️-text-to-speech).
 
 You don't need to choose just one though. The bot supports [mixing & matching models](./features.md#-mixing--matching-models), so you can use multiple providers at the same time.
 
 
 ### How to use a provider
 
-- sign up for it
-- obtain an API key
-- [create a new agent](./agents.md#creating-agents)
-- set it as a handler for some types of messages (see [Mixing & matching models](./features.md#-mixing--matching-models)) for a specific room or globally
+1. 📝 **Sign up for it**
+
+2. 🔑 **Obtain an API key**
+
+3. 🤖 **Create one or more agents** in a given room or globally. Next to each provider in the [list below](#supported-providers) you'll see **🗲 Quick start** commands, but you may also refer to the [agent creation guide](./agents.md#creating-agents).
+
+4. 🤝 **Set the new agent as a handler** for a given use-purpose like text-generation, image-generation, etc. The agent creation wizard will tell you how, but you may also refer to the [🤝 Handlers](./configuration/handlers.md) guide.
 
 
 ### Supported providers

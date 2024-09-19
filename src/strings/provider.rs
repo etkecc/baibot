@@ -25,10 +25,6 @@ pub fn invalid_configuration_for_provider(
     )
 }
 
-pub fn not_allowed() -> String {
-    "You are not allowed to see the providers list.".to_owned()
-}
-
 pub fn providers_list_intro() -> String {
     "The list of supported providers is below.".to_owned()
 }
@@ -39,7 +35,7 @@ pub fn help_how_to_choose_heading() -> String {
 
 pub fn help_how_to_choose_description(command_prefix: &str) -> String {
     let str = r#"
-If you're not sure which provider to start with, we **recommend OpenAI** as it's the most popular and has the **widest range of capabilities**.
+If you're not sure which provider to start with, **we recommend OpenAI** as it's the most popular and has the **widest range of capabilities**.
 
 You don't need to choose just one though. The bot supports **mixing & matching models** (by setting different handlers for different types of messages - see `%command_prefix% config`), so you can use multiple providers at the same time.
 "#;
@@ -55,13 +51,21 @@ pub fn help_how_to_use_heading() -> String {
 
 pub fn help_how_to_use_description(command_prefix: &str) -> String {
     let str = r#"
-- sign up for it
-- obtain an API key
-- create a new agent (see `%command_prefix% agent`)
-- set the new agent as a handler for some types of messages (see `%command_prefix% config`)
+1. 📝 **Sign up for it**
+2. 🔑 **Obtain an API key**
+3. 🤖 %create_one_or_more_agents%
+4. 🤝 %set_new_agent_as_handler%
 "#;
 
     str.replace("%command_prefix%", command_prefix)
+        .replace(
+            "%create_one_or_more_agents%",
+            &super::introduction::create_one_or_more_agents(command_prefix),
+        )
+        .replace(
+            "%set_new_agent_as_handler%",
+            &super::introduction::set_new_agent_as_handler(command_prefix),
+        )
         .trim()
         .to_owned()
 }

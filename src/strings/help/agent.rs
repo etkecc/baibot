@@ -2,15 +2,8 @@ pub fn heading() -> String {
     "🤖 Agents".to_owned()
 }
 
-pub fn intro(command_prefix: &str, can_see_providers: bool) -> String {
-    format!(
-        "An agent is an instantiation and configuration of some **☁️ provider**{}.",
-        if can_see_providers {
-            format!(" (see `{command_prefix} provider`)")
-        } else {
-            "".to_owned()
-        }
-    )
+pub fn intro(command_prefix: &str) -> String {
+    format!("An agent is an instantiation and configuration of some **☁️ provider** (see `{command_prefix} provider`).")
 }
 
 pub fn intro_handler_relation(command_prefix: &str) -> String {
@@ -24,7 +17,7 @@ pub fn intro_capabilities() -> String {
 }
 
 pub fn no_permission_to_create_agents() -> &'static str {
-    "You are neither an administrator, nor a room-local agent manager, so **you cannot create new agents by yourself**."
+    "⚠️ You are neither a bot administrator, nor a room-local agent manager, so **you cannot create new agents by yourself**."
 }
 
 pub fn list_agents(command_prefix: &str) -> String {

@@ -12,7 +12,7 @@ If there's a text-generation handler agent configured (see `%command_prefix% con
 
 Whether the bot responds depends on the **💬 Text Generation / 🗟 Prefix Requirement** setting (see `%command_prefix% config status`).
 Sometimes, a prefix (e.g. `%command_prefix%`) is required in front of messages sent to the room for the bot to respond.
-For multi-user rooms, this setting defaults to "required"
+For multi-user rooms, this setting defaults to "required".
 
 Room messages start a threaded conversation where you can continue back-and-forth communication with the bot.
 

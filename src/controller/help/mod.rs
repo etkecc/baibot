@@ -18,10 +18,7 @@ pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Resu
     // Agents
     message.push_str(&format!("## {}", strings::help::agent::heading()));
     message.push_str("\n\n");
-    message.push_str(&strings::help::agent::intro(
-        bot.command_prefix(),
-        sender_can_manage_room_local_agents,
-    ));
+    message.push_str(&strings::help::agent::intro(bot.command_prefix()));
     message.push_str("\n\n");
     message.push_str(&strings::help::agent::intro_handler_relation(
         bot.command_prefix(),

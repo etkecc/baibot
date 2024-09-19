@@ -12,10 +12,7 @@ pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Resu
 
     message.push_str(&format!("## {}", strings::help::agent::heading()));
     message.push_str("\n\n");
-    message.push_str(&strings::help::agent::intro(
-        bot.command_prefix(),
-        can_manage_agents,
-    ));
+    message.push_str(&strings::help::agent::intro(bot.command_prefix()));
     message.push('\n');
     message.push_str(&strings::help::agent::intro_capabilities());
     message.push_str("\n\n");

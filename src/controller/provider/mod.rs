@@ -9,17 +9,8 @@ pub fn determine_controller(_text: &str) -> ControllerType {
 }
 
 pub async fn handle_help(message_context: &MessageContext, bot: &Bot) -> anyhow::Result<()> {
-    if !message_context.sender_can_manage_room_local_agents()? {
-        bot.messaging()
-            .send_error_markdown_no_fail(
-                message_context.room(),
-                &strings::provider::not_allowed(),
-                MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
-            )
-            .await;
-
-        return Ok(());
-    }
+    let can_create_global_agents = message_context.sender_can_manage_global_config();
+    let can_create_room_local_agents = message_context.sender_can_manage_room_local_agents()?;
 
     let mut message = String::new();
     message.push_str(&format!("## {}", strings::help::provider::heading()));
@@ -69,18 +60,28 @@ pub async fn handle_help(message_context: &MessageContext, bot: &Bot) -> anyhow:
             &provider_info,
         ));
 
-        message.push_str("- 🗲 Quick start:\n");
-        message.push_str(&format!(
-            "\t- create a room-local agent: `{command_prefix} agent create-room-local {provider_id} my-{provider_id}-agent`",
-            command_prefix = bot.command_prefix(),
-            provider_id = provider.to_static_str(),
-        ));
-        message.push('\n');
-        message.push_str(&format!(
-            "\t- create a global agent: `{command_prefix} agent create-global {provider_id} my-{provider_id}-agent`",
-            command_prefix = bot.command_prefix(),
-            provider_id = provider.to_static_str(),
-        ));
+        // We always show a "Quick start" section (even to unprivileged users),
+        // because we're talking about it in a previous message.
+        message.push_str("- 🗲 Quick start:");
+        if can_create_room_local_agents {
+            message.push_str(&format!(
+                "\n\t- create a room-local agent: `{command_prefix} agent create-room-local {provider_id} my-{provider_id}-agent`",
+                command_prefix = bot.command_prefix(),
+                provider_id = provider.to_static_str(),
+            ));
+        }
+        if can_create_global_agents {
+            message.push_str(&format!(
+                "\n\t- create a global agent: `{command_prefix} agent create-global {provider_id} my-{provider_id}-agent`",
+                command_prefix = bot.command_prefix(),
+                provider_id = provider.to_static_str(),
+            ));
+        }
+        if !can_create_room_local_agents && !can_create_global_agents {
+            message.push_str(&format!(
+                " ask an administrator to create an agent for you (you lack permissions to do so yourself)",
+            ));
+        }
 
         message.push_str("\n\n");
     }

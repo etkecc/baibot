@@ -144,8 +144,8 @@ fn make_use_of_me_agent_creation(
     let message = r#"**To make use of me**:
 
 1. ☁️ **Choose an agent provider** (e.g. OpenAI, Mistral, etc). Send a `%command_prefix% provider` command to see the list.
-2. 🤖 **Create one or more agents** in this room or globally. The provider help message will show you **🗲 Quick start** commands, but you may also send a `%command_prefix% agent` command to see the guide.
-3. 🤝 **Set the new agent as a handler** for a given use-purpose like text-generation, image-generation, etc. The agent-creation wizard will tell you how, but you may also send a `%command_prefix% config` command to see the guide (in the *🤖 Handler Agents* section).
+2. 🤖 %create_one_or_more_agents%
+3. 🤝 %set_new_agent_as_handler%
 4. 👋 %send_a_message%
 5. 📖 %learn_more%
 "#;
@@ -159,6 +159,14 @@ fn make_use_of_me_agent_creation(
         .replace(
             "%learn_more%",
             &learn_more_from_usage_or_help(command_prefix),
+        )
+        .replace(
+            "%create_one_or_more_agents%",
+            &create_one_or_more_agents(command_prefix),
+        )
+        .replace(
+            "%set_new_agent_as_handler%",
+            &set_new_agent_as_handler(command_prefix),
         )
 }
 
@@ -180,4 +188,12 @@ fn learn_more_from_usage_or_help(command_prefix: &str) -> String {
     format!(
         "**Learn more** by sending a `{command_prefix} usage` or `{command_prefix} help` command."
     )
+}
+
+pub fn create_one_or_more_agents(command_prefix: &str) -> String {
+    format!("**Create one or more agents** in this room or globally. The provider help message will show you **🗲 Quick start** commands, but you may also send a `{command_prefix} agent` command to see the guide.")
+}
+
+pub fn set_new_agent_as_handler(command_prefix: &str) -> String {
+    format!("**Set the new agent as a handler** for a given use-purpose like text-generation, image-generation, etc. The agent-creation wizard will tell you how, but you may also send a `{command_prefix} config` command to see the guide (in the 🤖 *Handler Agents* section).")
 }
