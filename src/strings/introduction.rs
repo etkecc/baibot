@@ -23,20 +23,6 @@ fn purposes_intro() -> &'static str {
     "I can typically be used for the following purposes:"
 }
 
-fn no_text_generation_handler_agent() -> String {
-    format!(
-        "There is no configured handler agent which supports {} {}.",
-        AgentPurpose::TextGeneration.emoji(),
-        AgentPurpose::TextGeneration
-    )
-}
-
-fn introduction_outro(command_prefix: &str) -> String {
-    format!(
-        "You may also send a `{command_prefix} help` command message in this room for more information."
-    )
-}
-
 pub async fn create_on_join_introduction(
     name: &str,
     command_prefix: &str,
@@ -111,17 +97,16 @@ pub async fn create_on_join_introduction(
     message.push_str("\n\n");
 
     if got_text_generation_agent {
-        message.push_str(&simply_send_a_message(
+        message.push_str(&make_use_of_me_simply_send_a_message(
             command_prefix,
             room_config_context.text_generation_prefix_requirement_type(),
         ));
     } else {
-        message.push_str(&no_text_generation_handler_agent());
+        message.push_str(&make_use_of_me_agent_creation(
+            command_prefix,
+            room_config_context.text_generation_prefix_requirement_type(),
+        ));
     }
-
-    message.push_str("\n\n");
-
-    message.push_str(&introduction_outro(command_prefix));
 
     message
 }
@@ -130,17 +115,69 @@ pub fn create_short_introduction(name: &str) -> String {
     its_me(name)
 }
 
-fn simply_send_a_message(
+fn make_use_of_me_simply_send_a_message(
+    command_prefix: &str,
+    prefix_requirement_type: TextGenerationPrefixRequirementType,
+) -> String {
+    let message = r#"**To make use of me**:
+
+1. 👋 %send_a_message%
+2. 📖 %learn_more%
+"#;
+
+    message
+        .replace("%command_prefix%", command_prefix)
+        .replace(
+            "%send_a_message%",
+            &send_a_text_message(command_prefix, prefix_requirement_type),
+        )
+        .replace(
+            "%learn_more%",
+            &learn_more_from_usage_or_help(command_prefix),
+        )
+}
+
+fn make_use_of_me_agent_creation(
+    command_prefix: &str,
+    prefix_requirement_type: TextGenerationPrefixRequirementType,
+) -> String {
+    let message = r#"**To make use of me**:
+
+1. ☁️ **Choose an agent provider** (e.g. OpenAI, Mistral, etc). Send a `%command_prefix% provider` command to see the list.
+2. 🤖 **Create one or more agents** in this room or globally. The provider help message will show you **🗲 Quick start** commands, but you may also send a `%command_prefix% agent` command to see the guide.
+3. 🤝 **Set the new agent as a handler** for a given use-purpose like text-generation, image-generation, etc. The agent-creation wizard will tell you how, but you may also send a `%command_prefix% config` command to see the guide (in the *🤖 Handler Agents* section).
+4. 👋 %send_a_message%
+5. 📖 %learn_more%
+"#;
+
+    message
+        .replace("%command_prefix%", command_prefix)
+        .replace(
+            "%send_a_message%",
+            &send_a_text_message(command_prefix, prefix_requirement_type),
+        )
+        .replace(
+            "%learn_more%",
+            &learn_more_from_usage_or_help(command_prefix),
+        )
+}
+
+fn send_a_text_message(
     command_prefix: &str,
     prefix_requirement_type: TextGenerationPrefixRequirementType,
 ) -> String {
     match prefix_requirement_type {
         TextGenerationPrefixRequirementType::No => {
-            "**To make use of me, send a message** in this room (e.g. `Hello!`) and see me reply."
-                .to_owned()
+            "**Send a text message** in this room (e.g. `Hello!`) and see me reply.".to_owned()
         }
         TextGenerationPrefixRequirementType::CommandPrefix => {
-            format!("In this room, I'm configured to require the command prefix (`{command_prefix}`) for text messages.\n**To make use of me, send a prefixed text message** (e.g. `{command_prefix} Hello!`) and see me reply.")
+            format!("In this room, I'm configured to require the command prefix (`{command_prefix}`) for text messages. **Send a prefixed text message** (e.g. `{command_prefix} Hello!`) and see me reply.")
         }
     }
+}
+
+fn learn_more_from_usage_or_help(command_prefix: &str) -> String {
+    format!(
+        "**Learn more** by sending a `{command_prefix} usage` or `{command_prefix} help` command."
+    )
 }
