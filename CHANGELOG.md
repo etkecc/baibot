@@ -1,3 +1,11 @@
+# (2024-09-19) Version 1.0.6
+
+Improvements to:
+
+- messages sent by the bot - better onboarding flow, especially when no agents have been created yet
+- documentation pages
+
+
 # (2024-09-14) Version 1.0.5
 
 Further [improves](https://github.com/etkecc/baibot/commit/3b25b92a81a05ebaf1c6dbabf675fbfbe6c9f418) the typing notification logic, so that it tolerates edge cases better.
