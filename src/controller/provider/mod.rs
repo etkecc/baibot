@@ -78,9 +78,7 @@ pub async fn handle_help(message_context: &MessageContext, bot: &Bot) -> anyhow:
             ));
         }
         if !can_create_room_local_agents && !can_create_global_agents {
-            message.push_str(&format!(
-                " ask an administrator to create an agent for you (you lack permissions to do so yourself)",
-            ));
+            message.push_str(" ask an administrator to create an agent for you (you lack permissions to do so yourself)");
         }
 
         message.push_str("\n\n");
