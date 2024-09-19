@@ -25,7 +25,7 @@ run-in-container *extra_args: app-container-prepare build-container-image
 	--env BAIBOT_PERSISTENCE_DATA_DIR_PATH=/data \
 	--mount type=bind,src={{ justfile_directory() }}/var/app/container/config.yml,dst=/app/config.yml,ro \
 	--mount type=bind,src={{ justfile_directory() }}/var/app/container/data,dst=/data \
-	{{ container_image_name }} {{ extra_args }}
+	{{ container_image_name }}:latest {{ extra_args }}
 
 # Runs tests
 test *extra_args:
