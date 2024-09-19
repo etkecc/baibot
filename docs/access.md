@@ -5,16 +5,20 @@ This bot employs access control to decide who can use its services and manage it
 
 ### 👋 Joining rooms
 
-The bot automatically joins rooms when invited by someone considered a bot [user](#-users).
+The bot automatically joins rooms only when invited by someone considered a bot [👥 user](#-users).
 
 
 ### 👥 Users
 
-The bot will ignore messages (and room invitations) from unallowed users.
-
-Users can **use all the bot's [features](./features.md)** ([💬 Text Generation](./features.md#-text-generation), [🦻 Speech-to-Text](./features.md#-speech-to-text), etc.), but **cannot manage the bot's configuration**.
-
 The bot can be used by users that match some [dynamically](./configuration/README.md#dynamic-configuration) configured [Matrix user id](https://spec.matrix.org/v1.11/#users) patterns.
+
+Users:
+
+- ✅ can **invite the bot to rooms**
+- ✅ can **use all the bot's [features](./features.md)** ([💬 Text Generation](./features.md#-text-generation), [🦻 Speech-to-Text](./features.md#-speech-to-text), etc.) by sending room messages
+- ✅ can **change the bot's configuration in a room** (e.g. `!bai config room ...` commands)
+- ❌ cannot **change the bot's global configuration** (e.g. `!bai config global ...` commands)
+- ❌ cannot **create new [🤖 Agents](./agents.md)** (neither in rooms, nor globally). See [💼 Room-local agent managers](#-room-local-agent-managers) for controlling which users can create agents.
 
 The following commands are available:
 - **Show** the currently allowed users: `!bai access users`
@@ -27,6 +31,8 @@ Example patterns: `@*:example.com @*:another.com @someone:company.org`
 
 Administrators can **manage the bot's configuration and access control**.
 
+Administrators are [👥 Users](#-users) and [💼 Room-local agent managers](#-room-local-agent-managers) implicitly, so they inherit all their permissions.
+
 The bot can be administrated by users that match some [statically](./configuration/README.md#static-configuration) configured [Matrix user id](https://spec.matrix.org/v1.11/#users) patterns.
 
 Administrators cannot be changed without adjusting the bot's configuration on the server.
@@ -35,7 +41,8 @@ Administrators cannot be changed without adjusting the bot's configuration on th
 ### 💼 Room-local agent managers
 
 Room-local agent managers are users privileged to **create their own [agents](./agents.md)** (see `!bai agent`) in rooms.
-Letting regular users create agents which contact arbitrary network services **may be a security issue**.
+
+**⚠️ WARNING**: Letting regular users create agents which contact arbitrary network services **may be a security issue**.
 
 The following commands are available:
 - **Show** the currently allowed users: `!bai access room-local-agent-managers`
