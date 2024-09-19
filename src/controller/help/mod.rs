@@ -3,7 +3,7 @@ use mxlink::MessageResponseType;
 use crate::{entity::MessageContext, strings, Bot};
 
 pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Result<()> {
-    let sender_can_manage_global_config = message_context.sender_can_manage_global_config()?;
+    let sender_can_manage_global_config = message_context.sender_can_manage_global_config();
     let sender_can_manage_room_local_agents =
         message_context.sender_can_manage_room_local_agents()?;
 

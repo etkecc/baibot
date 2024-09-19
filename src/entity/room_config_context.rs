@@ -1,3 +1,5 @@
+use mxlink::matrix_sdk::ruma::OwnedUserId;
+
 use super::globalconfig::GlobalConfig;
 use super::roomconfig::RoomConfig;
 
@@ -179,5 +181,19 @@ impl RoomConfigContext {
                     .voice_override
                     .clone()
             })
+    }
+
+    pub fn is_user_allowed_room_local_agent_manager(
+        &self,
+        user_id: OwnedUserId,
+    ) -> mxidwc::Result<bool> {
+        match &self.global_config.access.room_local_agent_manager_patterns {
+            None => Ok(false),
+            Some(patterns) => {
+                let allowed_regexes = mxidwc::parse_patterns_vector(patterns)?;
+
+                Ok(mxidwc::match_user_id(user_id.as_str(), &allowed_regexes))
+            }
+        }
     }
 }

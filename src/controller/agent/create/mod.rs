@@ -138,7 +138,7 @@ pub async fn handle_global(
     provider: &str,
     agent_id_prefixless: &str,
 ) -> anyhow::Result<()> {
-    if !message_context.sender_can_manage_global_config()? {
+    if !message_context.sender_can_manage_global_config() {
         bot.messaging()
             .send_error_markdown_no_fail(
                 message_context.room(),

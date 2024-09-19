@@ -50,7 +50,7 @@ pub async fn handle(
                 .await
         }
         PublicIdentifier::DynamicGlobal(_) => {
-            if !message_context.sender_can_manage_global_config()? {
+            if !message_context.sender_can_manage_global_config() {
                 bot.messaging()
                     .send_error_markdown_no_fail(
                         message_context.room(),

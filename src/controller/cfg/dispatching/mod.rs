@@ -40,7 +40,7 @@ async fn dispatch_config_related_handler(
     bot: &Bot,
 ) -> anyhow::Result<()> {
     if let SettingsStorageSource::Global = config_type {
-        if !message_context.sender_can_manage_global_config()? {
+        if !message_context.sender_can_manage_global_config() {
             bot.messaging()
                 .send_error_markdown_no_fail(
                     message_context.room(),

@@ -70,12 +70,12 @@ impl MessageContext {
         &self.thread_info
     }
 
-    pub fn sender_can_manage_global_config(&self) -> anyhow::Result<bool> {
-        Ok(self.trigger_event_info.sender_is_admin)
+    pub fn sender_can_manage_global_config(&self) -> bool {
+        self.trigger_event_info.sender_is_admin
     }
 
-    pub fn sender_can_manage_room_local_agents(&self) -> anyhow::Result<bool> {
-        Ok(self.sender_can_manage_global_config()?
+    pub fn sender_can_manage_room_local_agents(&self) -> mxidwc::Result<bool> {
+        Ok(self.sender_can_manage_global_config()
             || self.sender_is_allowed_room_local_agent_manager()?)
     }
 
@@ -102,21 +102,8 @@ impl MessageContext {
         combined
     }
 
-    fn sender_is_allowed_room_local_agent_manager(&self) -> anyhow::Result<bool> {
-        match &self
-            .global_config()
-            .access
-            .room_local_agent_manager_patterns
-        {
-            None => Ok(false),
-            Some(patterns) => {
-                let allowed_regexes = mxidwc::parse_patterns_vector(patterns)?;
-
-                Ok(mxidwc::match_user_id(
-                    self.sender_id().as_str(),
-                    &allowed_regexes,
-                ))
-            }
-        }
+    fn sender_is_allowed_room_local_agent_manager(&self) -> mxidwc::Result<bool> {
+        self.room_config_context()
+            .is_user_allowed_room_local_agent_manager(self.sender_id().clone())
     }
 }

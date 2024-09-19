@@ -80,24 +80,21 @@ fn build_section_users(
         message.push_str(&strings::access::users_no_patterns());
     }
 
-    let can_manage_global_config = message_context.sender_can_manage_global_config();
-    if let Ok(can_manage_global_config) = can_manage_global_config {
-        if can_manage_global_config {
-            message.push_str("\n\n");
+    if message_context.sender_can_manage_global_config() {
+        message.push_str("\n\n");
 
-            message.push_str(strings::the_following_commands_are_available());
-            message.push('\n');
+        message.push_str(strings::the_following_commands_are_available());
+        message.push('\n');
 
-            message.push_str(&strings::help::access::users_command_get(command_prefix));
-            message.push('\n');
+        message.push_str(&strings::help::access::users_command_get(command_prefix));
+        message.push('\n');
 
-            message.push_str(&strings::help::access::users_command_set(command_prefix));
-            message.push_str("\n\n");
+        message.push_str(&strings::help::access::users_command_set(command_prefix));
+        message.push_str("\n\n");
 
-            message.push_str(&strings::help::access::example_user_patterns(
-                homeserver_name,
-            ));
-        }
+        message.push_str(&strings::help::access::example_user_patterns(
+            homeserver_name,
+        ));
     }
 
     message
@@ -156,27 +153,24 @@ fn build_section_room_local_agent_managers(
         message.push_str(&strings::access::room_local_agent_managers_no_patterns());
     }
 
-    let can_manage_global_config = message_context.sender_can_manage_global_config();
-    if let Ok(can_manage_global_config) = can_manage_global_config {
-        if can_manage_global_config {
-            message.push_str("\n\n");
-            message.push_str(strings::the_following_commands_are_available());
-            message.push('\n');
+    if message_context.sender_can_manage_global_config() {
+        message.push_str("\n\n");
+        message.push_str(strings::the_following_commands_are_available());
+        message.push('\n');
 
-            message.push_str(
-                &strings::help::access::room_local_agent_managers_command_get(command_prefix),
-            );
-            message.push('\n');
+        message.push_str(
+            &strings::help::access::room_local_agent_managers_command_get(command_prefix),
+        );
+        message.push('\n');
 
-            message.push_str(
-                &strings::help::access::room_local_agent_managers_command_set(command_prefix),
-            );
-            message.push_str("\n\n");
+        message.push_str(
+            &strings::help::access::room_local_agent_managers_command_set(command_prefix),
+        );
+        message.push_str("\n\n");
 
-            message.push_str(&strings::help::access::example_user_patterns(
-                homeserver_name,
-            ));
-        }
+        message.push_str(&strings::help::access::example_user_patterns(
+            homeserver_name,
+        ));
     }
 
     message
