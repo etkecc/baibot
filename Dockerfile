@@ -32,7 +32,9 @@ RUN --mount=type=cache,target=/target,sharing=locked \
 
 FROM docker.io/debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y ca-certificates sqlite3
+RUN apt-get update && apt-get install -y ca-certificates sqlite3 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
