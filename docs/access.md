@@ -37,10 +37,8 @@ Administrators cannot be changed without adjusting the bot's configuration on th
 Room-local agent managers are users privileged to **create their own [agents](./agents.md)** (see `!bai agent`) in rooms.
 Letting regular users create agents which contact arbitrary network services **may be a security issue**.
 
-No room-local agent manager patterns are configured, so new agents can only be created by administrators.
-
 The following commands are available:
 - **Show** the currently allowed users: `!bai access room-local-agent-managers`
 - **Set** the list of allowed users: `!bai access set-room-local-agent-managers SPACE_SEPARATED_PATTERNS`
 
-Example patterns: `@*:synapse.127.0.0.1.nip.io @*:another.com @someone:company.org`
+Example patterns: `@*:example.com @*:another.com @someone:company.org`
