@@ -13,6 +13,8 @@ pub trait ControllerTrait {
 
     fn ping(&self) -> impl std::future::Future<Output = anyhow::Result<PingResult>> + Send;
 
+    fn text_generation_model_id(&self) -> Option<String>;
+
     fn text_generation_prompt(&self) -> Option<String>;
 
     fn text_generation_temperature(&self) -> Option<f32>;
@@ -60,6 +62,14 @@ impl ControllerTrait for ControllerType {
             ControllerType::OpenAI(controller) => controller.supports_purpose(purpose),
             ControllerType::OpenAICompat(controller) => controller.supports_purpose(purpose),
             ControllerType::Anthropic(controller) => controller.supports_purpose(purpose),
+        }
+    }
+
+    fn text_generation_model_id(&self) -> Option<String> {
+        match &self {
+            ControllerType::OpenAI(controller) => controller.text_generation_model_id(),
+            ControllerType::OpenAICompat(controller) => controller.text_generation_model_id(),
+            ControllerType::Anthropic(controller) => controller.text_generation_model_id(),
         }
     }
 

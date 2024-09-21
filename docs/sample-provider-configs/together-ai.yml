@@ -2,7 +2,7 @@ base_url: https://api.together.xyz/v1
 api_key: YOUR_API_KEY_HERE
 text_generation:
   model_id: meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo
-  prompt: You are a brief, but helpful bot.
+  prompt: "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time now is: {{ baibot_now_utc }}."
   temperature: 1.0
   max_response_tokens: 2048
   max_context_tokens: 8192

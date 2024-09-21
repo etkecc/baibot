@@ -68,6 +68,19 @@ Where appropriate, you'll mention best practices and common pitfalls.
 
 A prompt override can also be set globally, see [🛠️ Room Settings](./README.md#room-settings).
 
+Prompts may contain the following **placeholder variables** which will be replaced *every time* the bot is interacted with:
+
+| Placeholder               | Description | Example |
+|---------------------------|-------------|---------|
+| `{{ baibot_name }}`       | Name of the bot as configured in the `user.name` field in the [Static configuration](./README.md#static-configuration) | `Baibot` |
+| `{{ baibot_model_id }}`   | Text-Generation model ID as configured in the [🤖 agent](../agents.md)'s configuration | `gpt-4o` |
+| `{{ baibot_now_utc }}`    | Current date and time in UTC | `2024-09-20 (Friday), 14:26:42 UTC (local timezone/time: unknown)` |
+
+Here's a prompt that combines some of the above variables:
+
+> You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time now is: {{ baibot_now_utc }}."
+
+
 ### 🌡️ Temperature Override
 
 You can override the [temperature](https://blogs.novita.ai/what-are-large-language-model-settings-temperature-top-p-and-max-tokens/#what-is-llm-temperature) (randomness / creativity) parameter configured at the [🤖 agent](../agents.md) level.

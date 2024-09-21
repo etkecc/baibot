@@ -86,11 +86,12 @@ impl ControllerTrait for Controller {
             ));
         };
 
-        let prompt_text = params
-            .prompt_override
-            .unwrap_or(self.text_generation_prompt().unwrap_or("".to_owned()))
-            .trim()
-            .to_owned();
+        let prompt_text = params.prompt_variables.format(
+            params
+                .prompt_override
+                .unwrap_or(self.text_generation_prompt().unwrap_or("".to_owned()))
+                .trim(),
+        );
 
         let prompt_message = if prompt_text.is_empty() {
             None
@@ -391,20 +392,25 @@ impl ControllerTrait for Controller {
         }
     }
 
-    fn text_generation_prompt(&self) -> Option<String> {
-        let Some(text_generation_config) = &self.config.text_generation else {
-            return None;
-        };
+    fn text_generation_model_id(&self) -> Option<String> {
+        self.config
+            .text_generation
+            .as_ref()
+            .map(|config| config.model_id.to_owned())
+    }
 
-        text_generation_config.prompt.clone()
+    fn text_generation_prompt(&self) -> Option<String> {
+        self.config
+            .text_generation
+            .as_ref()
+            .and_then(|config| config.prompt.clone())
     }
 
     fn text_generation_temperature(&self) -> Option<f32> {
-        let Some(text_generation_config) = &self.config.text_generation else {
-            return None;
-        };
-
-        Some(text_generation_config.temperature)
+        self.config
+            .text_generation
+            .as_ref()
+            .map(|config| config.temperature)
     }
 
     fn text_to_speech_voice(&self) -> Option<String> {

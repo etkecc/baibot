@@ -21,5 +21,5 @@ pub use config::ConfigTrait;
 
 pub use entity::{
     AgentProvider, AgentProviderInfo, ImageGenerationParams, PingResult, SpeechToTextParams,
-    SpeechToTextResult, TextGenerationParams, TextToSpeechParams,
+    SpeechToTextResult, TextGenerationParams, TextGenerationPromptVariables, TextToSpeechParams,
 };

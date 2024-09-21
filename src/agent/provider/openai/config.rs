@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::agent::provider::ConfigTrait;
+use crate::agent::{default_prompt, provider::ConfigTrait};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -66,7 +66,7 @@ impl Default for TextGenerationConfig {
     fn default() -> Self {
         Self {
             model_id: default_text_model_id(),
-            prompt: Some("You are a brief, but helpful bot.".to_owned()),
+            prompt: Some(default_prompt().to_owned()),
             temperature: super::super::default_temperature(),
             max_response_tokens: 16_384,
             max_context_tokens: 128_000,

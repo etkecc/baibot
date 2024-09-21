@@ -4,7 +4,9 @@ use mxlink::{MatrixLink, MessageResponseType};
 
 use tracing::Instrument;
 
-use crate::agent::provider::{SpeechToTextParams, TextGenerationParams};
+use crate::agent::provider::{
+    SpeechToTextParams, TextGenerationParams, TextGenerationPromptVariables,
+};
 use crate::agent::AgentInstance;
 use crate::agent::AgentPurpose;
 use crate::agent::ControllerTrait;
@@ -405,6 +407,16 @@ async fn handle_stage_text_generation(
 
     let start_time = std::time::Instant::now();
 
+    let controller = agent.controller();
+
+    let prompt_variables = TextGenerationPromptVariables::new(
+        bot.name(),
+        &controller
+            .text_generation_model_id()
+            .unwrap_or("unknown-model".to_owned()),
+        chrono::Utc::now(),
+    );
+
     let params = TextGenerationParams {
         context_management_enabled: message_context
             .room_config_context()
@@ -417,10 +429,11 @@ async fn handle_stage_text_generation(
         temperature_override: message_context
             .room_config_context()
             .text_generation_temperature_override(),
+
+        prompt_variables,
     };
 
-    let result = agent
-        .controller()
+    let result = controller
         .generate_text(conversation, params)
         .instrument(span)
         .await;

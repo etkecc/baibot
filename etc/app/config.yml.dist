@@ -73,7 +73,7 @@ agents:
     #     api_key: ""
     #     text_generation:
     #       model_id: gpt-4o-2024-08-06
-    #       prompt: You are a brief, but helpful bot.
+    #       prompt: "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time now is: {{ baibot_now_utc }}."
     #       temperature: 1.0
     #       max_response_tokens: 16384
     #       max_context_tokens: 128000
@@ -97,7 +97,7 @@ agents:
     #     api_key: null
     #     text_generation:
     #       model_id: gpt-4
-    #       prompt: You are a brief, but helpful bot.
+    #       prompt: "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time now is: {{ baibot_now_utc }}."
     #       temperature: 1.0
     #       max_response_tokens: 16384
     #       max_context_tokens: 128000

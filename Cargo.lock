@@ -303,6 +303,7 @@ dependencies = [
  "anyhow",
  "async-openai 0.24.0",
  "base64 0.22.1",
+ "chrono",
  "etke_openai_api_rust",
  "matrix-sdk",
  "mxidwc",
@@ -504,6 +505,15 @@ dependencies = [
  "cipher",
  "poly1305",
  "zeroize",
+]
+
+[[package]]
+name = "chrono"
+version = "0.4.38"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]

@@ -19,6 +19,7 @@ anthropic-rs = "0.1.*"
 anyhow = "1.0.*"
 async-openai = "0.24.*"
 base64 = "0.22.*"
+chrono = { version = "0.4.*", default-features = false, features = ["std", "now"] }
 # We'd rather not depend on this, but we cannot use the ruma-events EventContent macro without it.
 matrix-sdk = { version = "0.7.1", default-features = false }
 mxidwc = "1.0.*"
