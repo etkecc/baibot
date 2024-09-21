@@ -13,6 +13,7 @@ run-locally *extra_args: app-local-prepare
 	BAIBOT_PERSISTENCE_DATA_DIR_PATH={{ justfile_directory() }}/var/app/local/data \
 	cargo run -- {{ extra_args }}
 
+# Builds and runs the bot in a container
 run-in-container *extra_args: app-container-prepare build-container-image
 	/usr/bin/env docker run \
 	-it \
