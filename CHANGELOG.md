@@ -1,3 +1,14 @@
+# (2024-09-21) Version 1.1.0
+
+- (**Feature**) Adds support for [prompt variables](./docs/configuration/text-generation.md#️-prompt-override) (date/time, bot name, model id) ([2a5a2d6a4d](https://github.com/etkecc/baibot/commit/2a5a2d6a4dbf5fd7cb504ac07d4187fdc32ae395))
+
+- (**Improvement**) [Dockerfile](./Dockerfile) changes to produce ~20MB smaller container images ([354063abb7](https://github.com/etkecc/baibot/commit/354063abb79035069bd3b26c53214874e9cdd95d))
+
+- (**Improvement**) [Dockerfile](./Dockerfile) changes to optimize local (debug) runs in a container ([c8c5e0e540](https://github.com/etkecc/baibot/commit/c8c5e0e540ab981e849452eb3ddb0378105e1fc6))
+
+- (**Improvement**) CI changes to try and work around multi-arch image issues like [this one](https://github.com/etkecc/baibot/issues/2) ([5de7559ed6](https://github.com/etkecc/baibot/commit/5de7559ed685a41c22dfc12283681f02f4c2ee00))
+
+
 # (2024-09-19) Version 1.0.6
 
 Improvements to:
