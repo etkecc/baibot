@@ -14,7 +14,7 @@ run-locally *extra_args: app-local-prepare
 	cargo run -- {{ extra_args }}
 
 # Builds and runs the bot in a container
-run-in-container *extra_args: app-container-prepare build-container-image
+run-in-container *extra_args: app-container-prepare build-container-image-debug
 	/usr/bin/env docker run \
 	-it \
 	--rm \
@@ -39,9 +39,16 @@ build-debug *extra_args:
 # Builds an optimized release binary (target/release/*)
 build-release *extra_args: (build-debug "--release")
 
-# Builds a container image
-build-container-image tag='latest':
+# Builds a container image (debug mode)
+build-container-image-debug tag='latest': (_build-container-image "false" tag)
+
+# Builds a container image (release mode)
+build-container-image-release tag='latest': (_build-container-image "true" tag)
+
+_build-container-image release_build tag:
 	/usr/bin/env docker build \
+	--build-arg RELEASE_BUILD={{ release_build }} \
+	-f {{ justfile_directory() }}/Dockerfile \
 	-t {{ container_image_name }}:{{ tag }} \
 	.
 

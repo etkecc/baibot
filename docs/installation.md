@@ -15,8 +15,16 @@
 
 We provide prebuilt container images for the `amd64` and `arm64` architectures, so **you don't necessarily need to build images yourself** and can jump to [Running in a container](#-running-in-a-container).
 
-If you nevertheless wish to build a container image yourself, you can do so by running `just build-container-image`.
-This will build and tag your container image as `localhost/baibot:latest`.
+If you nevertheless wish to build a container image yourself, you can do so by running:
+
+- (recommended) `just build-container-image-release` to build a release version of the container image
+
+- or `just build-container-image-debug` to build a debug version of the container image
+
+Debug images are faster to build but are larger in size.
+Release images are ~5x smaller in size, but are slower to build.
+
+Both of these commands will build and tag your container image as `localhost/baibot:latest`.
 
 
 ### 🐋 Running in a container
