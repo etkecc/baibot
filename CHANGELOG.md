@@ -1,6 +1,13 @@
+# (2024-09-22) Version 1.1.1
+
+- (**Bugfix**) Fix thread messages being lost due to lack of pagination support ([d4ddd29660](https://github.com/etkecc/baibot/commit/d4ddd29660d9f51d248119dd6032e68ab29e7d35)) - fixes [issue #13](https://github.com/etkecc/baibot/issues/13)
+
+- (**Bugfix**) Fix Anthropic conversations getting stuck when being impatient and sending multiple consecutive messages ([8b12bdf2b3](https://github.com/etkecc/baibot/commit/8b12bdf2b3196abea0e8db33d7c50fff48341cb9)) - fixes [issue #13](https://github.com/etkecc/baibot/issues/13)
+
+
 # (2024-09-21) Version 1.1.0
 
-- (**Feature**) Adds support for [prompt variables](./docs/configuration/text-generation.md#️-prompt-override) (date/time, bot name, model id) ([2a5a2d6a4d](https://github.com/etkecc/baibot/commit/2a5a2d6a4dbf5fd7cb504ac07d4187fdc32ae395))
+- (**Feature**) Adds support for [prompt variables](./docs/configuration/text-generation.md#️-prompt-override) (date/time, bot name, model id) ([2a5a2d6a4d](https://github.com/etkecc/baibot/commit/2a5a2d6a4dbf5fd7cb504ac07d4187fdc32ae395)) - fixes [issue #10](https://github.com/etkecc/baibot/issues/10)
 
 - (**Improvement**) [Dockerfile](./Dockerfile) changes to produce ~20MB smaller container images ([354063abb7](https://github.com/etkecc/baibot/commit/354063abb79035069bd3b26c53214874e9cdd95d))
 
