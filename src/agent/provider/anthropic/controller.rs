@@ -111,6 +111,15 @@ impl ControllerTrait for Controller {
             })
         };
 
+        // Avoid the situation where multiple user or assistant messages are sent consecutively,
+        // to avoid errors like:
+        // > API error: Error response: error Api error: invalid_request_error messages: roles must alternate between "user" and "assistant", but found multiple "user" roles in a row
+        // as reported here: https://github.com/etkecc/baibot/issues/13
+        //
+        // As https://docs.anthropic.com/en/api/messages says:
+        // > Our models are trained to operate on alternating user and assistant conversational turns.
+        let conversation = conversation.combine_consecutive_messages();
+
         let mut conversation_messages = conversation.messages;
 
         if params.context_management_enabled {
