@@ -74,7 +74,7 @@ Prompts may contain the following **placeholder variables** which will be replac
 |---------------------------|-------------|---------|
 | `{{ baibot_name }}`       | Name of the bot as configured in the `user.name` field in the [Static configuration](./README.md#static-configuration) | `Baibot` |
 | `{{ baibot_model_id }}`   | Text-Generation model ID as configured in the [🤖 agent](../agents.md)'s configuration | `gpt-4o` |
-| `{{ baibot_now_utc }}`    | Current date and time in UTC | `2024-09-20 (Friday), 14:26:42 UTC (local timezone/time: unknown)` |
+| `{{ baibot_now_utc }}`    | Current date and time in UTC | `2024-09-20 (Friday), 14:26:42 UTC` |
 
 Here's a prompt that combines some of the above variables:
 
