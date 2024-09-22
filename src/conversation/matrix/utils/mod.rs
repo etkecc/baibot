@@ -13,7 +13,7 @@ use mxlink::matrix_sdk::{
     },
     Room,
 };
-use mxlink::{MatrixLink, ThreadInfo};
+use mxlink::{MatrixLink, ThreadGetMessagesParams, ThreadInfo};
 
 use super::{MatrixMessage, MatrixMessageProcessingParams, MatrixMessageType, RoomEventFetcher};
 use crate::entity::{MessagePayload, ThreadContext, ThreadContextFirstMessage};
@@ -23,7 +23,10 @@ pub async fn get_matrix_messages_in_thread(
     room: &Room,
     thread_id: OwnedEventId,
 ) -> Result<Vec<MatrixMessage>, mxlink::matrix_sdk::Error> {
-    let messages_native = matrix_link.threads().get_messages(room, thread_id).await?;
+    let messages_native = matrix_link
+        .threads()
+        .get_messages(room, thread_id, ThreadGetMessagesParams::default())
+        .await?;
 
     let mut messages: Vec<MatrixMessage> = Vec::new();
 
