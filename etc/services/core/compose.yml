@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: docker.io/postgres:16.3-alpine
+    image: docker.io/postgres:16.4-alpine
     user: ${UID}:${GID}
     restart: unless-stopped
     environment:
@@ -13,7 +13,7 @@ services:
     - /etc/passwd:/etc/passwd:ro
 
   synapse:
-    image: ghcr.io/element-hq/synapse:v1.114.0
+    image: ghcr.io/element-hq/synapse:v1.115.0
     user: "${UID}:${GID}"
     restart: unless-stopped
     entrypoint: python
