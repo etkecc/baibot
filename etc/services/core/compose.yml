@@ -26,7 +26,7 @@ services:
     - ./synapse/media-store:/media-store
 
   element-web:
-    image: docker.io/vectorim/element-web:v1.11.77
+    image: docker.io/vectorim/element-web:v1.11.78
     user: "${UID}:${GID}"
     restart: unless-stopped
     ports:
