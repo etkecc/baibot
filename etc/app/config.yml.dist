@@ -122,7 +122,7 @@ agents:
     #     api_key: null
     #     text_generation:
     #       model_id: "gemma2:2b"
-    #       prompt: "You are an assistant based on the gemma2:2b model. Be brief in your responses."
+    #       prompt: "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time now is: {{ baibot_now_utc }}."
     #       temperature: 1.0
     #       max_response_tokens: 4096
     #       max_context_tokens: 128000
