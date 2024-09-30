@@ -5,12 +5,18 @@ use super::text::{block_quote, block_unquote};
 /// Creates a text message which is based on transcribed audio.
 /// This text message is prefixed with an emoji and blockquoted, to indicate that it is a transcription.
 /// To reverse the process, use `parse_transcribed_message_text()`.
+///
+/// It should be noted that in certain cases (Transcribe-only mode), transcriptions are posted as regular notice messages which do not include
+/// the `> 🦻` prefixing. That is, not every transcribed message will pass through here (intentionally).
 pub fn create_transcribed_message_text(text: &str) -> String {
     block_quote(&format!("{} {}", AgentPurpose::SpeechToText.emoji(), text))
 }
 
 /// Parses a transcribed message text, reversing the process done by `create_transcribed_message_text()`.
 /// If the provided text string does not match the expected format, None is returned.
+///
+/// It should be noted that in certain cases (Transcribe-only mode), transcriptions are posted as regular notice messages which do not include
+/// the `> 🦻` prefixing. This function will not handle these properly.
 pub fn parse_transcribed_message_text(text: &str) -> Option<String> {
     if !text.starts_with("> ") {
         return None;

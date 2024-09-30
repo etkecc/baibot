@@ -31,6 +31,9 @@ fn convert_bot_notice_message(text: &str) -> Option<Message> {
     // Notice messages sent by the bot are usually transcriptions of previous messages sent by the user.
     // Such transcriptions are prefixed with an emoji and blockquoted.
     // If we find a notice that doesn't match this pattern, we skip it.
+    //
+    // It should be noted that transcriptions are sometimes posted as regular notice messages which do not include
+    // the `> 🦻` formatting. This function will not handle these properly.
 
     if let Some(text) = text_to_speech_utils::parse_transcribed_message_text(text) {
         // This is a transcription message. We remove the prefix and consider it as a message sent by the user.

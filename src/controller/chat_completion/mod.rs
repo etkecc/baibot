@@ -548,16 +548,49 @@ async fn handle_stage_speech_to_text_actual_transcribing(
         .instrument(span)
         .await?;
 
-    let transcribed_text = create_transcribed_message_text(&speech_to_text_result.text);
+    // Only use the `> 🦻 Transcribed text` format if we're posting in a thread.
+    //
+    // If we're dealing with a regular reply (which would be the case in "Transcribe-only mode" = speech-to-text/flow-type=only_transcribe),
+    // we don't want to use the `> 🦻 Transcribed text` format for 2 reasons:
+    //
+    // 1. This kind of blockquote-formatting can be confused by clients for a fallback-for-rich-replies
+    //    (see https://spec.matrix.org/v1.11/client-server-api/#fallbacks-for-rich-replies).
+    //    It makes certain clients render our messages incorrectly.
+    //
+    // 2. Transcribe-only mode is typically used for memos. Sticking to a plain-text format
+    //    allows people to copy-paste the text or forward it to another room more easily (without having to strip formatting, etc.)
+    //
+    // When sending a bare reply, we'd better annotate the message with a 🦻 reaction instead,
+    // to make it clear to users that it's a transcription.
+    //
+    // Regardless of how we post this message, it will be posted as a notice,
+    // which can indicate to the bot (for potential future text-generation purposes) that this message is not a bot message.
+    let (transcribed_text, annotate_message_with_reaction) = if let MessageResponseType::InThread(_) = response_type {
+        (create_transcribed_message_text(&speech_to_text_result.text), false)
+    } else {
+        (speech_to_text_result.text, true)
+    };
 
     let result = bot
         .messaging()
         .send_notice_markdown_no_fail(message_context.room(), transcribed_text, response_type)
         .await;
 
-    result
+    let event_id = result
         .map(|result| result.event_id)
-        .ok_or_else(|| anyhow::anyhow!("Failed to send transcribed text"))
+        .ok_or_else(|| anyhow::anyhow!("Failed to send transcribed text"))?;
+
+    if annotate_message_with_reaction {
+        bot.reacting()
+            .react_no_fail(
+                message_context.room(),
+                event_id.clone(),
+                AgentPurpose::SpeechToText.emoji().to_owned(),
+            )
+            .await;
+    }
+
+    Ok(event_id)
 }
 
 async fn send_tts_offer_for_message(
