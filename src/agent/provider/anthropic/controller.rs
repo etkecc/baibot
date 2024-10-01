@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use anthropic_rs::completion::message::ContentType;
+use anthropic_rs::completion::message::{ContentType, System};
 use anthropic_rs::{
     client::Client as AnthropicClient, config::Config as AnthropicConfig,
     models::claude::ClaudeModel,
@@ -157,7 +157,7 @@ impl ControllerTrait for Controller {
             .unwrap_or(text_generation_config.temperature);
 
         if let Some(prompt_message) = prompt_message {
-            request.system = Some(prompt_message.message_text);
+            request.system = Some(System::Text(prompt_message.message_text));
         }
 
         request.model = model;
