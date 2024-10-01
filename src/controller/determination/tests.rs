@@ -4,9 +4,6 @@ fn determine_text_controller() {
     use super::ControllerType;
     use crate::controller;
 
-    let bot_user_id = mxlink::matrix_sdk::ruma::owned_user_id!("@bot:example.com");
-    let bot_display_name = "Bot";
-
     let command_prefix = "!bai";
 
     struct TestCase {
@@ -44,9 +41,7 @@ fn determine_text_controller() {
             is_mentioning_bot: false,
             room_text_generation_prefix_requirement_type:
                 super::TextGenerationPrefixRequirementType::No,
-            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::ViaText {
-                prefixes_to_strip: vec![],
-            }),
+            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::TextCommand),
         },
         TestCase {
             name: "Access top-level",
@@ -110,9 +105,7 @@ fn determine_text_controller() {
             is_mentioning_bot: false,
             room_text_generation_prefix_requirement_type:
                 super::TextGenerationPrefixRequirementType::No,
-            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::ViaText {
-                prefixes_to_strip: vec![],
-            }),
+            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::TextDirect),
         },
         TestCase {
             name: "Regular text is ignored when prefix is required",
@@ -128,9 +121,7 @@ fn determine_text_controller() {
             is_mentioning_bot: false,
             room_text_generation_prefix_requirement_type:
                 super::TextGenerationPrefixRequirementType::CommandPrefix,
-            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::ViaText {
-                prefixes_to_strip: vec!["!bai".to_owned()],
-            }),
+            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::TextCommand),
         },
         TestCase {
             name: "Command-prefixed text triggers completion even when prefix is not required",
@@ -138,58 +129,35 @@ fn determine_text_controller() {
             is_mentioning_bot: false,
             room_text_generation_prefix_requirement_type:
                 super::TextGenerationPrefixRequirementType::No,
-            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::ViaText {
-                prefixes_to_strip: vec![],
-            }),
+            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::TextCommand),
         },
         TestCase {
-            name: "Regular message with bot mention triggers completion stripping bot id and display name (no prefix requirement)",
+            name: "Regular message with bot mention triggers completion (no prefix requirement)",
             input: "Regular text goes here",
             is_mentioning_bot: true,
             room_text_generation_prefix_requirement_type:
                 super::TextGenerationPrefixRequirementType::No,
-            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::ViaText {
-                prefixes_to_strip: vec![
-                    "@bot:example.com".to_owned(),
-                    "@bot".to_owned(),
-                    "bot".to_owned(),
-                    "@Bot".to_owned(),
-                    "Bot".to_owned(),
-                    ":".to_owned(),
-                ],
-            }),
+            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::TextMention),
         },
-        // This test case is the same as the one above, just with a different prefix requirement.
+        // This test case is the same as the one above, just with a different prefix requirement setting.
         // We expect the same result.
         TestCase {
-            name: "Regular message with bot mention triggers completion stripping bot id and display name (command_prefix requirement)",
+            name:
+                "Regular message with bot mention triggers completion (command prefix requirement)",
             input: "Regular text goes here",
             is_mentioning_bot: true,
             room_text_generation_prefix_requirement_type:
                 super::TextGenerationPrefixRequirementType::CommandPrefix,
-            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::ViaText {
-                prefixes_to_strip: vec![
-                    "@bot:example.com".to_owned(),
-                    "@bot".to_owned(),
-                    "bot".to_owned(),
-                    "@Bot".to_owned(),
-                    "Bot".to_owned(),
-                    ":".to_owned(),
-                ],
-            }),
+            expected: ControllerType::ChatCompletion(ChatCompletionControllerType::TextMention),
         },
     ];
 
     for test_case in test_cases {
-        let bot_display_name = Some(bot_display_name.to_owned());
-
         let result = super::determine_text_controller(
             command_prefix,
             test_case.input,
             test_case.room_text_generation_prefix_requirement_type,
             test_case.is_mentioning_bot,
-            &bot_user_id,
-            &bot_display_name,
         );
         assert_eq!(result, test_case.expected, "Test case: {}", test_case.name);
     }

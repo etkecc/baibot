@@ -41,7 +41,7 @@ It's influenced by [chaz](https://github.com/arcuru/chaz), but does **not** use 
 
 ![Introduction and general usage](./docs/screenshots/introduction-and-general-usage.webp)
 
-You can find more screenshots on the the [🌟 Features](./docs/features.md) and other [📚 Documentation](./docs/README.md) pages, as well as in the [docs/screenshots](./docs/screenshots) directory.
+You can find more screenshots on the [🌟 Features](./docs/features.md) and other [📚 Documentation](./docs/README.md) pages, as well as in the [docs/screenshots](./docs/screenshots) directory.
 
 
 ## 🚀 Getting Started

@@ -1,12 +1,14 @@
+use matrix_sdk::ruma::OwnedUserId;
+
 use super::{Author, Message};
 use crate::conversation::matrix::{MatrixMessage, MatrixMessageType};
 use crate::utils::text_to_speech as text_to_speech_utils;
 
 pub fn convert_matrix_message_to_llm_message(
     matrix_message: &MatrixMessage,
-    bot_user_id: &str,
+    bot_user_id: &OwnedUserId,
 ) -> Option<Message> {
-    if matrix_message.sender_id == bot_user_id {
+    if matrix_message.sender_id == bot_user_id.as_str() {
         return convert_bot_message(matrix_message);
     }
 

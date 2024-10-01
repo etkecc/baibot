@@ -11,7 +11,7 @@ use mxlink::{CallbackError, MessageResponseType};
 use tracing::Instrument;
 
 use crate::{
-    conversation::matrix::determine_thread_context_for_room_event,
+    conversation::matrix::determine_interaction_context_for_room_event,
     entity::{MessageContext, MessagePayload, RoomConfigContext, TriggerEventInfo},
 };
 
@@ -239,7 +239,7 @@ impl Messaging {
             }
         };
 
-        let thread_context = determine_thread_context_for_room_event(
+        let interaction_context = determine_interaction_context_for_room_event(
             self.bot.user_id(),
             &room,
             &event,
@@ -248,16 +248,18 @@ impl Messaging {
         )
         .await;
 
-        let thread_context = match thread_context {
+        let interaction_context = match interaction_context {
             Ok(value) => value,
             Err(err) => {
-                tracing::error!(?err, "Failed to determine thread context for event");
+                tracing::error!(?err, "Failed to determine interaction context for event");
                 return Ok(());
             }
         };
 
-        let Some(thread_context) = thread_context else {
-            tracing::debug!("Ignoring message with unknown thread context (likely not a threaded message or a top-level message)");
+        let Some(interaction_context) = interaction_context else {
+            tracing::debug!(
+                "Ignoring message with unknown interaction context (likely not a message for us)"
+            );
             return Ok(());
         };
 
@@ -276,33 +278,13 @@ impl Messaging {
             room_config_context,
             self.bot.admin_pattern_regexes().clone(),
             trigger_event_info,
-            thread_context.info.clone(),
+            interaction_context.thread_info.clone(),
         );
 
-        let bot_display_name = self
-            .bot
-            .room_display_name_fetcher()
-            .own_display_name_in_room(message_context.room())
-            .await;
-
-        let bot_display_name = match bot_display_name {
-            Ok(value) => value,
-            Err(err) => {
-                tracing::warn!(
-                    ?err,
-                    "Failed to fetch bot display name. Proceeding without it"
-                );
-                None
-            }
-        };
-
-        // The first event in the thread determines which handler processes the current event.
         let controller_type = crate::controller::determine_controller(
             self.bot.command_prefix(),
-            &thread_context.first_message,
+            &interaction_context.trigger,
             &message_context,
-            self.bot.user_id(),
-            &bot_display_name,
         );
 
         tracing::info!(?controller_type, "Determined controller");
@@ -310,7 +292,7 @@ impl Messaging {
         let _ = room
             .send_single_receipt(
                 ReceiptType::Read,
-                thread_context.info.clone().into(),
+                interaction_context.thread_info.clone().into(),
                 event.event_id.clone(),
             )
             .await;

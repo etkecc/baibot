@@ -35,8 +35,8 @@ pub async fn handle_image(
     };
 
     let params = MatrixMessageProcessingParams::new(
-        bot.user_id().as_str().to_owned(),
-        message_context.combined_admin_and_user_regexes(),
+        bot.user_id().to_owned(),
+        Some(message_context.combined_admin_and_user_regexes()),
     );
 
     let conversation = create_llm_conversation_for_matrix_thread(

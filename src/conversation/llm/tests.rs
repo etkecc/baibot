@@ -1,3 +1,5 @@
+use mxlink::matrix_sdk::ruma::OwnedUserId;
+
 use crate::utils::status::create_error_message_text;
 use crate::utils::text_to_speech::create_transcribed_message_text;
 
@@ -5,15 +7,17 @@ use super::*;
 
 #[test]
 fn test_messages_by_the_bot_are_identified_correctly() {
-    let bot_user_id = "@bot:example.com";
+    let bot_user_id =
+        OwnedUserId::try_from("@bot:example.com").expect("Failed to parse bot user ID");
 
     let matrix_message = super::super::matrix::MatrixMessage {
         sender_id: bot_user_id.to_owned(),
         message_type: super::super::matrix::MatrixMessageType::Text,
         message_text: "Hello!".to_owned(),
+        mentioned_users: vec![],
     };
 
-    let llm_message = convert_matrix_message_to_llm_message(&matrix_message, bot_user_id).unwrap();
+    let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
 
     assert_eq!(llm_message.author, Author::Assistant);
     assert_eq!(llm_message.message_text, "Hello!");
@@ -22,7 +26,8 @@ fn test_messages_by_the_bot_are_identified_correctly() {
 #[test]
 fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_considered_sent_by_user(
 ) {
-    let bot_user_id = "@bot:example.com";
+    let bot_user_id =
+        OwnedUserId::try_from("@bot:example.com").expect("Failed to parse bot user ID");
 
     let source_message_text = "Hello!";
     let message_text = create_transcribed_message_text(source_message_text);
@@ -33,9 +38,10 @@ fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_con
         sender_id: bot_user_id.to_owned(),
         message_type: super::super::matrix::MatrixMessageType::Notice,
         message_text,
+        mentioned_users: vec![],
     };
 
-    let llm_message = convert_matrix_message_to_llm_message(&matrix_message, bot_user_id).unwrap();
+    let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
 
     assert_eq!(llm_message.author, Author::User);
     assert_eq!(llm_message.message_text, source_message_text);
@@ -43,7 +49,8 @@ fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_con
 
 #[test]
 fn test_notice_error_messages_by_bot_are_ignored() {
-    let bot_user_id = "@bot:example.com";
+    let bot_user_id =
+        OwnedUserId::try_from("@bot:example.com").expect("Failed to parse bot user ID");
 
     let source_message_text = "Some error happened";
     let message_text = create_error_message_text(source_message_text);
@@ -54,9 +61,10 @@ fn test_notice_error_messages_by_bot_are_ignored() {
         sender_id: bot_user_id.to_owned(),
         message_type: super::super::matrix::MatrixMessageType::Notice,
         message_text,
+        mentioned_users: vec![],
     };
 
-    let llm_message = convert_matrix_message_to_llm_message(&matrix_message, bot_user_id);
+    let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id);
 
     assert!(llm_message.is_none());
 }
@@ -68,7 +76,8 @@ fn test_other_notice_messages_by_the_bot_are_ignored() {
     // (except for speech-to-text-created transcriptions - see `test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_considered_sent_by_user()`).
     // This test is to make sure that we don't accidentally start accepting other notice messages.
 
-    let bot_user_id = "@bot:example.com";
+    let bot_user_id =
+        OwnedUserId::try_from("@bot:example.com").expect("Failed to parse bot user ID");
 
     let message_text = "Something something";
 
@@ -76,9 +85,10 @@ fn test_other_notice_messages_by_the_bot_are_ignored() {
         sender_id: bot_user_id.to_owned(),
         message_type: super::super::matrix::MatrixMessageType::Notice,
         message_text: message_text.to_owned(),
+        mentioned_users: vec![],
     };
 
-    let llm_message = convert_matrix_message_to_llm_message(&matrix_message, bot_user_id);
+    let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id);
 
     assert!(llm_message.is_none());
 }

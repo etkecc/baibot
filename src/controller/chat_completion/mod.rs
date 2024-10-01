@@ -18,13 +18,28 @@ use crate::entity::roomconfig::{
 use crate::entity::MessagePayload;
 use crate::strings;
 use crate::utils::text_to_speech::create_transcribed_message_text;
-use crate::{conversation::create_llm_conversation_for_matrix_thread, entity::MessageContext, Bot};
+use crate::{
+    conversation::{
+        create_llm_conversation_for_matrix_reply_chain, create_llm_conversation_for_matrix_thread,
+        matrix::create_list_of_bot_user_prefixes_to_strip,
+    },
+    entity::MessageContext,
+    Bot,
+};
 
 #[derive(Debug, PartialEq)]
 pub enum ChatCompletionControllerType {
-    ViaText { prefixes_to_strip: Vec<String> },
+    // Invoked via a command prefix (e.g. `!bai Hello!`)
+    TextCommand,
+    // Invoked via a mention (e.g. `@baibot Hello!`)
+    TextMention,
+    // Invoked via a direct message (e.g. `Hello!`)
+    TextDirect,
 
-    ViaAudio,
+    Audio,
+
+    ThreadMention,
+    ReplyMention,
 }
 
 struct TextToSpeechEligiblePayload {
@@ -125,7 +140,15 @@ pub async fn handle(
                 None
             };
 
-        let response_type = MessageResponseType::InThread(message_context.thread_info().clone());
+        let response_type = match controller_type {
+            // When we're triggered via a reply mention, we reply to the message that triggered us.
+            ChatCompletionControllerType::ReplyMention => {
+                MessageResponseType::Reply(message_context.thread_info().last_event_id.clone())
+            }
+
+            // In all other cases, we're dealing with a threaded conversation, so we reply in the thread.
+            _ => MessageResponseType::InThread(message_context.thread_info().clone()),
+        };
 
         let text_to_speech_eligible_payload = handle_stage_text_generation(
             bot,
@@ -353,24 +376,78 @@ async fn handle_stage_text_generation(
     )
     .await?;
 
-    let prefixes_to_strip = match controller_type {
-        ChatCompletionControllerType::ViaText { prefixes_to_strip } => prefixes_to_strip.clone(),
-        ChatCompletionControllerType::ViaAudio => vec![],
+    // We only strip text from the first message if we're invoked via a command prefix.
+    // Otherwise, we do bot-user mentions stripping on all messages below.
+    let first_message_prefixes_to_strip = match controller_type {
+        ChatCompletionControllerType::TextCommand => vec![bot.command_prefix().to_owned()],
+        _ => vec![],
     };
 
-    let params = MatrixMessageProcessingParams::new(
-        bot.user_id().as_str().to_owned(),
-        message_context.combined_admin_and_user_regexes(),
-    )
-    .with_first_message_stripped_prefixes(prefixes_to_strip);
+    let bot_display_name = bot
+        .room_display_name_fetcher()
+        .own_display_name_in_room(message_context.room())
+        .await;
 
-    let conversation = create_llm_conversation_for_matrix_thread(
-        matrix_link.clone(),
-        message_context.room(),
-        message_context.thread_info().root_event_id.clone(),
-        &params,
-    )
-    .await;
+    let bot_display_name = match bot_display_name {
+        Ok(value) => value,
+        Err(err) => {
+            tracing::warn!(
+                ?err,
+                "Failed to fetch bot display name. Proceeding without it"
+            );
+            None
+        }
+    };
+
+    let bot_user_prefixes_to_strip =
+        create_list_of_bot_user_prefixes_to_strip(bot.user_id(), &bot_display_name);
+
+    let allowed_users = match controller_type {
+        // Regular chat completion only operates on messages from allowed users.
+        ChatCompletionControllerType::TextCommand
+        | ChatCompletionControllerType::TextMention
+        | ChatCompletionControllerType::TextDirect
+        | ChatCompletionControllerType::Audio => {
+            Some(message_context.combined_admin_and_user_regexes())
+        }
+
+        // When we're triggered via an explicit mention (thread or reply), we wish to operate against the mention's whole context
+        // (the whole thread or the whole reply chain upward of the message that triggered us).
+        //
+        // This is to allow admins and users to trigger text-generation for other users' messages.
+        // When we're dragged into a conversation by a known (to us) user, we'd like to process all messages in the conversation,
+        // not just those from allowed users.
+        ChatCompletionControllerType::ThreadMention
+        | ChatCompletionControllerType::ReplyMention => None,
+    };
+
+    let params = MatrixMessageProcessingParams::new(bot.user_id().to_owned(), allowed_users)
+        .with_first_message_prefixes_to_strip(first_message_prefixes_to_strip)
+        .with_bot_user_prefixes_to_strip(bot_user_prefixes_to_strip);
+
+    let conversation = match controller_type {
+        // When we're triggered via a reply mention, the context is the whole reply chain upward of the message that triggered us.
+        ChatCompletionControllerType::ReplyMention => {
+            create_llm_conversation_for_matrix_reply_chain(
+                &bot.room_event_fetcher().clone(),
+                message_context.room(),
+                message_context.thread_info().last_event_id.clone(),
+                &params,
+            )
+            .await
+        }
+
+        // Everything else is happening in a thread, so the context is the whole thread.
+        _ => {
+            create_llm_conversation_for_matrix_thread(
+                matrix_link.clone(),
+                message_context.room(),
+                message_context.thread_info().root_event_id.clone(),
+                &params,
+            )
+            .await
+        }
+    };
 
     let conversation = match conversation {
         Ok(conversation) => conversation,
@@ -565,11 +642,15 @@ async fn handle_stage_speech_to_text_actual_transcribing(
     //
     // Regardless of how we post this message, it will be posted as a notice,
     // which can indicate to the bot (for potential future text-generation purposes) that this message is not a bot message.
-    let (transcribed_text, annotate_message_with_reaction) = if let MessageResponseType::InThread(_) = response_type {
-        (create_transcribed_message_text(&speech_to_text_result.text), false)
-    } else {
-        (speech_to_text_result.text, true)
-    };
+    let (transcribed_text, annotate_message_with_reaction) =
+        if let MessageResponseType::InThread(_) = response_type {
+            (
+                create_transcribed_message_text(&speech_to_text_result.text),
+                false,
+            )
+        } else {
+            (speech_to_text_result.text, true)
+        };
 
     let result = bot
         .messaging()

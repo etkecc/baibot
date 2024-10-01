@@ -16,6 +16,7 @@ Users:
 
 - ✅ can **invite the bot to rooms**
 - ✅ can **use all the bot's [features](./features.md)** ([💬 Text Generation](./features.md#-text-generation), [🦻 Speech-to-Text](./features.md#-speech-to-text), etc.) by sending room messages
+- ✅ can **mention the bot** in threads and reply chains to provoke it to respond to non-user messages (see [📖 Usage / 💬 Text Generation / On-demand involvement](./usage.md#on-demand-involvement))
 - ✅ can **change the bot's configuration in a room** (e.g. `!bai config room ...` commands)
 - ❌ cannot **change the bot's global configuration** (e.g. `!bai config global ...` commands)
 - ❌ cannot **create new [🤖 Agents](./agents.md)** (neither in rooms, nor globally). See [💼 Room-local agent managers](#-room-local-agent-managers) for controlling which users can create agents.

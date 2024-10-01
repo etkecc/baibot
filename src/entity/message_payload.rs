@@ -6,10 +6,28 @@ use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId};
 use mxlink::ThreadInfo;
 
 /// MessagePayload is like matrix-sdk's MessageType, but represents only message types that the bot deals with and payloads are massaged a bit.
+///
+/// This also includes a few synthetic events.
 #[derive(Debug, Clone)]
 pub enum MessagePayload {
-    Text(TextMessageEventContent),
+    /// A synthetic message payload that indicates that the bot should produce a reply inside a thread.
+    /// This does not represent an actual message event, it's just a way to trigger a chat completion.
+    ///
+    /// When this is invoked, the ThreadInfo contains the full thread details (which represents our context).
+    ///
+    /// See: https://github.com/etkecc/baibot/issues/15
+    SynthethicChatCompletionTriggerInThread,
 
+    /// A synthetic message payload that indicates that the bot should produce a reply to a specific message.
+    /// This does not represent an actual message event, it's just a way to trigger a chat completion.
+    ///
+    /// When this is invoked, the ThreadInfo would refer to the reply-message that triggered us.
+    /// We can follow the chain upward from it to get the full context.
+    ///
+    /// See: https://github.com/etkecc/baibot/issues/15
+    SynthethicChatCompletionTriggerForReply,
+
+    Text(TextMessageEventContent),
     Audio(AudioMessageEventContent),
 
     Reaction {

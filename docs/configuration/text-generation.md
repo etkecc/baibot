@@ -13,7 +13,7 @@ You may also wish to see:
 
 In Direct Message rooms with the bot (1:1 rooms), it most usually makes sense for the bot to respond to **all** of your messages, as shown on this [🖼️ screenshot](../screenshots/text-generation.webp).
 
-In group rooms (with multiple users), it may be more appropriate for the bot to only respond to messages that are **prefixed** with the command prefix (e.g. `!bai`), so that other chat exchange in the room will not trigger it. Such a setup is shown on this [🖼️ screenshot](../screenshots/text-generation-prefix-requirement.webp).
+In group rooms (with multiple users), it may be more appropriate for the bot to only respond to messages that are **prefixed** with the command prefix (e.g. `!bai`) or which are [mentioning](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) the bot (e.g. `@baibot`), so that other chat exchange in the room will not trigger it. Such a setup is shown on the [🖼️ On-demand involvement in the room](../screenshots/text-generation-prefix-requirement.webp) screenshot.
 
 There are exceptions to these rules, and you can configure the bot to respond only to prefixed messages in a 1:1 room, or to respond to all messages even in a multi-user group room.
 
@@ -27,7 +27,10 @@ By default, the bot is **auto-configured (upon joining a new room)** to use the 
 
 Example: `!bai config room text-generation set-prefix-requirement-type command_prefix` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings))
 
-Regardless of this configuration, **the bot will also respond to messages which directly [mention](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) the bot** (e.g. `@baibot`), even if they are not prefixed. An example of this can be seen on this [🖼️ screenshot](../screenshots/text-generation-prefix-requirement.webp).
+Regardless of this configuration, **the bot will also respond to messages by allowed [👥 Users](../access.md#-users) which directly [mention](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) the bot** (e.g. `@baibot`), even if they are not prefixed. An example of this can be seen on these screenshots:
+
+- [🖼️ On-demand involvement in a thread](../screenshots/text-generation-on-demand-thread-involvement.webp)
+- [🖼️ On-demand involvement in a reply chain](../screenshots/text-generation-on-demand-reply-involvement.webp)
 
 
 ### 🪄 Auto Usage

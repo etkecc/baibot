@@ -1,13 +1,11 @@
 #[cfg(test)]
 mod tests;
 
-use mxlink::matrix_sdk::ruma::OwnedUserId;
-
 use super::chat_completion::ChatCompletionControllerType;
 use crate::{
     entity::{
-        roomconfig::TextGenerationPrefixRequirementType, MessageContext, MessagePayload,
-        ThreadContextFirstMessage,
+        roomconfig::TextGenerationPrefixRequirementType, InteractionTrigger, MessageContext,
+        MessagePayload,
     },
     strings,
 };
@@ -16,12 +14,16 @@ use super::ControllerType;
 
 pub fn determine_controller(
     command_prefix: &str,
-    first_thread_message: &ThreadContextFirstMessage,
+    first_thread_message: &InteractionTrigger,
     message_context: &MessageContext,
-    bot_user_id: &OwnedUserId,
-    bot_display_name: &Option<String>,
 ) -> ControllerType {
     match &first_thread_message.payload {
+        MessagePayload::SynthethicChatCompletionTriggerInThread => {
+            ControllerType::ChatCompletion(ChatCompletionControllerType::ThreadMention)
+        }
+        MessagePayload::SynthethicChatCompletionTriggerForReply => {
+            ControllerType::ChatCompletion(ChatCompletionControllerType::ReplyMention)
+        }
         MessagePayload::Text(text_message_content) => {
             let prefix_requirement_type = message_context
                 .room_config_context()
@@ -32,8 +34,6 @@ pub fn determine_controller(
                 &text_message_content.body,
                 prefix_requirement_type,
                 first_thread_message.is_mentioning_bot,
-                bot_user_id,
-                bot_display_name,
             )
         }
         MessagePayload::Encrypted(thread_info) => {
@@ -47,7 +47,7 @@ pub fn determine_controller(
             }
         }
         MessagePayload::Audio(_) => {
-            ControllerType::ChatCompletion(ChatCompletionControllerType::ViaAudio)
+            ControllerType::ChatCompletion(ChatCompletionControllerType::Audio)
         }
         MessagePayload::Reaction { .. } => {
             panic!("Handling reaction as first message in thread does not make sense")
@@ -60,8 +60,6 @@ fn determine_text_controller(
     text: &str,
     room_text_generation_prefix_requirement_type: TextGenerationPrefixRequirementType,
     is_mentioning_bot: bool,
-    bot_user_id: &OwnedUserId,
-    bot_display_name: &Option<String>,
 ) -> ControllerType {
     let text = text.trim();
 
@@ -102,53 +100,26 @@ fn determine_text_controller(
     // Otherwise, it depends on the prefix requirement for text generation - it may be routed for chat completion or ignored.
 
     if is_mentioning_bot {
-        // Different clients do mentions differently.
-        // The body text containing the mention usually contains one of:
-        // - the full user ID (includes a @ prefix by default)
-        // - the localpart (with a @ prefix)
-        // - the localpart (without a @ prefix)
-        // - the display name (with a @ prefix)
-        // - the display name (without a @ prefix)
-        //
-        // Some add a `: ` suffix after the mention.
-        //
-        // There's no guarantee that the mention is at the start even.
-        // It being there is most common and we try to strip it from there
-        // as best as we can.
-        let bot_user_id_localpart = bot_user_id.localpart();
-
-        let mut prefixes_to_strip = vec![
-            bot_user_id.as_str().to_owned(),
-            format!("@{}", bot_user_id_localpart),
-            bot_user_id_localpart.to_owned(),
-        ];
-
-        if let Some(bot_display_name) = bot_display_name {
-            prefixes_to_strip.push(format!("@{}", bot_display_name));
-            prefixes_to_strip.push(bot_display_name.to_owned());
-        }
-
-        prefixes_to_strip.push(":".to_owned());
-
-        return ControllerType::ChatCompletion(ChatCompletionControllerType::ViaText {
-            prefixes_to_strip,
-        });
+        return ControllerType::ChatCompletion(ChatCompletionControllerType::TextMention);
     }
+
+    // Regardless of what the prefix requirement is, if we encounter a command prefix, we'll consider it a chat completion via command prefix invokation.
+    // This is to correctly indicate to the chat completion controller that a command prefix was used,
+    // so that it can be stripped from the beginning of the message.
+    if text.starts_with(command_prefix) {
+        return ControllerType::ChatCompletion(ChatCompletionControllerType::TextCommand);
+    }
+
+    // We're dealing with a regular message that does not start with a command prefix.
 
     match room_text_generation_prefix_requirement_type {
         TextGenerationPrefixRequirementType::CommandPrefix => {
-            if text.starts_with(command_prefix) {
-                ControllerType::ChatCompletion(ChatCompletionControllerType::ViaText {
-                    prefixes_to_strip: vec![command_prefix.to_owned()],
-                })
-            } else {
-                ControllerType::Ignore
-            }
+            // A prefix is required, but we've already checked (above) that the message does not start with a command prefix.
+            // It's to be ignored.
+            ControllerType::Ignore
         }
         TextGenerationPrefixRequirementType::No => {
-            ControllerType::ChatCompletion(ChatCompletionControllerType::ViaText {
-                prefixes_to_strip: vec![],
-            })
+            ControllerType::ChatCompletion(ChatCompletionControllerType::TextDirect)
         }
     }
 }

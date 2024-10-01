@@ -28,6 +28,8 @@ Text Generation is the bot's ability to **respond to users' text messages with t
 
 In multi-user (group) rooms, to avoid disturbing the normal conversation between people, the bot is auto-configured to only respond to messages starting with the command prefix (`!bai`) or direct mentions via the [💬 Text Generation / 🗟 Prefix Requirement Type](./configuration/text-generation.md#-prefix-requirement-type) setting.
 
+Normally, the bot only responds to allowed [👥 Users](./access.md#-users). In certain cases, it's useful for an allowed user to provoke the bot to respond even in foreign threads or reply chains. You can learn more about this feature in the [📖 Usage / 💬 Text Generation / On-demand involvement](./usage.md#on-demand-involvement) section.
+
 A few other features (like [🗣️ Text-to-Speech](#️-text-to-speech) and [🦻 Speech-to-Text](#-speech-to-text)) combine well with Text Generation, so you **don't necessarily need to communicate with the bot via text** (with [Seamless voice interaction](#seamless-voice-interaction), you can communicate only with voice).
 
 You may also wish to see:

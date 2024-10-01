@@ -1,9 +1,14 @@
+use std::sync::Arc;
+
 use mxlink::matrix_sdk::ruma::OwnedEventId;
 use mxlink::MatrixLink;
 
+use crate::conversation::matrix::MatrixMessage;
+
 use super::llm::{convert_matrix_message_to_llm_message, Conversation, Message};
 use super::matrix::{
-    get_matrix_messages_in_thread, process_matrix_messages_in_thread, MatrixMessageProcessingParams,
+    get_matrix_messages_in_reply_chain, get_matrix_messages_in_thread, process_matrix_messages,
+    MatrixMessageProcessingParams, RoomEventFetcher,
 };
 
 pub async fn create_llm_conversation_for_matrix_thread(
@@ -14,7 +19,33 @@ pub async fn create_llm_conversation_for_matrix_thread(
 ) -> Result<Conversation, mxlink::matrix_sdk::Error> {
     let messages = get_matrix_messages_in_thread(matrix_link, room, thread_id).await?;
 
-    let messages_filtered = process_matrix_messages_in_thread(&messages, params).await;
+    let llm_messages = filter_messages_and_convert_to_llm_messages(messages, params).await;
+
+    Ok(Conversation {
+        messages: llm_messages,
+    })
+}
+
+pub async fn create_llm_conversation_for_matrix_reply_chain(
+    event_fetcher: &Arc<RoomEventFetcher>,
+    room: &mxlink::matrix_sdk::Room,
+    event_id: OwnedEventId,
+    params: &MatrixMessageProcessingParams,
+) -> Result<Conversation, mxlink::matrix_sdk::Error> {
+    let messages = get_matrix_messages_in_reply_chain(event_fetcher, room, event_id).await?;
+
+    let llm_messages = filter_messages_and_convert_to_llm_messages(messages, params).await;
+
+    Ok(Conversation {
+        messages: llm_messages,
+    })
+}
+
+async fn filter_messages_and_convert_to_llm_messages(
+    messages: Vec<MatrixMessage>,
+    params: &MatrixMessageProcessingParams,
+) -> Vec<Message> {
+    let messages_filtered = process_matrix_messages(&messages, params).await;
 
     let mut llm_messages: Vec<Message> = Vec::new();
 
@@ -28,7 +59,5 @@ pub async fn create_llm_conversation_for_matrix_thread(
         llm_messages.push(llm_message);
     }
 
-    Ok(Conversation {
-        messages: llm_messages,
-    })
+    llm_messages
 }
