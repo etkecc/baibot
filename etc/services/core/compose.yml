@@ -13,7 +13,7 @@ services:
     - /etc/passwd:/etc/passwd:ro
 
   synapse:
-    image: ghcr.io/element-hq/synapse:v1.115.0
+    image: ghcr.io/element-hq/synapse:v1.116.0
     user: "${UID}:${GID}"
     restart: unless-stopped
     entrypoint: python
@@ -26,7 +26,7 @@ services:
     - ./synapse/media-store:/media-store
 
   element-web:
-    image: docker.io/vectorim/element-web:v1.11.78
+    image: docker.io/vectorim/element-web:v1.11.79
     user: "${UID}:${GID}"
     restart: unless-stopped
     ports:
