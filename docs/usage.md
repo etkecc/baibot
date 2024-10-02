@@ -15,7 +15,7 @@ See screenshots of:
 
 - 🖼️ [the default Text Generation flow](./screenshots/text-generation.webp) in 1:1 rooms
 - 🖼️ [the Text Generation flow in multi-user rooms](./screenshots/text-generation-prefix-requirement.webp) (where the [🗟 Prefix Requirement](./configuration/text-generation.md#-prefix-requirement-type) setting is auto-configured to "required")
-- [on-demand involvement](#on-demand-involvement)
+- the [on-demand involvement](./features.md#on-demand-involvement) feature
 
 Whether the bot responds depends on:
 
@@ -25,26 +25,11 @@ Whether the bot responds depends on:
 
 - (🎨 agent capabilities) whether the configured `text-generation` (or `catch-all`) handler agent actually supports text-generation. The provider may lack support for this feature or it may be disabled in the [🤖 agents](./agents.md) configuration
 
-- (the [🗟 Prefix Requirement](./configuration/text-generation.md#-prefix-requirement-type) setting) whether a prefix (e.g. `!bai`) or user mention (e.g. `@baibot`) is required for messages sent to the room. For multi-user rooms, this setting defaults to "required". See [on-demand involvement](#on-demand-involvement) for details.
+- (the [🗟 Prefix Requirement](./configuration/text-generation.md#-prefix-requirement-type) setting) whether a prefix (e.g. `!bai`) or user mention (e.g. `@baibot`) is required for messages sent to the room. For multi-user rooms, this setting defaults to "required". See [🌟 Features / 💬 Text Generation / On-demand involvement](./features.md#on-demand-involvement) for details.
 
-Room messages start a threaded conversation where you can continue back-and-forth communication with the bot.
+Room messages start a threaded conversation where you can continue back-and-forth communication with the bot. Using [on-demand involvement](./features.md#on-demand-involvement), you can can also mention the bot to provoke it to get involved in any conversation thread or reply chain.
 
 Unless you've enabled the [♻️ Context Management](./features.md#️-context-management) feature, all messages will be sent to the agent's API each time. If the context management feature is enabled, older messages may be dropped.
-
-#### On-demand involvement
-
-In the following 2 cases, it's useful to involve the bot in conversations on-demand:
-
-1. For multi-user rooms (with the [🗟 Prefix Requirement](./configuration/text-generation.md#-prefix-requirement-type) setting set to "required")
-2. In rooms with foreign users (users that are not authorized bot [👥 users](./access.md#-users))
-
-In these instances, an allowed [👥 user](./access.md#-users) can also provoke the bot to respond to **any** thread or reply chain by [mentioning](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) the bot (e.g. `@baibot Hello!`). The following screenshots demonstrate this behavior:
-
-- [🖼️ On-demand involvement in the room](./screenshots/text-generation-prefix-requirement.webp)
-- [🖼️ On-demand involvement in a thread](./screenshots/text-generation-on-demand-thread-involvement.webp) (the Alice user in this example is not an allowed user, yet her messages are still considered as part of the conversation context)
-- [🖼️ On-demand involvement in a reply chain](./screenshots/text-generation-on-demand-reply-involvement.webp) (the Alice user in this example is not an allowed user, yet her messages are still considered as part of the conversation context)
-
-💡 **NOTE**: Normally, the bot **only considers messages from allowed [👥 Users](./access.md#-users)** and ignores all other messages when responding. However, **when the bot is explicitly invoked (via mention)** in a thread or reply chain, **it will consider all messages** in the thread and reply chain (even those from foreign users) as part of the conversation context.
 
 
 ### 🗣️ Text-to-Speech

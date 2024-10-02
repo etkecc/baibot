@@ -1,6 +1,6 @@
 # (2024-10-01) Version 1.2.0
 
-- (**Feature**) Adds support for [on-demand involvement](./docs/usage.md#on-demand-involvement) of the bot (via mention) in arbitrary threads and reply chains ([9908512968](https://github.com/etkecc/baibot/commit/990851296828168c2106eb3f4668833e9e5a7463)) - fixes [issue #15](https://github.com/etkecc/baibot/issues/15)
+- (**Feature**) Adds support for [on-demand involvement](./docs/features.md#on-demand-involvement) of the bot (via mention) in arbitrary threads and reply chains ([9908512968](https://github.com/etkecc/baibot/commit/990851296828168c2106eb3f4668833e9e5a7463)) - fixes [issue #15](https://github.com/etkecc/baibot/issues/15)
 
 - (**Feature**) Simplifies [Transcribe-only mode](./docs/features.md#transcribe-only-mode) reply format (removing `> 🦻` prefixing) to allow easier forwarding, etc. ([e6aa956423](https://github.com/etkecc/baibot/commit/e6aa95642376ee7d87932d0e66dcfedf261b188b)) - fixes [issue #14](https://github.com/etkecc/baibot/issues/14)
 
