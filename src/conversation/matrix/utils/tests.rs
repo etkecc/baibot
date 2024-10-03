@@ -297,13 +297,6 @@ async fn process_matrix_messages() {
 }
 
 #[test]
-fn strip_rich_reply_fallback_text() {
-    let text = "> <@admin:example.com> What's the difference between Matrix and XMPP?\n\nAnswer me";
-    let stripped_text = super::strip_rich_reply_fallback_text(text);
-    assert_eq!(stripped_text, "Answer me");
-}
-
-#[test]
 fn create_list_of_bot_user_prefixes_to_strip() {
     let bot_user_id =
         OwnedUserId::try_from("@baibot:example.com").expect("Failed to parse bot user ID");

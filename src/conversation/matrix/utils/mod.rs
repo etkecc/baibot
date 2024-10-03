@@ -9,7 +9,8 @@ use mxlink::matrix_sdk::{
     ruma::events::{
         relation::Thread,
         room::message::{
-            MessageType, OriginalSyncRoomMessageEvent, Relation, RoomMessageEventContent,
+            sanitize::remove_plain_reply_fallback, MessageType, OriginalSyncRoomMessageEvent,
+            Relation, RoomMessageEventContent,
         },
         AnyMessageLikeEvent, AnyMessageLikeEventContent, AnyTimelineEvent, MessageLikeEvent,
     },
@@ -229,7 +230,7 @@ pub fn convert_matrix_native_event_to_matrix_message(
     let text = if is_reply {
         // For regular replies, we need to strip the fallback-for-rich replies part.
         // See: https://spec.matrix.org/v1.11/client-server-api/#fallbacks-for-rich-replies
-        strip_rich_reply_fallback_text(&text)
+        remove_plain_reply_fallback(&text).to_owned()
     } else {
         text
     };
@@ -451,32 +452,6 @@ fn is_event_mentioning_bot(
         // so improving this compatibility block is not a high priority.
         event_content.body().contains(bot_user_id.as_str())
     }
-}
-
-/// Strips the rich reply fallback text from the given text.
-/// See: https://spec.matrix.org/v1.11/client-server-api/#fallbacks-for-rich-replies
-///
-/// Example:
-/// ```rust,ignore
-/// let text = "> <@admin:example.com> What's the difference between Matrix and XMPP?\n\nAnswer me";
-/// let stripped_text = strip_rich_reply_fallback_text(text);
-/// assert_eq!(stripped_text, "Answer me");
-/// ```
-fn strip_rich_reply_fallback_text(text: &str) -> String {
-    let lines = text.lines();
-    let mut stripped_lines = Vec::new();
-    let mut encountered_non_prefix = false;
-
-    for line in lines {
-        if !encountered_non_prefix && line.starts_with("> ") {
-            continue;
-        } else {
-            encountered_non_prefix = true;
-            stripped_lines.push(line);
-        }
-    }
-
-    stripped_lines.join("\n").trim().to_owned()
 }
 
 fn timeline_event_to_detailed_message_payload(
