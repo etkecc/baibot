@@ -131,12 +131,18 @@ impl ControllerTrait for Controller {
             .temperature_override
             .unwrap_or(text_generation_config.temperature);
 
-        let request = CreateChatCompletionRequestArgs::default()
-            .max_tokens(text_generation_config.max_response_tokens)
+        let mut request_builder = CreateChatCompletionRequestArgs::default();
+
+        request_builder
             .model(&text_generation_config.model_id)
             .temperature(temperature)
-            .messages(openai_conversation_messages)
-            .build()?;
+            .messages(openai_conversation_messages);
+
+        if let Some(max_response_tokens) = text_generation_config.max_response_tokens {
+            request_builder.max_tokens(max_response_tokens);
+        }
+
+        let request = request_builder.build()?;
 
         if let Ok(request_as_json) = serde_json::to_string(&request) {
             tracing::trace!(

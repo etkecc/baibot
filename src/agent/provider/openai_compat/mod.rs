@@ -56,7 +56,7 @@ pub fn default_config() -> Config {
 
     if let Some(text_generation) = &mut config.text_generation {
         text_generation.model_id = "some-model".to_string();
-        text_generation.max_response_tokens = 4096;
+        text_generation.max_response_tokens = Some(4096);
         text_generation.max_context_tokens = 128_000;
     }
 

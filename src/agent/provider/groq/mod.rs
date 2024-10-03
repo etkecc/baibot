@@ -15,7 +15,7 @@ pub fn default_config() -> Config {
     if let Some(ref mut config) = config.text_generation.as_mut() {
         config.model_id = "llama3-70b-8192".to_owned();
         config.max_context_tokens = 131_072;
-        config.max_response_tokens = 4096;
+        config.max_response_tokens = Some(4096);
     }
 
     if let Some(ref mut config) = config.speech_to_text.as_mut() {

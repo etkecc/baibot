@@ -131,12 +131,15 @@ impl ControllerTrait for Controller {
 
         let max_tokens = text_generation_config
             .max_response_tokens
-            .try_into()
-            .expect("Failed converting max_response_tokens from u32 to i32");
+            .map(|max_response_tokens| {
+                max_response_tokens
+                    .try_into()
+                    .expect("Failed converting max_response_tokens from u32 to i32")
+            });
 
         let request = ChatBody {
             model: text_generation_config.model_id.clone(),
-            max_tokens: Some(max_tokens),
+            max_tokens,
             temperature: Some(temperature),
             top_p: None,
             n: Some(1),

@@ -129,7 +129,7 @@ impl ControllerTrait for Controller {
                 &text_generation_config.model_id,
                 &prompt_message,
                 conversation_messages,
-                text_generation_config.max_response_tokens,
+                Some(text_generation_config.max_response_tokens),
                 text_generation_config.max_context_tokens,
             );
 

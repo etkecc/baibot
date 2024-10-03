@@ -13,7 +13,7 @@ pub fn default_config() -> Config {
     if let Some(ref mut config) = config.text_generation.as_mut() {
         config.model_id = "gpt-4".to_owned();
         config.max_context_tokens = 128_000;
-        config.max_response_tokens = 4096;
+        config.max_response_tokens = Some(4096);
     }
 
     if let Some(ref mut config) = config.text_to_speech.as_mut() {

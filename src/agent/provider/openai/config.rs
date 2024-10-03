@@ -56,7 +56,7 @@ pub struct TextGenerationConfig {
     pub temperature: f32,
 
     #[serde(default)]
-    pub max_response_tokens: u32,
+    pub max_response_tokens: Option<u32>,
 
     #[serde(default)]
     pub max_context_tokens: u32,
@@ -68,7 +68,7 @@ impl Default for TextGenerationConfig {
             model_id: default_text_model_id(),
             prompt: Some(default_prompt().to_owned()),
             temperature: super::super::default_temperature(),
-            max_response_tokens: 16_384,
+            max_response_tokens: Some(16_384),
             max_context_tokens: 128_000,
         }
     }

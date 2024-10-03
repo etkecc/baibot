@@ -16,7 +16,7 @@ pub fn shorten_messages_list_to_context_size(
     model: &str,
     prompt_message: &Option<Message>,
     mut messages: Vec<Message>,
-    max_response_tokens: u32,
+    max_response_tokens: Option<u32>,
     max_context_tokens: u32,
 ) -> Vec<Message> {
     // Loading the tokenization data is an expensive process, so
@@ -26,7 +26,8 @@ pub fn shorten_messages_list_to_context_size(
     // We want to retain the prompt in all cases, so we always count it first.
     // We also always reserve enough tokens for the maximum response we expect.
     let mut current_context_length: u32 = if let Some(prompt_message) = prompt_message {
-        calculate_token_size_for_message(&bpe, model, prompt_message) + max_response_tokens
+        calculate_token_size_for_message(&bpe, model, prompt_message)
+            + max_response_tokens.unwrap_or(0)
     } else {
         0
     };
@@ -98,7 +99,7 @@ pub mod test {
 
         let bpe = super::get_bpe_for_model(model);
 
-        let max_response_tokens: u32 = 5;
+        let max_response_tokens: Option<u32> = Some(5);
 
         let prompt = super::Message {
             author: super::Author::Prompt,
@@ -173,7 +174,7 @@ pub mod test {
             &Some(prompt),
             conversation_messages,
             max_response_tokens,
-            prompt_length + max_response_tokens + forth_length + third_length,
+            prompt_length + max_response_tokens.unwrap_or(0) + forth_length + third_length,
         );
 
         assert_eq!(2, new_conversation_messages.len());
@@ -195,7 +196,7 @@ pub mod test {
 
         let bpe = super::get_bpe_for_model(model);
 
-        let max_response_tokens: u32 = 5;
+        let max_response_tokens: Option<u32> = Some(5);
 
         let prompt = super::Message {
             author: super::Author::User,
@@ -269,7 +270,7 @@ pub mod test {
             &Some(prompt),
             conversation_messages,
             max_response_tokens,
-            prompt_length + max_response_tokens + forth_length + third_length,
+            prompt_length + max_response_tokens.unwrap_or(0) + forth_length + third_length,
         );
 
         assert_eq!(2, new_conversation_messages.len());
