@@ -77,11 +77,14 @@ Prompts may contain the following **placeholder variables** which will be replac
 |---------------------------|-------------|---------|
 | `{{ baibot_name }}`       | Name of the bot as configured in the `user.name` field in the [Static configuration](./README.md#static-configuration) | `Baibot` |
 | `{{ baibot_model_id }}`   | Text-Generation model ID as configured in the [🤖 agent](../agents.md)'s configuration | `gpt-4o` |
-| `{{ baibot_now_utc }}`    | Current date and time in UTC | `2024-09-20 (Friday), 14:26:42 UTC` |
+| `{{ baibot_now_utc }}`    | Current date and time in UTC (⚠️ usage may break prompt caching - see below) | `2024-09-20 (Friday), 14:26:42 UTC` |
+| `{{ baibot_conversation_start_time_utc }}` | The date and time in UTC that the conversation started | `2024-09-20 (Friday), 14:26:42 UTC` |
+
+💡 `{{ baibot_now_utc }}` changes as time goes on, which prevents [prompt caching](https://platform.openai.com/docs/guides/prompt-caching) from working. It's better to use `{{ baibot_conversation_start_time_utc }}` in prompts, as its value doesn't change yet still orients the bot to the current date/time.
 
 Here's a prompt that combines some of the above variables:
 
-> You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time now is: {{ baibot_now_utc }}."
+> You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time of this conversation's start is: {{ baibot_conversation_start_time_utc }}."
 
 
 ### 🌡️ Temperature Override

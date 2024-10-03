@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use regex::Regex;
 
 use mxlink::matrix_sdk::ruma::OwnedUserId;
@@ -8,6 +9,7 @@ pub struct MatrixMessage {
     pub message_type: MatrixMessageType,
     pub message_text: String,
     pub mentioned_users: Vec<OwnedUserId>,
+    pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Clone)]

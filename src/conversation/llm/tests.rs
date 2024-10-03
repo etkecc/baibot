@@ -15,6 +15,7 @@ fn test_messages_by_the_bot_are_identified_correctly() {
         message_type: super::super::matrix::MatrixMessageType::Text,
         message_text: "Hello!".to_owned(),
         mentioned_users: vec![],
+        timestamp: chrono::Utc::now(),
     };
 
     let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
@@ -39,6 +40,7 @@ fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_con
         message_type: super::super::matrix::MatrixMessageType::Notice,
         message_text,
         mentioned_users: vec![],
+        timestamp: chrono::Utc::now(),
     };
 
     let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
@@ -62,6 +64,7 @@ fn test_notice_error_messages_by_bot_are_ignored() {
         message_type: super::super::matrix::MatrixMessageType::Notice,
         message_text,
         mentioned_users: vec![],
+        timestamp: chrono::Utc::now(),
     };
 
     let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id);
@@ -86,6 +89,7 @@ fn test_other_notice_messages_by_the_bot_are_ignored() {
         message_type: super::super::matrix::MatrixMessageType::Notice,
         message_text: message_text.to_owned(),
         mentioned_users: vec![],
+        timestamp: chrono::Utc::now(),
     };
 
     let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id);

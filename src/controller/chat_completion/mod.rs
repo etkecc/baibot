@@ -492,6 +492,7 @@ async fn handle_stage_text_generation(
             .text_generation_model_id()
             .unwrap_or("unknown-model".to_owned()),
         chrono::Utc::now(),
+        conversation.start_time(),
     );
 
     let params = TextGenerationParams {

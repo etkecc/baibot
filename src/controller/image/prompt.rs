@@ -46,6 +46,8 @@ mod tests {
 
     #[test]
     fn test_build_prompt() {
+        let timestamp = chrono::Utc::now();
+
         let test_cases = vec![
             // Simple case
             TestCase {
@@ -59,6 +61,7 @@ mod tests {
                 messages: vec![Message {
                     author: Author::User,
                     message_text: "Must be blue".to_owned(),
+                    timestamp,
                 }],
                 expected_prompt: "Generate a picture of a dog\nOther criteria:\n- Must be blue",
             },
@@ -68,14 +71,17 @@ mod tests {
                 messages: vec![Message {
                     author: Author::User,
                     message_text: "Must be blue".to_owned(),
+                    timestamp,
                 },
                 Message {
                     author: Author::Assistant,
                     message_text: "Whatever".to_owned(),
+                    timestamp,
                 },
                 Message {
                     author: Author::User,
                     message_text: "Must be 3-legged.\nMust be flying.".to_owned(),
+                    timestamp,
                 }],
                 expected_prompt: "Generate a picture of an elephant\nOther criteria:\n- Must be blue\n- Must be 3-legged.. Must be flying.",
             },
@@ -85,18 +91,22 @@ mod tests {
                 messages: vec![Message {
                     author: Author::User,
                     message_text: "Must be blue".to_owned(),
+                    timestamp,
                 },
                 Message {
                     author: Author::Assistant,
                     message_text: "Whatever".to_owned(),
+                    timestamp,
                 },
                 Message {
                     author: Author::User,
                     message_text: "Again".to_owned(),
+                    timestamp,
                 },
                 Message {
                     author: Author::User,
                     message_text: "again".to_owned(),
+                    timestamp,
                 }],
                 expected_prompt: "Generate a picture of a grizzly bear\nOther criteria:\n- Must be blue",
             },

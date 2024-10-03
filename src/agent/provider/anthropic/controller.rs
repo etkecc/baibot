@@ -72,6 +72,7 @@ impl ControllerTrait for Controller {
         let messages = vec![LLMMessage {
             author: LLMAuthor::User,
             message_text: "Hello!".to_string(),
+            timestamp: chrono::Utc::now(),
         }];
 
         let conversation = LLMConversation { messages };
@@ -108,6 +109,7 @@ impl ControllerTrait for Controller {
             Some(LLMMessage {
                 author: LLMAuthor::Prompt,
                 message_text: prompt_text,
+                timestamp: chrono::Utc::now(),
             })
         };
 

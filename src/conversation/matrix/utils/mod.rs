@@ -234,6 +234,13 @@ pub fn convert_matrix_native_event_to_matrix_message(
         text
     };
 
+    let timestamp = chrono::DateTime::<chrono::Utc>::from(
+        matrix_native_event
+            .origin_server_ts()
+            .to_system_time()
+            .unwrap_or_else(std::time::SystemTime::now),
+    );
+
     let mentioned_users = room_message
         .mentions
         .map(|m| m.user_ids.iter().map(|u| u.to_owned()).collect())
@@ -248,6 +255,7 @@ pub fn convert_matrix_native_event_to_matrix_message(
         },
         message_text: text,
         mentioned_users,
+        timestamp,
     })
 }
 

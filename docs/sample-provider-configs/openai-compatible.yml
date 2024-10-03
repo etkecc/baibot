@@ -2,7 +2,7 @@ base_url: ''
 api_key: YOUR_API_KEY_HERE
 text_generation:
   model_id: some-model
-  prompt: "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time now is: {{ baibot_now_utc }}."
+  prompt: "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time of this conversation's start is: {{ baibot_conversation_start_time_utc }}."
   temperature: 1.0
   max_response_tokens: 4096
   max_context_tokens: 128000

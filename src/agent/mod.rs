@@ -21,5 +21,5 @@ pub use provider::{AgentProvider, AgentProviderInfo, ControllerTrait};
 pub use purpose::AgentPurpose;
 
 pub(super) fn default_prompt() -> &'static str {
-    "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time now is: {{ baibot_now_utc }}."
+    "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time of this conversation's start is: {{ baibot_conversation_start_time_utc }}."
 }
