@@ -172,6 +172,24 @@ impl Bot {
         self.matrix_link().user_id()
     }
 
+    pub(crate) async fn user_display_name_in_room(&self, room: &Room) -> Option<String> {
+        let bot_display_name = self
+            .room_display_name_fetcher()
+            .own_display_name_in_room(room)
+            .await;
+
+        match bot_display_name {
+            Ok(value) => value,
+            Err(err) => {
+                tracing::warn!(
+                    ?err,
+                    "Failed to fetch bot display name. Proceeding without it"
+                );
+                None
+            }
+        }
+    }
+
     pub(crate) fn reacting(&self) -> super::reacting::Reacting {
         super::reacting::Reacting::new(self.clone())
     }

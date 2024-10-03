@@ -15,6 +15,8 @@ pub struct MessageContext {
     admin_whitelist_regexes: Vec<regex::Regex>,
     trigger_event_info: TriggerEventInfo,
     thread_info: ThreadInfo,
+
+    bot_display_name: Option<String>,
 }
 
 impl MessageContext {
@@ -31,7 +33,18 @@ impl MessageContext {
             admin_whitelist_regexes,
             trigger_event_info,
             thread_info,
+
+            bot_display_name: None,
         }
+    }
+
+    pub fn with_bot_display_name(mut self, value: Option<String>) -> Self {
+        self.bot_display_name = value;
+        self
+    }
+
+    pub fn bot_display_name(&self) -> &Option<String> {
+        &self.bot_display_name
     }
 
     pub fn room(&self) -> &Room {

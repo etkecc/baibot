@@ -277,13 +277,14 @@ pub fn convert_matrix_native_event_to_matrix_message(
 #[tracing::instrument(name = "determine_interaction_context_for_room_event", skip_all, fields(room_id = room.room_id().as_str(), event_id = current_event.event_id.as_str()))]
 pub async fn determine_interaction_context_for_room_event(
     bot_user_id: &OwnedUserId,
+    bot_display_name: &Option<String>,
     room: &Room,
     current_event: &OriginalSyncRoomMessageEvent,
     current_event_payload: &MessagePayload,
     event_fetcher: &Arc<RoomEventFetcher>,
 ) -> anyhow::Result<Option<InteractionContext>> {
     let current_event_is_mentioning_bot =
-        is_event_mentioning_bot(&current_event.content, bot_user_id);
+        is_event_mentioning_bot(&current_event.content, bot_user_id, bot_display_name);
 
     let Some(relation) = &current_event.content.relates_to else {
         // This is a top-level message. We consider it the start of the thread.
@@ -305,6 +306,7 @@ pub async fn determine_interaction_context_for_room_event(
         Relation::Thread(thread) => {
             determine_interaction_context_for_room_event_related_to_thread(
                 bot_user_id,
+                bot_display_name,
                 room,
                 current_event,
                 event_fetcher,
@@ -329,6 +331,7 @@ pub async fn determine_interaction_context_for_room_event(
 
 async fn determine_interaction_context_for_room_event_related_to_thread(
     bot_user_id: &OwnedUserId,
+    bot_display_name: &Option<String>,
     room: &Room,
     current_event: &OriginalSyncRoomMessageEvent,
     event_fetcher: &Arc<RoomEventFetcher>,
@@ -389,6 +392,7 @@ async fn determine_interaction_context_for_room_event_related_to_thread(
         thread_start_timeline_event,
         thread_info.clone(),
         bot_user_id,
+        bot_display_name,
     )?;
 
     let Some(detailed_message_payload) = thread_start_detailed_message_payload else {
@@ -431,6 +435,7 @@ async fn determine_interaction_context_for_room_event_related_to_reply(
 fn is_event_mentioning_bot(
     event_content: &RoomMessageEventContent,
     bot_user_id: &OwnedUserId,
+    bot_display_name: &Option<String>,
 ) -> bool {
     if let Some(mentions) = &event_content.mentions {
         mentions
@@ -445,12 +450,17 @@ fn is_event_mentioning_bot(
         // As of 2024-10-03, at least Element iOS does not support the new Mentions specification
         // and is still quite widespread.
         //
-        // It may be even better to match not only against the MXID, but also against the bot's
-        // room-specific display name.
-        //
         // We may consider dropping this string-matching behavior altogether in the future,
         // so improving this compatibility block is not a high priority.
-        event_content.body().contains(bot_user_id.as_str())
+        if event_content.body().contains(bot_user_id.as_str()) {
+            return true;
+        }
+
+        if let Some(bot_display_name) = bot_display_name {
+            return event_content.body().contains(bot_display_name);
+        }
+
+        false
     }
 }
 
@@ -459,6 +469,7 @@ fn timeline_event_to_detailed_message_payload(
     timeline_event: TimelineEvent,
     thread_info: ThreadInfo,
     bot_user_id: &OwnedUserId,
+    bot_display_name: &Option<String>,
 ) -> anyhow::Result<Option<DetailedMessagePayload>> {
     let timeline_event_deserialized = match timeline_event.event.deserialize() {
         Ok(value) => value,
@@ -510,8 +521,11 @@ fn timeline_event_to_detailed_message_payload(
                     return Ok(None);
                 };
 
-                let is_mentioning_bot =
-                    is_event_mentioning_bot(&room_message_original.content, bot_user_id);
+                let is_mentioning_bot = is_event_mentioning_bot(
+                    &room_message_original.content,
+                    bot_user_id,
+                    bot_display_name,
+                );
 
                 (is_mentioning_bot, room_message_payload)
             } else {

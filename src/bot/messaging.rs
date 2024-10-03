@@ -239,8 +239,11 @@ impl Messaging {
             }
         };
 
+        let bot_display_name = self.bot.user_display_name_in_room(&room).await;
+
         let interaction_context = determine_interaction_context_for_room_event(
             self.bot.user_id(),
+            &bot_display_name,
             &room,
             &event,
             &payload,
@@ -279,7 +282,8 @@ impl Messaging {
             self.bot.admin_pattern_regexes().clone(),
             trigger_event_info,
             interaction_context.thread_info.clone(),
-        );
+        )
+        .with_bot_display_name(bot_display_name);
 
         let controller_type = crate::controller::determine_controller(
             self.bot.command_prefix(),

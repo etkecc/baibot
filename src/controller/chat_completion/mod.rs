@@ -383,24 +383,10 @@ async fn handle_stage_text_generation(
         _ => vec![],
     };
 
-    let bot_display_name = bot
-        .room_display_name_fetcher()
-        .own_display_name_in_room(message_context.room())
-        .await;
-
-    let bot_display_name = match bot_display_name {
-        Ok(value) => value,
-        Err(err) => {
-            tracing::warn!(
-                ?err,
-                "Failed to fetch bot display name. Proceeding without it"
-            );
-            None
-        }
-    };
-
-    let bot_user_prefixes_to_strip =
-        create_list_of_bot_user_prefixes_to_strip(bot.user_id(), &bot_display_name);
+    let bot_user_prefixes_to_strip = create_list_of_bot_user_prefixes_to_strip(
+        bot.user_id(),
+        message_context.bot_display_name(),
+    );
 
     let allowed_users = match controller_type {
         // Regular chat completion only operates on messages from allowed users.
