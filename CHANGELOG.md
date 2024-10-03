@@ -1,7 +1,11 @@
+# (2024-10-03) Version 1.3.1
+
+- (**Improvement**) Improves fallback user mentions support for old clients (like Element iOS) which use the bot's display name (not its full Matrix User ID). ([d9a045a5e4](https://github.com/etkecc/baibot/commit/d9a045a5e41d2b99694f92ec9e90f47529546d89))
+
+
 # (2024-10-03) Version 1.3.0
 
 **TLDR**: you can now use OpenAI's [o1](https://platform.openai.com/docs/models/o1) models, benefit from [prompt caching](https://platform.openai.com/docs/guides/prompt-caching) and mention the bot again from old clients lacking proper [user mentions support](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) (like Element iOS).
-
 
 - (**Feature**) Introduces a new `baibot_conversation_start_time_utc` [prompt variable](./docs/configuration/text-generation.md#️-prompt-override) which is not a moving target (like the `baibot_now_utc` variable) and allows [prompt caching](https://platform.openai.com/docs/guides/prompt-caching) to work. All default/sample configs have been adjusted to make use of this new variable, but users need to adjust your existing dynamically-created agents to start using it. ([85e66406dc](https://github.com/etkecc/baibot/commit/85e66406dc6f430741c7819f420e2df4ae6e8d3b))
 
