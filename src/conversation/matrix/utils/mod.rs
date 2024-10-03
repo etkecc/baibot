@@ -423,18 +423,26 @@ fn is_event_mentioning_bot(
     event_content: &RoomMessageEventContent,
     bot_user_id: &OwnedUserId,
 ) -> bool {
-    // As a fallback, we used to do string matching (`event_content.body().contains(bot_user_id.as_str())`) here as well.
-    // However, this is unreliable. In 2024+, clients that do not have proper mentions support should get fixed,
-    // instead of us having to deal with the possibility of false positives.
-    //
-    let Some(mentions) = &event_content.mentions else {
-        return false;
-    };
-
-    mentions
-        .user_ids
-        .iter()
-        .any(|user_id| user_id == bot_user_id)
+    if let Some(mentions) = &event_content.mentions {
+        mentions
+            .user_ids
+            .iter()
+            .any(|user_id| user_id == bot_user_id)
+    } else {
+        // For compatibility with clients that do not support the new Mentions specification
+        // (see https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions),
+        // we also do string matching here.
+        //
+        // As of 2024-10-03, at least Element iOS does not support the new Mentions specification
+        // and is still quite widespread.
+        //
+        // It may be even better to match not only against the MXID, but also against the bot's
+        // room-specific display name.
+        //
+        // We may consider dropping this string-matching behavior altogether in the future,
+        // so improving this compatibility block is not a high priority.
+        event_content.body().contains(bot_user_id.as_str())
+    }
 }
 
 /// Strips the rich reply fallback text from the given text.
