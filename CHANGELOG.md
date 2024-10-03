@@ -1,8 +1,22 @@
+# (2024-10-03) Version 1.3.0
+
+**TLDR**: you can now use OpenAI's [o1](https://platform.openai.com/docs/models/o1) models, benefit from [prompt caching](https://platform.openai.com/docs/guides/prompt-caching) and mention the bot again from old clients lacking proper [user mentions support](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) (like Element iOS).
+
+
+- (**Feature**) Introduces a new `baibot_conversation_start_time_utc` [prompt variable](./docs/configuration/text-generation.md#️-prompt-override) which is not a moving target (like the `baibot_now_utc` variable) and allows [prompt caching](https://platform.openai.com/docs/guides/prompt-caching) to work. All default/sample configs have been adjusted to make use of this new variable, but users need to adjust your existing dynamically-created agents to start using it. ([85e66406dc](https://github.com/etkecc/baibot/commit/85e66406dc6f430741c7819f420e2df4ae6e8d3b))
+
+- (**Improvement**) Allows for the `max_response_tokens` configuration value for the [OpenAI provider](./docs/providers.md#openai) to be set to `null` to allow [o1](https://platform.openai.com/docs/models/o1) models (which do not support `max_response_tokens`) to be used. See the new o1 sample config [here](./docs/sample-provider-configs/openai-o1.yml). ([db9422740c](https://github.com/etkecc/baibot/commit/db9422740ceca32956d9628b6326b8be206344e2))
+
+- (**Improvement**) Switches the sample configs for the [OpenAI provider](./docs/providers.md#openai) to point to the `gpt-4o` model, which since 2024-10-02 is the same as the `gpt-4o-2024-08-06` model. We previously explicitly pointed the bot to the `gpt-4o-2024-08-06` model, because it was much better (longer context window). Now that `gpt-4o` points to the same powerful model, we don't need to pin its version anymore. Existing users may wish to adjust their configuration to match. ([90fbad5b64](https://github.com/etkecc/baibot/commit/90fbad5b643cd06c23179f055a309ec6a7cba161))
+
+- (**Bugfix**) Restores fallback user mentions support (via regular text, not via the [user mentions spec](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions)) to allow certain old clients (like Element iOS) to be able to mention the bot again. Support for this was intentionally removed recently (in [v1.2.0](#2024-10-01-version-120)), but it turned out to be too early to do this. ([b40226826f](https://github.com/etkecc/baibot/commit/b40226826fe914d0d5d265230ebc5bac8058b6f7))
+
+
 # (2024-10-01) Version 1.2.0
 
 - (**Feature**) Adds support for [on-demand involvement](./docs/features.md#on-demand-involvement) of the bot (via mention) in arbitrary threads and reply chains ([9908512968](https://github.com/etkecc/baibot/commit/990851296828168c2106eb3f4668833e9e5a7463)) - fixes [issue #15](https://github.com/etkecc/baibot/issues/15)
 
-- (**Feature**) Simplifies [Transcribe-only mode](./docs/features.md#transcribe-only-mode) reply format (removing `> 🦻` prefixing) to allow easier forwarding, etc. ([e6aa956423](https://github.com/etkecc/baibot/commit/e6aa95642376ee7d87932d0e66dcfedf261b188b)) - fixes [issue #14](https://github.com/etkecc/baibot/issues/14)
+- (**Improvement**) Simplifies [Transcribe-only mode](./docs/features.md#transcribe-only-mode) reply format (removing `> 🦻` prefixing) to allow easier forwarding, etc. ([e6aa956423](https://github.com/etkecc/baibot/commit/e6aa95642376ee7d87932d0e66dcfedf261b188b)) - fixes [issue #14](https://github.com/etkecc/baibot/issues/14)
 
 - (**Bugfix**) Fixes speech-to-text replies rendering incorrectly in certain clients, due to them confusing our old reply format with [fallback for rich replies](https://spec.matrix.org/v1.11/client-server-api/#fallbacks-for-rich-replies) ([e6aa956423](https://github.com/etkecc/baibot/commit/e6aa95642376ee7d87932d0e66dcfedf261b188b)) - fixes [issue #17](https://github.com/etkecc/baibot/issues/17)
 
