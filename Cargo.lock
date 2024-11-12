@@ -291,7 +291,7 @@ dependencies = [
 
 [[package]]
 name = "baibot"
-version = "1.3.1"
+version = "1.3.2"
 dependencies = [
  "anthropic-rs",
  "anyhow",

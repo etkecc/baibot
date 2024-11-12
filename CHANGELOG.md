@@ -1,3 +1,8 @@
+# (2024-11-12) Version 1.3.2
+
+Dependency updates.
+
+
 # (2024-10-03) Version 1.3.1
 
 - (**Improvement**) Improves fallback user mentions support for old clients (like Element iOS) which use the bot's display name (not its full Matrix User ID). ([d9a045a5e4](https://github.com/etkecc/baibot/commit/d9a045a5e41d2b99694f92ec9e90f47529546d89))
