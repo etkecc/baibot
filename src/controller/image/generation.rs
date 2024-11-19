@@ -34,6 +34,8 @@ pub async fn handle_image(
         return Ok(());
     };
 
+    let _typing_notice_guard = bot.start_typing_notice(message_context.room()).await;
+
     let params = MatrixMessageProcessingParams::new(
         bot.user_id().to_owned(),
         Some(message_context.combined_admin_and_user_regexes()),
