@@ -1,3 +1,10 @@
+# (2024-11-19) Version 1.4.0
+
+- (**Improvement**) Dependency updates. This version is based on [mxlink](https://crates.io/crates/mxlink)@1.4.0 (which is based on the newly released [matrix-sdk](https://crates.io/crates/matrix-sdk)@[0.8.0](https://github.com/matrix-org/matrix-rust-sdk/releases/tag/matrix-sdk-0.8.0)). Once you run this version at least once and your matrix-sdk datastore gets upgraded to the new schema, **you will not be able to downgrade to older baibot versions** (based on the older matrix-sdk), unless you start with an empty datastore.
+
+- (**Bugfix**) Add missing typing notices sending functionality while generating images ([9d166e35ba](https://github.com/etkecc/baibot/commit/9d166e35ba6fc0daaf69318870e92436f3302056))
+
+
 # (2024-11-12) Version 1.3.2
 
 Dependency updates.
