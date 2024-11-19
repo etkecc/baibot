@@ -575,7 +575,7 @@ async fn handle_stage_speech_to_text_actual_transcribing(
 ) -> anyhow::Result<OwnedEventId> {
     let src = &audio_content.source;
 
-    let media_request = mxlink::matrix_sdk::media::MediaRequest {
+    let media_request = mxlink::matrix_sdk::media::MediaRequestParameters {
         source: src.to_owned(),
         format: mxlink::matrix_sdk::media::MediaFormat::File,
     };

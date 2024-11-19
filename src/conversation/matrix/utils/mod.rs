@@ -12,7 +12,8 @@ use mxlink::matrix_sdk::{
             sanitize::remove_plain_reply_fallback, MessageType, OriginalSyncRoomMessageEvent,
             Relation, RoomMessageEventContent,
         },
-        AnyMessageLikeEvent, AnyMessageLikeEventContent, AnyTimelineEvent, MessageLikeEvent,
+        AnyMessageLikeEventContent, AnySyncMessageLikeEvent, AnySyncTimelineEvent,
+        SyncMessageLikeEvent,
     },
     Room,
 };
@@ -76,10 +77,10 @@ async fn get_matrix_messages_in_reply_chain_native(
     event_fetcher: &Arc<RoomEventFetcher>,
     room: &Room,
     event_id: OwnedEventId,
-) -> Result<Vec<AnyMessageLikeEvent>, mxlink::matrix_sdk::Error> {
+) -> Result<Vec<AnySyncMessageLikeEvent>, mxlink::matrix_sdk::Error> {
     let mut next_event_id = Some(event_id.clone());
 
-    let mut messages: Vec<AnyMessageLikeEvent> = Vec::new();
+    let mut messages: Vec<AnySyncMessageLikeEvent> = Vec::new();
     let mut handled_event_ids: Vec<OwnedEventId> = Vec::new();
 
     while let Some(next_event_id_in_loop) = next_event_id {
@@ -98,9 +99,9 @@ async fn get_matrix_messages_in_reply_chain_native(
 
         handled_event_ids.push(next_event_id_in_loop.clone());
 
-        let event_deserialized = event.event.deserialize()?;
+        let event_deserialized = event.raw().deserialize()?;
 
-        let AnyTimelineEvent::MessageLike(message_like_event) = event_deserialized else {
+        let AnySyncTimelineEvent::MessageLike(message_like_event) = event_deserialized else {
             tracing::warn!(
                 "Not proceeding past non-MessageLike event: {:?}",
                 event_deserialized
@@ -109,9 +110,9 @@ async fn get_matrix_messages_in_reply_chain_native(
         };
 
         next_event_id = match message_like_event.clone() {
-            AnyMessageLikeEvent::RoomEncrypted(_) => None,
-            AnyMessageLikeEvent::RoomMessage(room_message) => {
-                if let MessageLikeEvent::Original(room_message_original) = room_message {
+            AnySyncMessageLikeEvent::RoomEncrypted(_) => None,
+            AnySyncMessageLikeEvent::RoomMessage(room_message) => {
+                if let SyncMessageLikeEvent::Original(room_message_original) = room_message {
                     match room_message_original.content.relates_to {
                         Some(Relation::Reply { in_reply_to }) => Some(in_reply_to.event_id.clone()),
                         _ => None,
@@ -207,7 +208,7 @@ fn is_message_from_allowed_sender(
 }
 
 pub fn convert_matrix_native_event_to_matrix_message(
-    matrix_native_event: &AnyMessageLikeEvent,
+    matrix_native_event: &AnySyncMessageLikeEvent,
 ) -> Option<MatrixMessage> {
     let Some(content) = matrix_native_event.original_content() else {
         // Redacted message
@@ -471,7 +472,7 @@ fn timeline_event_to_detailed_message_payload(
     bot_user_id: &OwnedUserId,
     bot_display_name: &Option<String>,
 ) -> anyhow::Result<Option<DetailedMessagePayload>> {
-    let timeline_event_deserialized = match timeline_event.event.deserialize() {
+    let timeline_event_deserialized = match timeline_event.raw().deserialize() {
         Ok(value) => value,
         Err(err) => {
             return Err(anyhow::format_err!(
@@ -482,7 +483,7 @@ fn timeline_event_to_detailed_message_payload(
         }
     };
 
-    let AnyTimelineEvent::MessageLike(thread_start_message_like_event) =
+    let AnySyncTimelineEvent::MessageLike(thread_start_message_like_event) =
         timeline_event_deserialized
     else {
         tracing::trace!(
@@ -493,7 +494,7 @@ fn timeline_event_to_detailed_message_payload(
     };
 
     let (is_mentioning_bot, message_payload) = match thread_start_message_like_event {
-        AnyMessageLikeEvent::RoomEncrypted(room_message) => {
+        AnySyncMessageLikeEvent::RoomEncrypted(room_message) => {
             tracing::warn!(
                 "Could not inspect event {} because it failed to decrypt: {:?}",
                 timeline_event_id.clone(),
@@ -508,8 +509,8 @@ fn timeline_event_to_detailed_message_payload(
                 MessagePayload::Encrypted(thread_info.clone()),
             )
         }
-        AnyMessageLikeEvent::RoomMessage(room_message) => {
-            if let MessageLikeEvent::Original(room_message_original) = room_message {
+        AnySyncMessageLikeEvent::RoomMessage(room_message) => {
+            if let SyncMessageLikeEvent::Original(room_message_original) = room_message {
                 let room_message_payload: Result<MessagePayload, String> =
                     room_message_original.content.msgtype.clone().try_into();
 

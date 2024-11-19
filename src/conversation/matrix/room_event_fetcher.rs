@@ -22,7 +22,7 @@ impl RoomEventFetcher {
         room: &Room,
     ) -> mxlink::matrix_sdk::Result<TimelineEvent> {
         let Some(lru_cache) = &self.lru_cache else {
-            return room.event(event_id).await;
+            return room.event(event_id, None).await;
         };
 
         let guard = lru_cache.get_value_or_guard_async(event_id).await;
@@ -33,7 +33,7 @@ impl RoomEventFetcher {
                 return Ok(config);
             }
             Err(guard) => {
-                let event = room.event(event_id).await?;
+                let event = room.event(event_id, None).await?;
 
                 let _ = guard.insert(event.clone());
 

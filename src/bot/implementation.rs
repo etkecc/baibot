@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 
-use mxlink::matrix_sdk::media::{MediaFormat, MediaRequest};
+use mxlink::matrix_sdk::media::{MediaFormat, MediaRequestParameters};
 use mxlink::matrix_sdk::ruma::{
     events::room::MediaSource, MilliSecondsSinceUnixEpoch, OwnedUserId,
 };
@@ -287,7 +287,7 @@ impl Bot {
         let desired_display_name = self.inner.config.user.name.clone();
 
         let profile = account
-            .get_profile()
+            .fetch_user_profile()
             .await
             .map_err(|e| anyhow::anyhow!("Failed fetching profile: {:?}", e))?;
 
@@ -310,7 +310,7 @@ impl Bot {
 
         let should_update_avatar = match &profile.avatar_url {
             Some(avatar_url) => {
-                let request = MediaRequest {
+                let request = MediaRequestParameters {
                     source: MediaSource::Plain(avatar_url.to_owned()),
                     format: MediaFormat::File,
                 };

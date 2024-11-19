@@ -1,8 +1,8 @@
 use mxlink::matrix_sdk::{
     ruma::{
         events::{
-            room::message::Relation, AnyMessageLikeEvent, AnySyncTimelineEvent, AnyTimelineEvent,
-            MessageLikeEvent,
+            room::message::Relation, AnySyncMessageLikeEvent, AnySyncTimelineEvent,
+            SyncMessageLikeEvent,
         },
         OwnedEventId, OwnedUserId,
     },
@@ -139,7 +139,7 @@ impl Reacting {
             }
         };
 
-        let reacted_to_event_any_timeline_event = match reacted_to_event.event.deserialize() {
+        let reacted_to_event_any_timeline_event = match reacted_to_event.raw().deserialize() {
             Ok(value) => value,
             Err(err) => {
                 tracing::error!(
@@ -154,7 +154,7 @@ impl Reacting {
         let reacted_to_event_sender_id: OwnedUserId =
             reacted_to_event_any_timeline_event.sender().to_owned();
 
-        let AnyTimelineEvent::MessageLike(reacted_to_event_message_like) =
+        let AnySyncTimelineEvent::MessageLike(reacted_to_event_message_like) =
             reacted_to_event_any_timeline_event
         else {
             tracing::debug!(
@@ -164,7 +164,7 @@ impl Reacting {
             return Ok(());
         };
 
-        let AnyMessageLikeEvent::RoomMessage(reacted_to_event_room_message) =
+        let AnySyncMessageLikeEvent::RoomMessage(reacted_to_event_room_message) =
             reacted_to_event_message_like
         else {
             tracing::debug!(
@@ -174,7 +174,7 @@ impl Reacting {
             return Ok(());
         };
 
-        let MessageLikeEvent::Original(reacted_to_event_room_message_original) =
+        let SyncMessageLikeEvent::Original(reacted_to_event_room_message_original) =
             reacted_to_event_room_message
         else {
             tracing::debug!(?reacted_to_event_id, "Ignoring redacted reacted-to event",);
