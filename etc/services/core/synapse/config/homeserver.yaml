@@ -579,9 +579,7 @@ rc_login:
 #
 #federation_rr_transactions_per_room_per_second: 50
 
-# Authenticated media is not supported yet.
-# See: https://github.com/etkecc/baibot/issues/12
-enable_authenticated_media: false
+enable_authenticated_media: true
 
 # Directory where uploaded images and attachments are stored.
 #
