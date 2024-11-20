@@ -4,6 +4,8 @@
 
 - (**Bugfix**) Add missing typing notices sending functionality while generating images ([9d166e35ba](https://github.com/etkecc/baibot/commit/9d166e35ba6fc0daaf69318870e92436f3302056))
 
+- (**Feature**) Support for [Matrix authenticated media](https://matrix.org/docs/spec-guides/authed-media-servers/), thanks to upgrading [mxlink](https://crates.io/crates/mxlink) / [matrix-sdk](https://crates.io/crates/matrix-sdk) - fixes [issue #12](https://github.com/etkecc/baibot/issues/12)
+
 
 # (2024-11-12) Version 1.3.2
 
