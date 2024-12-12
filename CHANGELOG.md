@@ -1,6 +1,6 @@
 # (2024-12-12) Version 1.4.1
 
-- (**Bugfix**) Fix detection for whether the bot is the last member in a room, to avoid incorrectly leaving multi-user rooms that have had at least one person `leave` ([d2d846816e](https://github.com/etkecc/baibot/commit/d2d846816e58c132e30cad28440552453afe1af4))
+- (**Bugfix**) Fix detection for whether the bot is the last member in a room, to avoid incorrectly leaving multi-user rooms that have had at least one person `leave` ([3c47d40781](https://github.com/etkecc/baibot/commit/3c47d407819aa9c0121117a411858238724f06da))
 
 
 # (2024-11-19) Version 1.4.0
