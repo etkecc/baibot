@@ -1,3 +1,8 @@
+# (2024-12-12) Version 1.4.1
+
+- (**Bugfix**) Fix detection for whether the bot is the last member in a room, to avoid incorrectly leaving multi-user rooms that have had at least one person `leave` ([d2d846816e](https://github.com/etkecc/baibot/commit/d2d846816e58c132e30cad28440552453afe1af4))
+
+
 # (2024-11-19) Version 1.4.0
 
 - (**Improvement**) Dependency updates. This version is based on [mxlink](https://crates.io/crates/mxlink)@1.4.0 (which is based on the newly released [matrix-sdk](https://crates.io/crates/matrix-sdk)@[0.8.0](https://github.com/matrix-org/matrix-rust-sdk/releases/tag/matrix-sdk-0.8.0)). Once you run this version at least once and your matrix-sdk datastore gets upgraded to the new schema, **you will not be able to downgrade to older baibot versions** (based on the older matrix-sdk), unless you start with an empty datastore.
