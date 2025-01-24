@@ -3,6 +3,7 @@ use mxlink::{MatrixLink, MessageResponseType};
 
 use tracing::Instrument;
 
+use crate::controller::utils::mime::get_file_extension;
 use crate::{
     agent::{provider::TextToSpeechParams, AgentInstance, AgentPurpose, ControllerTrait},
     entity::MessageContext,
@@ -117,7 +118,7 @@ async fn do_generate_and_send_tts_for_message(
         }
     };
 
-    let attachment_body_text = strings::text_to_speech::alternate_body_text();
+    let attachment_body_text = format!("generated-speech.{}", get_file_extension(&text_to_speech_result.mime_type));
 
     let event_content = matrix_link
         .media()
