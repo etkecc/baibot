@@ -21,7 +21,8 @@ async-openai = "0.27.*"
 base64 = "0.22.*"
 chrono = { version = "0.4.*", default-features = false, features = ["std", "now"] }
 # We'd rather not depend on this, but we cannot use the ruma-events EventContent macro without it.
-matrix-sdk = { version = "0.9.0", default-features = false }
+# We add the `native-tls` feature, because of https://github.com/etkecc/rust-mxlink/issues/1
+matrix-sdk = { version = "0.9.0", default-features = false, features = ["native-tls"] }
 mxidwc = "1.0.*"
 mxlink = ">=1.5.0"
 etke_openai_api_rust = "0.1.*"
