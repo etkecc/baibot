@@ -8,7 +8,7 @@ use super::{
     TriggerEventInfo,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MessageContext {
     room: Room,
     room_config_context: RoomConfigContext,

@@ -9,7 +9,7 @@ use crate::entity::roomconfig::{
     TextToSpeechUserMessagesFlowType,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RoomConfigContext {
     pub(crate) global_config: GlobalConfig,
     pub(crate) room_config: RoomConfig,

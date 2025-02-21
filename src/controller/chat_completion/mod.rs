@@ -1,3 +1,6 @@
+pub mod message_aggregator;
+pub use message_aggregator::handle;
+
 use mxlink::matrix_sdk::ruma::events::room::message::AudioMessageEventContent;
 use mxlink::matrix_sdk::ruma::OwnedEventId;
 use mxlink::{MatrixLink, MessageResponseType};
@@ -27,7 +30,7 @@ use crate::{
     Bot,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ChatCompletionControllerType {
     // Invoked via a command prefix (e.g. `!bai Hello!`)
     TextCommand,
@@ -52,7 +55,7 @@ enum TextToSpeechParams {
     Offer(TextToSpeechEligiblePayload, MessageResponseType),
 }
 
-pub async fn handle(
+pub async fn handle_message(
     bot: &Bot,
     matrix_link: MatrixLink,
     message_context: &MessageContext,

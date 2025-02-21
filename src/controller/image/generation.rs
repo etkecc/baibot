@@ -6,11 +6,11 @@ use crate::agent::provider::ImageGenerationParams;
 use crate::agent::AgentPurpose;
 use crate::agent::ControllerTrait;
 use crate::controller::utils::agent::get_effective_agent_for_purpose_or_complain;
+use crate::controller::utils::mime::get_file_extension;
 use crate::conversation::create_llm_conversation_for_matrix_thread;
 use crate::conversation::matrix::MatrixMessageProcessingParams;
 use crate::strings;
 use crate::{entity::MessageContext, Bot};
-use crate::controller::utils::mime::get_file_extension;
 
 // We may make this configurable (per room, etc.) in the future, but for now it's hardcoded.
 const STICKER_SIZE: &str = "256x256";
@@ -82,7 +82,10 @@ pub async fn handle_image(
             .await;
     }
 
-    let attachment_body_text = format!("generated-image.{}", get_file_extension(&response.mime_type));
+    let attachment_body_text = format!(
+        "generated-image.{}",
+        get_file_extension(&response.mime_type)
+    );
 
     let mut event_content = matrix_link
         .media()
@@ -158,7 +161,10 @@ pub async fn handle_sticker(
         .instrument(span)
         .await?;
 
-    let attachment_body_text = format!("generated-sticker.{}", get_file_extension(&response.mime_type));
+    let attachment_body_text = format!(
+        "generated-sticker.{}",
+        get_file_extension(&response.mime_type)
+    );
 
     let mut event_content = matrix_link
         .media()
