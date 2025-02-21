@@ -5,6 +5,7 @@ use std::{
     time::{self, Duration, Instant},
 };
 
+use matrix_sdk::ruma::events::room::message::TextMessageEventContent;
 use tokio::sync::Mutex;
 
 use mxlink::MatrixLink;
@@ -12,14 +13,14 @@ use serde::Deserialize;
 
 use super::handle_message;
 
-use crate::{entity::MessageContext, Bot};
+use crate::{entity::{MessageContext, MessagePayload}, Bot};
 
 use super::ChatCompletionControllerType;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ConfigChatCompletionAggregator {
-    pub message_expiration_seconds: u16,
-    pub message_polling_interval_seconds: u16,
+    pub message_expiration_seconds: u64,
+    pub message_polling_interval_seconds: u64,
 }
 
 struct Param {
@@ -51,25 +52,48 @@ impl Param {
 
 pub struct MessageAggregator {
     messages: Arc<Mutex<HashMap<String, Param>>>,
+    config: ConfigChatCompletionAggregator
 }
 
 impl MessageAggregator {
-    pub fn new() -> Self {
+    pub fn new(config: ConfigChatCompletionAggregator) -> Self {
         Self {
             messages: Arc::new(Mutex::new(HashMap::new())),
+            config: config
         }
     }
 
     async fn handle(&self, k: String, param: Param) {
         let mut messages = self.messages.lock().await;        
-        
-        messages.insert(k, param);
+
+        let existans = messages.get_mut(&k);
+
+        match existans {
+            None => {messages.insert(k, param);},
+            Some(p) => {
+                
+                if let MessagePayload::Text(t) = p.message_context.payload() {
+                    let mut payload = t.body.clone();
+
+                    if let MessagePayload::Text(pt) = param.message_context.payload() {
+                        payload.push('\n');
+                        payload.push_str(&pt.body);
+                    }
+                    
+                    p.message_context.set_payload(
+                        MessagePayload::Text(TextMessageEventContent::plain(payload))
+                    );
+
+                    p.received_timestamp = Instant::now();
+                }
+            }
+        };
     }
 
     pub async fn listen(&self) {
         loop {
             let now = time::Instant::now();
-            let ten_seconds_ago = now - Duration::from_secs(10);
+            let ten_seconds_ago = now - Duration::from_secs(self.config.message_expiration_seconds);
 
             // to unlock mutex
             {
@@ -89,12 +113,16 @@ impl MessageAggregator {
                 }
             }
 
-            thread::sleep(Duration::from_secs(2));
+            thread::sleep(Duration::from_secs(self.config.message_polling_interval_seconds));
         }
     }
 
     async fn send_to_chat_completion_controller(&self, p: &Param) {
         // TODO
+        if let MessagePayload::Text(t) = p.message_context.payload() {
+            println!("SALAR::::::prompt: {}", t.body);
+        }
+
         let _ = handle_message(&p.bot, p.matrix_link.clone(), &p.message_context, &p.controller_type).await;
     }
 }

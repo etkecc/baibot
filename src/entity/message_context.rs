@@ -79,6 +79,10 @@ impl MessageContext {
         &self.trigger_event_info.payload
     }
 
+    pub fn set_payload(&mut self, payload: MessagePayload) {
+        self.trigger_event_info.payload = payload;
+    }
+
     pub fn thread_info(&self) -> &ThreadInfo {
         &self.thread_info
     }

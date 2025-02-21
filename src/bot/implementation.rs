@@ -118,7 +118,7 @@ impl Bot {
             Some(ROOM_DISPLAY_NAME_FETCHER_LRU_CACHE_SIZE),
         );
 
-        let chat_completion_message_aggregator = MessageAggregator::new();
+        let chat_completion_message_aggregator = MessageAggregator::new(config.chat_completion_aggregator.clone());
         Ok(Self {
             inner: Arc::new(BotInner {
                 config,
