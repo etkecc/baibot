@@ -8,7 +8,7 @@ readme = "README.md"
 keywords = ["matrix", "chat", "bot", "AI", "LLM"]
 include = ["/etc/assets/baibot-torso-768.png", "/src", "/README.md", "/CHANGELOG.md", "/LICENSE"]
 version = "1.4.1"
-edition = "2021"
+edition = "2024"
 
 [lib]
 name = "baibot"
