@@ -32,6 +32,10 @@ user:
 # Command prefix. Leave empty to use the default (!bai).
 command_prefix: "!bai"
 
+room:
+  # Whether the bot should send an introduction message after joining a room.
+  post_join_self_introduction_enabled: true
+
 access:
   # Space-separated list of MXID patterns which specify who is an admin.
   admin_patterns:

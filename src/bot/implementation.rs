@@ -140,6 +140,10 @@ impl Bot {
         &self.inner.config.command_prefix
     }
 
+    pub(crate) fn post_join_self_introduction_enabled(&self) -> bool {
+        self.inner.config.room.post_join_self_introduction_enabled
+    }
+
     pub(crate) fn homeserver_name(&self) -> &str {
         &self.inner.config.homeserver.server_name
     }
