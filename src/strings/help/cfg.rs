@@ -200,6 +200,15 @@ pub fn speech_to_text_flow_type_intro() -> &'static str {
     "Controls how voice messages are handled."
 }
 
+pub fn speech_to_text_msg_type_for_non_threaded_only_transcribed_messages_heading() -> &'static str
+{
+    "🪄 Message Type for non-threaded only-transcribed messages"
+}
+
+pub fn speech_to_text_msg_type_for_non_threaded_only_transcribed_messages_intro() -> &'static str {
+    "Controls how the transcribed text of voice messages is sent to the chat when Flow Type = `only_transcribe`."
+}
+
 pub fn speech_to_text_language_heading() -> &'static str {
     "🔤 Language"
 }

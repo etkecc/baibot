@@ -12,5 +12,6 @@ pub fn get_file_extension(mime_type: &mime::Mime) -> String {
         (mime::IMAGE, mime::PNG) => "png",
         (mime::IMAGE, mime::SVG) => "svg",
         _ => "bin",
-    }.to_string()
+    }
+    .to_string()
 }

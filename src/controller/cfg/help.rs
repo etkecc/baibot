@@ -3,7 +3,8 @@ use mxlink::MessageResponseType;
 use crate::{
     entity::{
         roomconfig::{
-            SpeechToTextFlowType, TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
+            SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
+            TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
             TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
         },
         MessageContext,
@@ -343,6 +344,46 @@ fn build_section_speech_to_text(command_prefix: &str) -> String {
     message.push_str(&format!(
         "- {}",
         &strings::help::cfg::current_setting_unset(command_prefix, "speech-to-text set-flow-type")
+    ));
+    message.push_str("\n\n");
+
+    // Msg Type For Non Threaded Only Transcribed Messages
+
+    message.push_str(&format!(
+        "#### {}",
+        strings::help::cfg::speech_to_text_msg_type_for_non_threaded_only_transcribed_messages_heading()
+    ));
+    message.push_str("\n\n");
+    message.push_str(strings::help::cfg::speech_to_text_msg_type_for_non_threaded_only_transcribed_messages_intro());
+    message.push('\n');
+    message.push_str(
+        &strings::help::cfg::the_following_configuration_values_are_recognized(
+            SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages::choices(),
+        ),
+    );
+    message.push_str("\n\n");
+    message.push_str(&format!(
+        "- {}",
+        &strings::help::cfg::current_setting_show(
+            command_prefix,
+            "speech-to-text msg-type-for-non-threaded-only-transcribed-messages"
+        )
+    ));
+    message.push('\n');
+    message.push_str(&format!(
+        "- {}",
+        &strings::help::cfg::current_setting_set(
+            command_prefix,
+            "speech-to-text set-msg-type-for-non-threaded-only-transcribed-messages VALUE"
+        )
+    ));
+    message.push('\n');
+    message.push_str(&format!(
+        "- {}",
+        &strings::help::cfg::current_setting_unset(
+            command_prefix,
+            "speech-to-text set-msg-type-for-non-threaded-only-transcribed-messages"
+        )
     ));
     message.push_str("\n\n");
 

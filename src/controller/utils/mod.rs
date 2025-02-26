@@ -6,8 +6,8 @@ use crate::{
 };
 
 pub mod agent;
-pub mod text_to_speech;
 pub(super) mod mime;
+pub mod text_to_speech;
 
 pub async fn get_text_body_or_complain<'a>(
     bot: &Bot,

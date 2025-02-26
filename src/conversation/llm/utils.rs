@@ -45,7 +45,7 @@ fn convert_bot_notice_message(
     // Such transcriptions are prefixed with an emoji and blockquoted.
     // If we find a notice that doesn't match this pattern, we skip it.
     //
-    // It should be noted that transcriptions are sometimes posted as regular notice messages which do not include
+    // It should be noted that transcriptions are sometimes posted as regular notice (or even text) messages which do not include
     // the `> 🦻` formatting. This function will not handle these properly.
 
     if let Some(text) = text_to_speech_utils::parse_transcribed_message_text(text) {

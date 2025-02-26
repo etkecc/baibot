@@ -13,7 +13,9 @@ mod text_generation;
 mod text_to_speech;
 
 pub use handler::RoomSettingsHandler;
-pub use speech_to_text::SpeechToTextFlowType;
+pub use speech_to_text::{
+    SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
+};
 pub use text_generation::{TextGenerationAutoUsage, TextGenerationPrefixRequirementType};
 pub use text_to_speech::{TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType};
 

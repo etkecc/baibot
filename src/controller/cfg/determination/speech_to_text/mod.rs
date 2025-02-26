@@ -1,7 +1,13 @@
 #[cfg(test)]
 mod tests;
 
-use crate::{controller::ControllerType, entity::roomconfig::SpeechToTextFlowType, strings};
+use crate::{
+    controller::ControllerType,
+    entity::roomconfig::{
+        SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
+    },
+    strings,
+};
 
 use super::super::controller_type::ConfigSpeechToTextSettingRelatedControllerType;
 
@@ -44,6 +50,53 @@ pub(super) fn determine(
         };
 
         return Ok(ConfigSpeechToTextSettingRelatedControllerType::SetFlowType(
+            value_choice,
+        ));
+    }
+
+    // msg_type_for_non_threaded_only_transcribed_messages
+
+    if let Some(remaining_text) =
+        text.strip_prefix("msg-type-for-non-threaded-only-transcribed-messages")
+    {
+        let remaining_text = remaining_text.trim();
+
+        if !remaining_text.is_empty() {
+            return Err(ControllerType::Error(
+                strings::cfg::configuration_getter_used_with_extra_text(
+                    "msg-type-for-non-threaded-only-transcribed-messages",
+                    remaining_text,
+                )
+                .to_owned(),
+            ));
+        }
+
+        return Ok(ConfigSpeechToTextSettingRelatedControllerType::GetMsgTypeForNonThreadedOnlyTranscribedMessages);
+    }
+
+    if let Some(value_string) =
+        text.strip_prefix("set-msg-type-for-non-threaded-only-transcribed-messages")
+    {
+        let value_string = value_string.trim().to_owned();
+
+        let value_choice = if value_string.is_empty() {
+            None
+        } else {
+            let value_choice =
+                SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages::from_str(
+                    &value_string.to_lowercase(),
+                );
+
+            if value_choice.is_none() {
+                return Err(ControllerType::Error(
+                    strings::cfg::configuration_value_unrecognized(&value_string).to_owned(),
+                ));
+            }
+
+            value_choice
+        };
+
+        return Ok(ConfigSpeechToTextSettingRelatedControllerType::SetMsgTypeForNonThreadedOnlyTranscribedMessages(
             value_choice,
         ));
     }

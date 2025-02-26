@@ -118,7 +118,10 @@ async fn do_generate_and_send_tts_for_message(
         }
     };
 
-    let attachment_body_text = format!("generated-speech.{}", get_file_extension(&text_to_speech_result.mime_type));
+    let attachment_body_text = format!(
+        "generated-speech.{}",
+        get_file_extension(&text_to_speech_result.mime_type)
+    );
 
     let event_content = matrix_link
         .media()

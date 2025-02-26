@@ -136,6 +136,8 @@ To operate in this mode, you can:
 
 - adjust the [🦻 Speech-to-Text / 🪄 Flow Type](./configuration/speech-to-text.md#-flow-type) setting to make the bot only transcribe (without doing [💬 Text Generation](#-text-generation)): `!bai config room speech-to-text set-flow-type only_transcribe`
 
+- optionally adjust [🦻 Speech-to-Text / 🪄 Message Type for non-threaded only-transcribed messages](./configuration/speech-to-text.md#-message-type-for-non-threaded-only-transcribed-messages), if you'd like to bot to send messages of type `notice` (for better compatibility with other bots in the room) instead of sending regular `text` messages (default)
+
 
 ### 🖌️ Image Generation
 

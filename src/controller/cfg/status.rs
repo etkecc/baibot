@@ -507,6 +507,35 @@ async fn generate_speech_to_text_section(
         flow_type_set_where,
     ));
 
+    // Msg Type For Non Threaded Only Transcribed Messages
+
+    let effective_msg_type_for_non_threaded_only_transcribed_messages =
+        room_config_context.speech_to_text_msg_type_for_non_threaded_only_transcribed_messages();
+    let room_config_msg_type_for_non_threaded_only_transcribed_messages = room_config_context
+        .room_config
+        .settings
+        .speech_to_text
+        .msg_type_for_non_threaded_only_transcribed_messages;
+    let global_config_msg_type_for_non_threaded_only_transcribed_messages = room_config_context
+        .global_config
+        .fallback_room_settings
+        .speech_to_text
+        .msg_type_for_non_threaded_only_transcribed_messages;
+
+    let msg_type_for_non_threaded_only_transcribed_messages_set_where =
+        if room_config_msg_type_for_non_threaded_only_transcribed_messages.is_some() {
+            strings::cfg::status_badge_set_in_room_config()
+        } else if global_config_msg_type_for_non_threaded_only_transcribed_messages.is_some() {
+            strings::cfg::status_badge_set_in_global_config()
+        } else {
+            strings::cfg::status_badge_using_hardcoded_default()
+        };
+
+    message.push_str(&strings::cfg::status_speech_to_text_entry_msg_type_for_non_threaded_only_transcribed_messages(
+        effective_msg_type_for_non_threaded_only_transcribed_messages,
+        msg_type_for_non_threaded_only_transcribed_messages_set_where,
+    ));
+
     // Language
 
     let effective_language = room_config_context.speech_to_text_language();

@@ -23,6 +23,19 @@ The following configuration values are recognized:
 Example: `!bai config room speech-to-text set-flow-type ignore` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings))
 
 
+### 🪄 Message Type for non-threaded only-transcribed messages
+
+Controls how the transcribed text of voice messages is sent to the chat when Flow Type = `only_transcribe`.
+
+The following configuration values are recognized:
+
+- (default) `text`: the transcribed text is sent as a regular message. This is more convenient if you'd like to forward the transcribed message to other rooms.
+
+- `notice`: the transcribed text is sent as a notice message. This provides better compatibility with other bots in the room, as they are less likely to interact with messages of type notice.
+
+Example: `!bai config room speech-to-text set-msg-type-for-non-threaded-only-transcribed-messages notice` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings))
+
+
 ### 🔤 Language
 
 Lets you specify the language of the input voice messages, to avoid using auto-detection.

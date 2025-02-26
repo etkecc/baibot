@@ -4,7 +4,8 @@ use crate::{
         PublicIdentifier,
     },
     entity::roomconfig::{
-        SpeechToTextFlowType, TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
+        SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
+        TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
         TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
     },
     utils::text::block_quote,
@@ -267,6 +268,16 @@ pub fn status_speech_to_text_entry_flow_type(
     set_where: &str,
 ) -> String {
     format!("- 🪄 Flow type: `{}` ({})\n", value, set_where)
+}
+
+pub fn status_speech_to_text_entry_msg_type_for_non_threaded_only_transcribed_messages(
+    value: SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
+    set_where: &str,
+) -> String {
+    format!(
+        "- 🪄 Message type for non-threaded only-transcribed messages: `{}` ({})\n",
+        value, set_where
+    )
 }
 
 pub fn status_speech_to_text_entry_language(value: Option<String>, set_where: &str) -> String {
