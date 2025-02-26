@@ -324,7 +324,7 @@ async fn handle_stage_speech_to_text(
         .react_no_fail(
             message_context.room(),
             message_context.event_id().clone(),
-            AgentPurpose::SpeechToText.emoji().to_owned(),
+            strings::PROGRESS_INDICATOR_EMOJI.to_owned(),
         )
         .await;
 
