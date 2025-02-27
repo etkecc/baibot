@@ -1,8 +1,8 @@
-use anthropic_rs::completion::message::{Content, ContentType, Message, MessageRequest, Role};
+use anthropic::types::{ContentBlock, Message, MessagesRequest, MessagesRequestBuilder, Role};
 
 use crate::conversation::llm::{Author as LLMAuthor, Message as LLMMessage};
 
-pub(super) fn create_anthropic_message_request(llm_messages: Vec<LLMMessage>) -> MessageRequest {
+pub(super) fn create_anthropic_message_request(llm_messages: Vec<LLMMessage>) -> MessagesRequest {
     let mut messages = vec![];
 
     for message in llm_messages {
@@ -14,8 +14,7 @@ pub(super) fn create_anthropic_message_request(llm_messages: Vec<LLMMessage>) ->
             }
         };
 
-        let content = vec![Content {
-            content_type: ContentType::Text,
+        let content = vec![ContentBlock::Text {
             text: message.message_text,
         }];
 
@@ -24,9 +23,9 @@ pub(super) fn create_anthropic_message_request(llm_messages: Vec<LLMMessage>) ->
         messages.push(message);
     }
 
-    MessageRequest {
-        stream: false,
-        messages,
-        ..Default::default()
-    }
+    MessagesRequestBuilder::default()
+        .messages(messages)
+        .stream(false)
+        .build()
+        .expect("Failed to build messages request")
 }

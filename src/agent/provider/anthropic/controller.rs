@@ -1,12 +1,8 @@
 use std::fmt::Debug;
-use std::str::FromStr;
 use std::sync::Arc;
 
-use anthropic_rs::completion::message::{ContentType, System};
-use anthropic_rs::{
-    client::Client as AnthropicClient, config::Config as AnthropicConfig,
-    models::claude::ClaudeModel,
-};
+use anthropic::client::{Client, ClientBuilder};
+use anthropic::types::ContentBlock;
 
 use super::super::ControllerTrait;
 use crate::agent::AgentPurpose;
@@ -24,7 +20,7 @@ use crate::strings;
 use super::config::Config;
 
 struct ControllerInner {
-    client: AnthropicClient,
+    client: Client,
 }
 
 #[derive(Clone)]
@@ -43,18 +39,20 @@ impl Debug for Controller {
 
 impl Controller {
     pub fn new(config: Config) -> anyhow::Result<Self> {
-        let anthropic_config =
-            AnthropicConfig::new(config.api_key.clone()).with_base_url(config.base_url.clone());
+        // The previous library that we used expected a base URL that ends with "/v1"
+        // (e.g. "https://api.anthropic.com/v1"), while the new one doesn't.
+        //
+        // To keep backward compatibility, we don't ask people to change their configuration
+        // and rather adapt by removing the "/v1" from the base URL.
+        if !config.base_url.ends_with("/v1") {
+            return Err(anyhow::anyhow!("base_url must end with '/v1'"));
+        }
 
-        let client = match AnthropicClient::new(anthropic_config) {
-            Ok(client) => client,
-            Err(err) => {
-                return Err(anyhow::anyhow!(
-                    "Failed to create Anthropic client: {}",
-                    err.to_string()
-                ));
-            }
-        };
+        let base_url = &config.base_url[..config.base_url.len() - 3];
+        let client = ClientBuilder::default()
+            .api_base(base_url.to_string())
+            .api_key(config.api_key.clone())
+            .build()?;
 
         Ok(Self {
             config,
@@ -142,29 +140,17 @@ impl ControllerTrait for Controller {
 
         let mut request = super::utils::create_anthropic_message_request(conversation_messages);
 
-        let model = match ClaudeModel::from_str(&text_generation_config.model_id) {
-            Ok(model) => model,
-            Err(err) => {
-                tracing::debug!(?err, "Failed to parse model ID");
-
-                return Err(anyhow::anyhow!(
-                    "Failed to parse model ID: {}",
-                    &text_generation_config.model_id
-                ));
-            }
-        };
-
         let temperature = params
             .temperature_override
             .unwrap_or(text_generation_config.temperature);
 
         if let Some(prompt_message) = prompt_message {
-            request.system = Some(System::Text(prompt_message.message_text));
+            request.system = prompt_message.message_text;
         }
 
-        request.model = model;
-        request.temperature = Some(temperature);
-        request.max_tokens = text_generation_config.max_response_tokens;
+        request.model = text_generation_config.model_id.clone();
+        request.temperature = Some(temperature as f64);
+        request.max_tokens = text_generation_config.max_response_tokens as usize;
 
         if let Ok(request_as_json) = serde_json::to_string(&request) {
             tracing::trace!(
@@ -175,19 +161,27 @@ impl ControllerTrait for Controller {
             );
         }
 
-        let response = self.inner.client.create_message(request).await?;
+        let response = self.inner.client.messages(request).await?;
 
         tracing::trace!(?response, "Got response from Anthropic create message API");
 
         // response.content usually contains a single element, but we support handling multiple to account for all possibilities
         let mut text_parts = vec![];
         for content in response.content {
-            let content_type = content.content_type;
-
-            match content_type {
-                ContentType::Text => {
-                    text_parts.push(content.text);
-                } // There are no other content types to handle yet, but there may be in the future
+            match content {
+                ContentBlock::Text { text } => {
+                    text_parts.push(text);
+                }
+                ContentBlock::Image {
+                    source,
+                    media_type,
+                    data: _,
+                } => {
+                    text_parts.push(format!(
+                        "The model responded with an image of type {}: {}",
+                        media_type, source
+                    ));
+                }
             }
         }
 
