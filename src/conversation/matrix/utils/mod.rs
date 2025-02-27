@@ -5,17 +5,17 @@ use std::sync::Arc;
 
 use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId};
 use mxlink::matrix_sdk::{
+    Room,
     deserialized_responses::TimelineEvent,
     ruma::events::{
-        relation::Thread,
-        room::message::{
-            sanitize::remove_plain_reply_fallback, MessageType, OriginalSyncRoomMessageEvent,
-            Relation, RoomMessageEventContent,
-        },
         AnyMessageLikeEventContent, AnySyncMessageLikeEvent, AnySyncTimelineEvent,
         SyncMessageLikeEvent,
+        relation::Thread,
+        room::message::{
+            MessageType, OriginalSyncRoomMessageEvent, Relation, RoomMessageEventContent,
+            sanitize::remove_plain_reply_fallback,
+        },
     },
-    Room,
 };
 use mxlink::{MatrixLink, ThreadGetMessagesParams, ThreadInfo};
 

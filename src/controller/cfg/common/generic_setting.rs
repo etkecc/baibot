@@ -1,6 +1,6 @@
 use mxlink::MessageResponseType;
 
-use crate::{entity::MessageContext, strings, Bot};
+use crate::{Bot, entity::MessageContext, strings};
 
 pub async fn handle_get<T>(
     bot: &Bot,

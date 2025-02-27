@@ -1,31 +1,31 @@
-use mxlink::matrix_sdk::ruma::events::room::message::AudioMessageEventContent;
 use mxlink::matrix_sdk::ruma::OwnedEventId;
+use mxlink::matrix_sdk::ruma::events::room::message::AudioMessageEventContent;
 use mxlink::{MatrixLink, MessageResponseType};
 
 use tracing::Instrument;
 
-use crate::agent::provider::{
-    SpeechToTextParams, TextGenerationParams, TextGenerationPromptVariables,
-};
 use crate::agent::AgentInstance;
 use crate::agent::AgentPurpose;
 use crate::agent::ControllerTrait;
+use crate::agent::provider::{
+    SpeechToTextParams, TextGenerationParams, TextGenerationPromptVariables,
+};
 use crate::controller::utils::agent::get_effective_agent_for_purpose_or_complain;
 use crate::conversation::matrix::MatrixMessageProcessingParams;
+use crate::entity::MessagePayload;
 use crate::entity::roomconfig::{
     SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
     TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
 };
-use crate::entity::MessagePayload;
 use crate::strings;
 use crate::utils::text_to_speech::create_transcribed_message_text;
 use crate::{
+    Bot,
     conversation::{
         create_llm_conversation_for_matrix_reply_chain, create_llm_conversation_for_matrix_thread,
         matrix::create_list_of_bot_user_prefixes_to_strip,
     },
     entity::MessageContext,
-    Bot,
 };
 
 #[derive(Debug, PartialEq)]

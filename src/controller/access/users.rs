@@ -1,6 +1,6 @@
 use mxlink::MessageResponseType;
 
-use crate::{entity::MessageContext, strings, Bot};
+use crate::{Bot, entity::MessageContext, strings};
 
 pub async fn handle_get(bot: &Bot, message_context: &MessageContext) -> anyhow::Result<()> {
     let message = match &message_context.global_config().access.user_patterns {

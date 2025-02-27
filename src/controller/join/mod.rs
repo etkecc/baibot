@@ -1,7 +1,7 @@
 use mxlink::MessageResponseType;
 
 use crate::entity::RoomConfigContext;
-use crate::{strings, Bot};
+use crate::{Bot, strings};
 
 pub async fn handle(
     bot: &Bot,
@@ -9,7 +9,9 @@ pub async fn handle(
     room_config_context: &RoomConfigContext,
 ) -> anyhow::Result<()> {
     if !bot.post_join_self_introduction_enabled() {
-        tracing::debug!("Post-join self-introduction is disabled - not sending introduction message");
+        tracing::debug!(
+            "Post-join self-introduction is disabled - not sending introduction message"
+        );
 
         return Ok(());
     }

@@ -1,7 +1,7 @@
 use crate::{
     agent::{
-        utils::AgentForPurposeDeterminationInfoConfigurationSource, AgentInstance, AgentPurpose,
-        PublicIdentifier,
+        AgentInstance, AgentPurpose, PublicIdentifier,
+        utils::AgentForPurposeDeterminationInfoConfigurationSource,
     },
     entity::roomconfig::{
         SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
@@ -45,7 +45,9 @@ pub fn configuration_getter_used_with_extra_text(
     getter_name: &str,
     remaining_text: &str,
 ) -> String {
-    format!("You're invoking a getter command (`{getter_name}`), but passing additional text (`{remaining_text}`) as if you're invoking a setter.\n\nPerhaps you meant to invoke `set-{getter_name}`?")
+    format!(
+        "You're invoking a getter command (`{getter_name}`), but passing additional text (`{remaining_text}`) as if you're invoking a setter.\n\nPerhaps you meant to invoke `set-{getter_name}`?"
+    )
 }
 
 pub fn configuration_value_unrecognized(value: &str) -> String {
@@ -53,7 +55,10 @@ pub fn configuration_value_unrecognized(value: &str) -> String {
 }
 
 pub fn configuration_value_not_f32(value: &str) -> String {
-    format!("The value `{}` could not be converted to a [floating point number](https://en.wikipedia.org/wiki/Floating-point_arithmetic).", value)
+    format!(
+        "The value `{}` could not be converted to a [floating point number](https://en.wikipedia.org/wiki/Floating-point_arithmetic).",
+        value
+    )
 }
 
 pub fn status_room_config_handlers_heading() -> &'static str {

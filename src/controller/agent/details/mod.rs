@@ -1,6 +1,6 @@
 use mxlink::MessageResponseType;
 
-use crate::{agent::PublicIdentifier, entity::MessageContext, strings, Bot};
+use crate::{Bot, agent::PublicIdentifier, entity::MessageContext, strings};
 
 pub async fn handle(
     bot: &Bot,

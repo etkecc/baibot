@@ -142,8 +142,7 @@ fn determine_text_controller() {
         // This test case is the same as the one above, just with a different prefix requirement setting.
         // We expect the same result.
         TestCase {
-            name:
-                "Regular message with bot mention triggers completion (command prefix requirement)",
+            name: "Regular message with bot mention triggers completion (command prefix requirement)",
             input: "Regular text goes here",
             is_mentioning_bot: true,
             room_text_generation_prefix_requirement_type:

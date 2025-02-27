@@ -6,5 +6,5 @@ mod entity;
 mod strings;
 mod utils;
 
-pub use bot::{load_config, Bot};
+pub use bot::{Bot, load_config};
 pub use entity::cfg::Config;

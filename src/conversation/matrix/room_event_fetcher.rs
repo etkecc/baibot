@@ -1,6 +1,6 @@
+use mxlink::matrix_sdk::Room;
 use mxlink::matrix_sdk::deserialized_responses::TimelineEvent;
 use mxlink::matrix_sdk::ruma::OwnedEventId;
-use mxlink::matrix_sdk::Room;
 
 use quick_cache::sync::Cache;
 

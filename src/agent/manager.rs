@@ -1,7 +1,7 @@
-use super::instantiation;
-use super::instantiation::AgentInstance;
 use super::AgentDefinition;
 use super::PublicIdentifier;
+use super::instantiation;
+use super::instantiation::AgentInstance;
 use crate::entity::RoomConfigContext;
 
 #[derive(Debug)]

@@ -3,9 +3,9 @@ use std::ops::Deref;
 use mxlink::MatrixLink;
 
 use crate::{
+    Bot,
     agent::AgentPurpose,
     entity::{MessageContext, MessagePayload},
-    Bot,
 };
 
 mod text_to_speech;

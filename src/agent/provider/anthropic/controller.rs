@@ -9,15 +9,15 @@ use anthropic_rs::{
 };
 
 use super::super::ControllerTrait;
+use crate::agent::AgentPurpose;
 use crate::agent::provider::entity::{
     ImageGenerationResult, PingResult, TextGenerationParams, TextGenerationResult,
     TextToSpeechParams, TextToSpeechResult,
 };
 use crate::agent::provider::{ImageGenerationParams, SpeechToTextParams, SpeechToTextResult};
-use crate::agent::AgentPurpose;
 use crate::conversation::llm::{
-    shorten_messages_list_to_context_size, Author as LLMAuthor, Conversation as LLMConversation,
-    Message as LLMMessage,
+    Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
+    shorten_messages_list_to_context_size,
 };
 use crate::strings;
 

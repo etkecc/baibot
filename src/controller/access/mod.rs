@@ -4,5 +4,5 @@ pub mod help;
 mod room_local_agent_managers;
 mod users;
 
-pub use determination::{determine_controller, AccessControllerType};
+pub use determination::{AccessControllerType, determine_controller};
 pub use dispatching::dispatch_controller;

@@ -1,9 +1,10 @@
 use mxlink::MessageResponseType;
 
 use crate::{
+    Bot,
     agent::{AgentPurpose, PublicIdentifier},
-    entity::{globalconfig::GlobalConfigurationManager, MessageContext},
-    strings, Bot,
+    entity::{MessageContext, globalconfig::GlobalConfigurationManager},
+    strings,
 };
 
 pub async fn handle_get(

@@ -1,7 +1,7 @@
-use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::format::FmtSpan;
 
-use baibot::{load_config, Bot, Config};
+use baibot::{Bot, Config, load_config};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

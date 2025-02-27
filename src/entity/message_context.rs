@@ -1,11 +1,11 @@
-use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId, RoomId};
 use mxlink::matrix_sdk::Room;
+use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId, RoomId};
 
 use mxlink::ThreadInfo;
 
 use super::{
-    globalconfig::GlobalConfig, roomconfig::RoomConfig, MessagePayload, RoomConfigContext,
-    TriggerEventInfo,
+    MessagePayload, RoomConfigContext, TriggerEventInfo, globalconfig::GlobalConfig,
+    roomconfig::RoomConfig,
 };
 
 #[derive(Debug)]

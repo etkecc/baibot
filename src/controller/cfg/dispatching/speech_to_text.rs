@@ -2,7 +2,7 @@ use crate::entity::roomconfig::{
     RoomSettings, SpeechToTextFlowType,
     SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
 };
-use crate::{entity::MessageContext, Bot};
+use crate::{Bot, entity::MessageContext};
 
 use super::super::controller_type::{
     ConfigSpeechToTextSettingRelatedControllerType, SettingsStorageSource,

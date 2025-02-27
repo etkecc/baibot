@@ -5,7 +5,7 @@ use anyhow::anyhow;
 
 use crate::agent::AgentPurpose;
 
-pub use crate::entity::cfg::{defaults as cfg_defaults, env as cfg_env, Config};
+pub use crate::entity::cfg::{Config, defaults as cfg_defaults, env as cfg_env};
 
 pub fn load() -> anyhow::Result<Config> {
     let config_file_path = env::var(cfg_env::BAIBOT_CONFIG_FILE_PATH)

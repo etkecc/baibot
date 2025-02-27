@@ -1,6 +1,6 @@
 use super::{
-    provider::{self, ControllerType},
     AgentDefinition, AgentProvider, PublicIdentifier,
+    provider::{self, ControllerType},
 };
 
 // Dead-code is allowed. We do not use these enum struct payloads directly,

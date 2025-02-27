@@ -1,15 +1,16 @@
 use mxlink::MessageResponseType;
 
 use crate::{
+    Bot,
     agent::{
-        utils::get_effective_agent_for_purpose, AgentInstance, AgentPurpose, ControllerTrait,
-        Manager as AgentManager, PublicIdentifier,
+        AgentInstance, AgentPurpose, ControllerTrait, Manager as AgentManager, PublicIdentifier,
+        utils::get_effective_agent_for_purpose,
     },
     entity::{
-        roomconfig::{RoomConfig, RoomSettingsHandler},
         MessageContext, RoomConfigContext,
+        roomconfig::{RoomConfig, RoomSettingsHandler},
     },
-    strings, Bot,
+    strings,
 };
 
 pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Result<()> {

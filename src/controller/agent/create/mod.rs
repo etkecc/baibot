@@ -3,15 +3,15 @@ mod tests;
 
 use mxlink::MessageResponseType;
 
-use crate::agent::provider::{ControllerTrait, PingResult};
 use crate::agent::PublicIdentifier;
-use crate::agent::{create_from_provider_and_yaml_value_config, AgentDefinition};
+use crate::agent::provider::{ControllerTrait, PingResult};
+use crate::agent::{AgentDefinition, create_from_provider_and_yaml_value_config};
 use crate::agent::{AgentInstance, AgentProvider};
 use crate::controller::utils::get_text_body_or_complain;
 use crate::entity::globalconfig::GlobalConfigurationManager;
 use crate::entity::roomconfig::RoomConfigurationManager;
 use crate::strings;
-use crate::{entity::MessageContext, Bot};
+use crate::{Bot, entity::MessageContext};
 
 struct ParsedAgentConfig {
     agent: AgentInstance,

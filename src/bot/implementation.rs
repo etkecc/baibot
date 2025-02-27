@@ -1,11 +1,11 @@
 use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 
+use mxlink::matrix_sdk::Room;
 use mxlink::matrix_sdk::media::{MediaFormat, MediaRequestParameters};
 use mxlink::matrix_sdk::ruma::{
-    events::room::MediaSource, MilliSecondsSinceUnixEpoch, OwnedUserId,
+    MilliSecondsSinceUnixEpoch, OwnedUserId, events::room::MediaSource,
 };
-use mxlink::matrix_sdk::Room;
 
 use mxlink::{
     InitConfig, LoginConfig, LoginCredentials, LoginEncryption, MatrixLink, PersistenceConfig,

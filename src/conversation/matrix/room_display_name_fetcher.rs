@@ -1,5 +1,5 @@
-use mxlink::matrix_sdk::ruma::OwnedRoomId;
 use mxlink::matrix_sdk::Room;
+use mxlink::matrix_sdk::ruma::OwnedRoomId;
 
 use mxlink::MatrixLink;
 use quick_cache::sync::Cache;

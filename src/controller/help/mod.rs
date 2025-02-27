@@ -1,6 +1,6 @@
 use mxlink::MessageResponseType;
 
-use crate::{entity::MessageContext, strings, Bot};
+use crate::{Bot, entity::MessageContext, strings};
 
 pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Result<()> {
     let sender_can_manage_global_config = message_context.sender_can_manage_global_config();

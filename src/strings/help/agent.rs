@@ -3,7 +3,9 @@ pub fn heading() -> String {
 }
 
 pub fn intro(command_prefix: &str) -> String {
-    format!("An agent is an instantiation and configuration of some **☁️ provider** (see `{command_prefix} provider`).")
+    format!(
+        "An agent is an instantiation and configuration of some **☁️ provider** (see `{command_prefix} provider`)."
+    )
 }
 
 pub fn intro_handler_relation(command_prefix: &str) -> String {
@@ -25,7 +27,9 @@ pub fn list_agents(command_prefix: &str) -> String {
 }
 
 pub fn show_agent_details(command_prefix: &str) -> String {
-    format!("- **Show** full details for a given agent: `{command_prefix} agent details FULL_AGENT_IDENTIFIER`")
+    format!(
+        "- **Show** full details for a given agent: `{command_prefix} agent details FULL_AGENT_IDENTIFIER`"
+    )
 }
 
 pub fn create_agent_intro() -> &'static str {
@@ -33,11 +37,15 @@ pub fn create_agent_intro() -> &'static str {
 }
 
 pub fn create_agent_room_local(command_prefix: &str) -> String {
-    format!("\t- (Accessible in **this room only**) `{command_prefix} agent create-room-local PROVIDER_ID AGENT_ID`")
+    format!(
+        "\t- (Accessible in **this room only**) `{command_prefix} agent create-room-local PROVIDER_ID AGENT_ID`"
+    )
 }
 
 pub fn create_agent_global(command_prefix: &str) -> String {
-    format!("\t- (Accessible in **all rooms**) `{command_prefix} agent create-global PROVIDER_ID AGENT_ID`")
+    format!(
+        "\t- (Accessible in **all rooms**) `{command_prefix} agent create-global PROVIDER_ID AGENT_ID`"
+    )
 }
 
 pub fn create_agent_example(command_prefix: &str) -> String {

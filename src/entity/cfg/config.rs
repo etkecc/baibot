@@ -247,7 +247,6 @@ impl PersistenceConfig {
     }
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigRoom {
     #[serde(default = "super::defaults::room_post_join_self_introduction_enabled")]
@@ -263,7 +262,8 @@ impl ConfigRoom {
 impl Default for ConfigRoom {
     fn default() -> Self {
         Self {
-            post_join_self_introduction_enabled: super::defaults::room_post_join_self_introduction_enabled(),
+            post_join_self_introduction_enabled:
+                super::defaults::room_post_join_self_introduction_enabled(),
         }
     }
 }

@@ -1,15 +1,16 @@
 use mxlink::MessageResponseType;
 
 use crate::{
+    Bot,
     entity::{
+        MessageContext,
         roomconfig::{
             SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
             TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
             TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
         },
-        MessageContext,
     },
-    strings, Bot,
+    strings,
 };
 
 pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Result<()> {

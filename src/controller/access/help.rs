@@ -1,6 +1,6 @@
 use mxlink::MessageResponseType;
 
-use crate::{entity::MessageContext, strings, Bot};
+use crate::{Bot, entity::MessageContext, strings};
 
 pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Result<()> {
     let mut message = String::new();

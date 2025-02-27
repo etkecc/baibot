@@ -5,9 +5,10 @@ use tracing::Instrument;
 
 use crate::controller::utils::mime::get_file_extension;
 use crate::{
-    agent::{provider::TextToSpeechParams, AgentInstance, AgentPurpose, ControllerTrait},
+    Bot,
+    agent::{AgentInstance, AgentPurpose, ControllerTrait, provider::TextToSpeechParams},
     entity::MessageContext,
-    strings, Bot,
+    strings,
 };
 
 pub async fn generate_and_send_tts_for_message(
