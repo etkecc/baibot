@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{Arc},
+    sync::Arc,
     thread,
     time::{self, Duration, Instant},
 };
@@ -13,7 +13,10 @@ use serde::Deserialize;
 
 use super::handle_message;
 
-use crate::{entity::{MessageContext, MessagePayload}, Bot};
+use crate::{
+    entity::{MessageContext, MessagePayload},
+    Bot,
+};
 
 use super::ChatCompletionControllerType;
 
@@ -33,10 +36,10 @@ struct Param {
 
 impl Param {
     pub fn new(
-        bot:  Bot,
+        bot: Bot,
         matrix_link: MatrixLink,
-        message_context:  MessageContext,
-        controller_type:  ChatCompletionControllerType,
+        message_context: MessageContext,
+        controller_type: ChatCompletionControllerType,
     ) -> Self {
         let received_timestamp = Instant::now();
 
@@ -52,26 +55,26 @@ impl Param {
 
 pub struct MessageAggregator {
     messages: Arc<Mutex<HashMap<String, Param>>>,
-    config: ConfigChatCompletionAggregator
+    config: ConfigChatCompletionAggregator,
 }
 
 impl MessageAggregator {
     pub fn new(config: ConfigChatCompletionAggregator) -> Self {
         Self {
             messages: Arc::new(Mutex::new(HashMap::new())),
-            config: config
+            config: config,
         }
     }
 
     async fn handle(&self, k: String, param: Param) {
-        let mut messages = self.messages.lock().await;        
-
+        let mut messages = self.messages.lock().await;
         let existans = messages.get_mut(&k);
 
         match existans {
-            None => {messages.insert(k, param);},
+            None => {
+                messages.insert(k, param);
+            }
             Some(p) => {
-                
                 if let MessagePayload::Text(t) = p.message_context.payload() {
                     let mut payload = t.body.clone();
 
@@ -79,10 +82,10 @@ impl MessageAggregator {
                         payload.push('\n');
                         payload.push_str(&pt.body);
                     }
-                    
-                    p.message_context.set_payload(
-                        MessagePayload::Text(TextMessageEventContent::plain(payload))
-                    );
+
+                    p.message_context.set_payload(MessagePayload::Text(
+                        TextMessageEventContent::plain(payload),
+                    ));
 
                     p.received_timestamp = Instant::now();
                 }
@@ -98,7 +101,6 @@ impl MessageAggregator {
             // to unlock mutex
             {
                 let mut messages = self.messages.lock().await;
-
                 let mut to_remove = Vec::new();
 
                 for (k, p) in messages.iter() {
@@ -113,17 +115,25 @@ impl MessageAggregator {
                 }
             }
 
-            thread::sleep(Duration::from_secs(self.config.message_polling_interval_seconds));
+            thread::sleep(Duration::from_secs(
+                self.config.message_polling_interval_seconds,
+            ));
         }
     }
 
     async fn send_to_chat_completion_controller(&self, p: &Param) {
-        // TODO
         if let MessagePayload::Text(t) = p.message_context.payload() {
+            // Todo: add to db
             println!("SALAR::::::prompt: {}", t.body);
         }
 
-        let _ = handle_message(&p.bot, p.matrix_link.clone(), &p.message_context, &p.controller_type).await;
+        let _ = handle_message(
+            &p.bot,
+            p.matrix_link.clone(),
+            &p.message_context,
+            &p.controller_type,
+        )
+        .await;
     }
 }
 
@@ -134,11 +144,19 @@ pub async fn handle(
     controller_type: &ChatCompletionControllerType,
 ) -> anyhow::Result<()> {
     let k = message_context.room_id().to_string();
-        
-    let param = Param::new(bot.clone(), matrix_link.clone(), message_context.clone(), controller_type.clone());
-    
+
+    let param = Param::new(
+        bot.clone(),
+        matrix_link.clone(),
+        message_context.clone(),
+        controller_type.clone(),
+    );
+
     //TODO
-    let _ = bot.chat_completion_message_aggregator().handle(k, param).await;
+    let _ = bot
+        .chat_completion_message_aggregator()
+        .handle(k, param)
+        .await;
 
     Ok(())
 }

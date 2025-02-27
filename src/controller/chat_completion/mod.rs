@@ -558,6 +558,7 @@ async fn handle_stage_text_generation(
         return None;
     }
 
+    // TODO: count response
     let send_message_response = bot
         .messaging()
         .send_text_markdown_no_fail(message_context.room(), text.clone(), response_type)

@@ -118,7 +118,8 @@ impl Bot {
             Some(ROOM_DISPLAY_NAME_FETCHER_LRU_CACHE_SIZE),
         );
 
-        let chat_completion_message_aggregator = MessageAggregator::new(config.chat_completion_aggregator.clone());
+        let chat_completion_message_aggregator =
+            MessageAggregator::new(config.chat_completion_aggregator.clone());
         Ok(Self {
             inner: Arc::new(BotInner {
                 config,
@@ -256,25 +257,21 @@ impl Bot {
 
         let cloned_aggregator = Arc::clone(&self.inner.chat_completion_message_aggregator);
 
-        let chat_completion_message_aggregator_handler = tokio::spawn( async move {
-            cloned_aggregator
-            .listen()
-            .await
-        });
+        let chat_completion_message_aggregator_handler =
+            tokio::spawn(async move { cloned_aggregator.listen().await });
 
         let cloened_inner = Arc::clone(&self.inner);
 
-        let bot_runner = tokio::spawn( async move {
+        let bot_runner = tokio::spawn(async move {
             cloened_inner
-            .matrix_link
-            .start()
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to sync: {:?}", e))
+                .matrix_link
+                .start()
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to sync: {:?}", e))
         });
 
         chat_completion_message_aggregator_handler.await.unwrap();
         bot_runner.await.unwrap()
-
     }
 
     async fn prepare_profile(&self) -> anyhow::Result<()> {
