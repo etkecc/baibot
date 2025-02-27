@@ -1,3 +1,22 @@
+# (2025-02-27) Version 1.5.0
+
+- (**Feature**) Add support for sending Speech-to-Text replies for [Transcribe-only mode](./docs/features.md#transcribe-only-mode) as regular text messages instead of notices and doing it so by default ([a1bd292752](https://github.com/etkecc/baibot/commit/a1bd292752bdd37a196788c73d00b5619e843a78)) - improvement for [issue #14](https://github.com/etkecc/baibot/issues/14). See [🦻 Speech-to-Text / 🪄 Message Type for non-threaded only-transcribed messages](./docs/configuration/speech-to-text.md#-message-type-for-non-threaded-only-transcribed-messages) for details.
+
+- (**Feature**) Add config setting controlling if a self-introduction message is posted after joining a room ([c051da2f4a](https://github.com/etkecc/baibot/commit/c051da2f4a161de0974ebb917f7a52d01f5a001f)) - fixes [issue #32](https://github.com/etkecc/baibot/issues/32). You may wish to add a `room.post_join_self_introduction_enabled` property to your configuration. See the [sample config](./etc/app/config.yml.dist) for details. If unspecified, it defaults to `true` anyway which preserves the old behavior.
+
+- (**Feature**) Add support for configuring `max_completion_tokens` for OpenAI ([47d8edea70](https://github.com/etkecc/baibot/commit/47d8edea705a44aa25a9bfaec4888c0f9ea8700e))
+
+- (**Improvement**) Dependency updates. This version is based on [mxlink](https://crates.io/crates/mxlink)@1.6.1 (which is based on the newly released [matrix-sdk](https://crates.io/crates/matrix-sdk)@[0.10.0](https://github.com/matrix-org/matrix-rust-sdk/releases/tag/matrix-sdk-0.10.0))
+
+- (**Improvement**) Populate image/audio attachment `body` with a filename, not with text to avoid incorrect rendering in Element Web, etc. ([ec1879d212](https://github.com/etkecc/baibot/commit/ec1879d212fa8d6e5f8590486e94c72abfcb75a5))
+
+- (**Improvement**) Replace Anthropic library ([anthropic-rs](https://crates.io/crates/anthropic-rs) -> [anthropic](https://crates.io/crates/anthropic)) and switch default recommended model (`claude-3-5-sonnet-20240620` -> `claude-3-7-sonnet-20250219`) ([692d61b239](https://github.com/etkecc/baibot/commit/692d61b2398f073b81d32d4cbe8145ab3929e48c)) - fixes [issue #22](https://github.com/etkecc/baibot/issues/22)
+
+- (**Internal Improvement**) Switch to native building of `arm64` container images to decrease total build times from ~40 minutes to ~8 minutes ([6719538530b](https://github.com/etkecc/baibot/commit/6719538530bf76b3ff2d24077b2a7fa868276b79))
+
+- (**Internal Improvement**) Various other internal changes, including upgrading [Rust from 1.82 to 1.85 and switching to Rust edition 2024](https://blog.rust-lang.org/2025/02/20/Rust-1.85.0.html)
+
+
 # (2024-12-12) Version 1.4.1
 
 - (**Bugfix**) Fix detection for whether the bot is the last member in a room, to avoid incorrectly leaving multi-user rooms that have had at least one person `leave` ([3c47d40781](https://github.com/etkecc/baibot/commit/3c47d407819aa9c0121117a411858238724f06da))
