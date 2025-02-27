@@ -80,6 +80,8 @@ agents:
     #       prompt: "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time of this conversation's start is: {{ baibot_conversation_start_time_utc }}."
     #       temperature: 1.0
     #       max_response_tokens: 16384
+    #       # Reasoning models need to use `max_completion_tokens` instead of `max_response_tokens`.
+    #       max_completion_tokens: ~
     #       max_context_tokens: 128000
     #     speech_to_text:
     #       model_id: whisper-1

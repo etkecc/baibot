@@ -144,6 +144,10 @@ impl ControllerTrait for Controller {
             request_builder.max_tokens(max_response_tokens);
         }
 
+        if let Some(max_completion_tokens) = text_generation_config.max_completion_tokens {
+            request_builder.max_completion_tokens(max_completion_tokens);
+        }
+
         let request = request_builder.build()?;
 
         if let Ok(request_as_json) = serde_json::to_string(&request) {
