@@ -3,6 +3,7 @@ mod bot;
 mod controller;
 mod conversation;
 mod entity;
+pub mod repository;
 mod strings;
 mod utils;
 

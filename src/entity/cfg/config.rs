@@ -34,6 +34,8 @@ pub struct Config {
     pub logging: String,
 
     pub chat_completion_aggregator: ConfigChatCompletionAggregator,
+
+    pub sqlite_db_path: String
 }
 
 impl Config {

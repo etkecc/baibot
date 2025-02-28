@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 
@@ -30,6 +31,8 @@ use crate::entity::roomconfig::{RoomConfig, RoomConfigurationManager};
 use crate::agent::Manager;
 
 use crate::conversation::matrix::{RoomDisplayNameFetcher, RoomEventFetcher};
+use crate::repository::sqlite::{SqliteBotRepository, SqliteConn};
+use crate::repository::BotRepository;
 
 const ROOM_EVENT_FETCHER_LRU_CACHE_SIZE: usize = 1000;
 const ROOM_DISPLAY_NAME_FETCHER_LRU_CACHE_SIZE: usize = 1000;
@@ -61,6 +64,7 @@ struct BotInner {
     agent_manager: Manager,
     admin_pattern_regexes: Vec<regex::Regex>,
     chat_completion_message_aggregator: Arc<MessageAggregator>,
+    repository: Arc<dyn BotRepository>
 }
 
 /// Bot represents a bot instance.
@@ -74,6 +78,10 @@ pub struct Bot {
 impl Bot {
     pub fn chat_completion_message_aggregator(&self) -> Arc<MessageAggregator> {
         Arc::clone(&self.inner.chat_completion_message_aggregator)
+    }
+
+    pub fn repository(&self) -> Arc<dyn BotRepository> {
+        Arc::clone(&self.inner.repository)
     }
 
     pub async fn new(config: Config) -> anyhow::Result<Self> {
@@ -120,6 +128,10 @@ impl Bot {
 
         let chat_completion_message_aggregator =
             MessageAggregator::new(config.chat_completion_aggregator.clone());
+
+        let sqlite_conn = SqliteConn::new(Path::new(&config.sqlite_db_path));
+        let repository = SqliteBotRepository::new(Arc::new(sqlite_conn));
+
         Ok(Self {
             inner: Arc::new(BotInner {
                 config,
@@ -133,6 +145,7 @@ impl Bot {
                 agent_manager,
                 admin_pattern_regexes,
                 chat_completion_message_aggregator: Arc::new(chat_completion_message_aggregator),
+                repository: Arc::new(repository)
             }),
         })
     }

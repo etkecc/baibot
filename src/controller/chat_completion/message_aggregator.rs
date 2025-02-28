@@ -14,8 +14,7 @@ use serde::Deserialize;
 use super::handle_message;
 
 use crate::{
-    entity::{MessageContext, MessagePayload},
-    Bot,
+    entity::{MessageContext, MessagePayload}, repository::Answer, Bot
 };
 
 use super::ChatCompletionControllerType;
@@ -123,8 +122,15 @@ impl MessageAggregator {
 
     async fn send_to_chat_completion_controller(&self, p: &Param) {
         if let MessagePayload::Text(t) = p.message_context.payload() {
-            // Todo: add to db
-            println!("SALAR::::::prompt: {}", t.body);
+            
+            
+            let _ = p.bot.repository().store_answer(
+                Answer{
+                    id: 0,
+                    length: t.body.split_whitespace().count() as i64,
+                    stored_at: chrono::Utc::now().date_naive().to_string()
+                }
+            ).await;
         }
 
         let _ = handle_message(
@@ -152,7 +158,6 @@ pub async fn handle(
         controller_type.clone(),
     );
 
-    //TODO
     let _ = bot
         .chat_completion_message_aggregator()
         .handle(k, param)

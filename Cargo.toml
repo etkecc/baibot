@@ -38,8 +38,19 @@ tracing = "0.1.*"
 tracing-subscriber = { version = "0.3.*", features = ["env-filter"] }
 url = "2.5.*"
 actix-web = "4"
+rusqlite = "0.32.1"
+env_logger = "0.11.6"
 
 [profile.release]
 strip = true
 opt-level = "z"
 lto = "thin"
+
+
+[[bin]]
+name = "http-server"
+path = "src/bin/http_server.rs"
+
+[[bin]]
+name = "bot"
+path = "src/bin/bot.rs"

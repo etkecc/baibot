@@ -1,4 +1,3 @@
-use actix_web::{get, rt, web, App, HttpResponse, HttpServer, Responder};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::EnvFilter;
 
@@ -6,16 +5,10 @@ use baibot::{load_config, Bot, Config};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let server_handle = tokio::spawn(run_server());
-
-    let bot_res = match load_config() {
+    match load_config() {
         Ok(config) => run_with_config(config).await,
         Err(err) => Err(anyhow::anyhow!("Failed loading configuration: {}", err)),
-    };
-
-    let _ = server_handle.await?;
-
-    bot_res
+    }
 }
 
 async fn run_with_config(config: Config) -> anyhow::Result<()> {
