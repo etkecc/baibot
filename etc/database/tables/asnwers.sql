@@ -1,6 +1,6 @@
 
 CREATE TABLE `answers` (
     `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-    `stored_at` timestamp NOT NULL,
+    `stored_at` DATE NOT NULL,
     `content_length` INTEGER NOT NULL
 );

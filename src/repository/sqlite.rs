@@ -1,7 +1,7 @@
 use std::{path::Path, sync::Arc};
+use anyhow::Ok;
 use tokio::sync::Mutex;
 
-use anyhow::Ok;
 use matrix_sdk::async_trait;
 
 use super::BotRepository;
@@ -43,7 +43,7 @@ impl SqliteBotRepository {
 impl BotRepository for SqliteBotRepository {
     async fn store_response(&self, data: super::Response) -> anyhow::Result<()> {
         self.conn.conn.lock().await.execute(
-            "INSERT INTO responses (length, stored_at) VALUES (?1, ?2)",
+            "INSERT INTO responses (content_length, stored_at) VALUES (?1, ?2)",
             (data.length, data.stored_at),
         )?;
 
@@ -52,7 +52,7 @@ impl BotRepository for SqliteBotRepository {
 
     async fn store_answer(&self, data: super::Answer) -> anyhow::Result<()> {
         self.conn.conn.lock().await.execute(
-            "INSERT INTO answers (length, stored_at) VALUES (?1, ?2)",
+            "INSERT INTO answers (content_length, stored_at) VALUES (?1, ?2)",
             (data.length, data.stored_at),
         )?;
 
@@ -66,12 +66,12 @@ impl BotRepository for SqliteBotRepository {
         };
 
         let lock = self.conn.conn.lock().await;
+
         let stmt = lock
-        
-        .prepare("SELECT SUM(content_length) FROM responses WHERE stored_at BETWEEN ?1 AND ?2");
+            .prepare("SELECT SUM(content_length) FROM responses WHERE stored_at BETWEEN ?1 AND ?2");
         let sum: Option<i64> = stmt.unwrap().query_row([from, to_date], |row| row.get(0))?;
         
-        Ok(sum.unwrap())
+        Ok(sum.unwrap_or_default())
     }
 
     async fn get_answer_count_from(&self, from: String, to: Option<String>) -> anyhow::Result<i64> {
@@ -79,14 +79,13 @@ impl BotRepository for SqliteBotRepository {
             None => chrono::Utc::now().date_naive().to_string(),
             Some(d) => d 
         };
-
         
         let lock = self.conn.conn.lock().await;
-        let stmt = lock
         
-        .prepare("SELECT SUM(content_length) FROM answers WHERE stored_at BETWEEN ?1 AND ?2");
+        let stmt = lock
+            .prepare("SELECT SUM(content_length) FROM answers WHERE stored_at BETWEEN ?1 AND ?2");
         let sum: Option<i64> = stmt.unwrap().query_row([from, to_date], |row| row.get(0))?;
         
-        Ok(sum.unwrap())
+        Ok(sum.unwrap_or_default())
     }
 }

@@ -123,7 +123,6 @@ impl MessageAggregator {
     async fn send_to_chat_completion_controller(&self, p: &Param) {
         if let MessagePayload::Text(t) = p.message_context.payload() {
             
-            
             let _ = p.bot.repository().store_answer(
                 Answer{
                     id: 0,
