@@ -11,7 +11,7 @@ run-locally *extra_args: app-local-prepare
 	RUST_BACKTRACE=1 \
 	BAIBOT_CONFIG_FILE_PATH={{ justfile_directory() }}/var/app/local/config.yml \
 	BAIBOT_PERSISTENCE_DATA_DIR_PATH={{ justfile_directory() }}/var/app/local/data \
-	cargo run --bin bot -- {{ extra_args }}
+	cargo run --bin baibot -- {{ extra_args }}
 
 # Builds and runs the http server in a container
 run-http-server-locally:

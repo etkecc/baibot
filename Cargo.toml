@@ -52,5 +52,5 @@ name = "http-server"
 path = "src/bin/http_server.rs"
 
 [[bin]]
-name = "bot"
-path = "src/bin/bot.rs"
+name = "baibot"
+path = "src/bin/baibot.rs"

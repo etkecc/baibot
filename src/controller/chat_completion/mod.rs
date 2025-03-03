@@ -562,6 +562,7 @@ async fn handle_stage_text_generation(
     let _ = bot.repository().store_response(
         Response {
             id: 0,
+            bot_id: bot.bot_uniqe_id(),
             length: text.split_whitespace().count() as i64,
             stored_at: chrono::Utc::now().date_naive().to_string()
         }

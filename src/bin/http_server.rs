@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
     for f in files {
         let content = fs::read_to_string(f.unwrap().path())?;
 
-        let _ = sc_arc.clone().execute(content).await;
+        let _ = sc_arc.clone().execute(content).await.unwrap();
     }
 
 

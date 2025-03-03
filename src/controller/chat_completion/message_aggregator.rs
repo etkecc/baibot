@@ -126,6 +126,7 @@ impl MessageAggregator {
             let _ = p.bot.repository().store_answer(
                 Answer{
                     id: 0,
+                    bot_id: p.bot.bot_uniqe_id(),
                     length: t.body.split_whitespace().count() as i64,
                     stored_at: chrono::Utc::now().date_naive().to_string()
                 }

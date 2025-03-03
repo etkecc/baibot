@@ -35,7 +35,9 @@ pub struct Config {
 
     pub chat_completion_aggregator: ConfigChatCompletionAggregator,
 
-    pub sqlite_db_path: String
+    pub sqlite_db_path: String,
+    
+    pub uniqe_bot_id: String
 }
 
 impl Config {

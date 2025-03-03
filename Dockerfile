@@ -28,9 +28,9 @@ RUN --mount=type=cache,target=/cargo,sharing=locked \
 # Move it out of the mounted cache, so we can copy it in the next stage.
 RUN --mount=type=cache,target=/target,sharing=locked \
 	if [ "$RELEASE_BUILD" = "true" ]; then \
-		cp /target/release/baibot /baibot; \
+		cp /target/release/baibot /baibot; cp /target/release/http-server /http-server; \
 	else \
-		cp /target/debug/baibot /baibot; \
+		cp /target/debug/baibot /baibot; cp /target/debug/http-server /http-server;  \
 	fi
 
 #######################################
@@ -48,7 +48,6 @@ RUN apt-get update && apt-get install -y ca-certificates sqlite3 && \
 WORKDIR /app
 
 COPY --from=build /baibot .
+COPY --from=build /http-server .
 
 ENTRYPOINT ["/bin/sh", "-c"]
-
-CMD ["/app/baibot"]

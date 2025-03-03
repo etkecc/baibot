@@ -150,6 +150,10 @@ impl Bot {
         })
     }
 
+    pub fn bot_uniqe_id(&self) -> String {
+        self.inner.config.uniqe_bot_id.clone()
+    }
+    
     pub(crate) fn admin_patterns(&self) -> &Vec<String> {
         &self.inner.config.access.admin_patterns
     }

@@ -5,11 +5,13 @@ pub mod sqlite;
 pub struct Response {
     pub id: i32,
     pub length: i64,
+    pub bot_id: String,
     pub stored_at: String,
 }
 
 pub struct Answer {
     pub id: i32,
+    pub bot_id: String,
     pub length: i64,
     pub stored_at: String,
 }

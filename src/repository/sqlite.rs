@@ -43,8 +43,8 @@ impl SqliteBotRepository {
 impl BotRepository for SqliteBotRepository {
     async fn store_response(&self, data: super::Response) -> anyhow::Result<()> {
         self.conn.conn.lock().await.execute(
-            "INSERT INTO responses (content_length, stored_at) VALUES (?1, ?2)",
-            (data.length, data.stored_at),
+            "INSERT INTO responses (content_length, bot_id, stored_at) VALUES (?1, ?2, ?3)",
+            (data.length, data.bot_id, data.stored_at),
         )?;
 
         Ok(())
@@ -52,8 +52,8 @@ impl BotRepository for SqliteBotRepository {
 
     async fn store_answer(&self, data: super::Answer) -> anyhow::Result<()> {
         self.conn.conn.lock().await.execute(
-            "INSERT INTO answers (content_length, stored_at) VALUES (?1, ?2)",
-            (data.length, data.stored_at),
+            "INSERT INTO answers (content_length, bot_id, stored_at) VALUES (?1, ?2, ?3)",
+            (data.length, data.bot_id, data.stored_at),
         )?;
 
         Ok(())
