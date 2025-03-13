@@ -4,8 +4,8 @@ mod tests;
 use super::chat_completion::ChatCompletionControllerType;
 use crate::{
     entity::{
-        roomconfig::TextGenerationPrefixRequirementType, InteractionTrigger, MessageContext,
-        MessagePayload,
+        InteractionTrigger, MessageContext, MessagePayload,
+        roomconfig::TextGenerationPrefixRequirementType,
     },
     strings,
 };

@@ -7,20 +7,20 @@ use super::super::ControllerTrait;
 use crate::agent::utils::base64_decode;
 use crate::{
     agent::provider::{
-        entity::{TextGenerationParams, TextGenerationResult},
         ImageGenerationParams, SpeechToTextParams, SpeechToTextResult,
+        entity::{TextGenerationParams, TextGenerationResult},
     },
     conversation::llm::{
-        shorten_messages_list_to_context_size, Author as LLMAuthor,
-        Conversation as LLMConversation, Message as LLMMessage,
+        Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
+        shorten_messages_list_to_context_size,
     },
 };
 use crate::{
     agent::{
+        AgentPurpose,
         provider::entity::{
             ImageGenerationResult, PingResult, TextToSpeechParams, TextToSpeechResult,
         },
-        AgentPurpose,
     },
     strings,
 };

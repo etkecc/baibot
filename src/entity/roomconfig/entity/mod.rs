@@ -13,7 +13,9 @@ mod text_generation;
 mod text_to_speech;
 
 pub use handler::RoomSettingsHandler;
-pub use speech_to_text::SpeechToTextFlowType;
+pub use speech_to_text::{
+    SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
+};
 pub use text_generation::{TextGenerationAutoUsage, TextGenerationPrefixRequirementType};
 pub use text_to_speech::{TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType};
 
@@ -44,7 +46,9 @@ impl RoomConfigTrait for RoomConfig {}
 
 impl RoomConfig {
     pub async fn with_room(mut self, room: Room) -> Self {
-        tracing::trace!("Determining room members count to decide on a suitable text-generation/prefix-requirement-type default");
+        tracing::trace!(
+            "Determining room members count to decide on a suitable text-generation/prefix-requirement-type default"
+        );
 
         let members = room.members(RoomMemberships::ACTIVE).await;
 
@@ -58,12 +62,19 @@ impl RoomConfig {
                     text_generation::TextGenerationPrefixRequirementType::No
                 };
 
-                tracing::info!(?members_count, ?prefix_requirement_type, "Determined text-generation/prefix-requirement-type based on room members count");
+                tracing::info!(
+                    ?members_count,
+                    ?prefix_requirement_type,
+                    "Determined text-generation/prefix-requirement-type based on room members count"
+                );
 
                 prefix_requirement_type
             }
             Err(err) => {
-                tracing::error!(?err, "Failed to get members of room - will default text-generation/prefix-requirement-type to No");
+                tracing::error!(
+                    ?err,
+                    "Failed to get members of room - will default text-generation/prefix-requirement-type to No"
+                );
                 text_generation::TextGenerationPrefixRequirementType::No
             }
         };

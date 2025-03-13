@@ -1,6 +1,6 @@
 use mxlink::MessageResponseType;
 
-use crate::{agent::AgentProvider, entity::MessageContext, strings, Bot};
+use crate::{Bot, agent::AgentProvider, entity::MessageContext, strings};
 
 use super::ControllerType;
 

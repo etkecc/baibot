@@ -16,7 +16,7 @@ pub fn create_transcribed_message_text(text: &str) -> String {
 /// If the provided text string does not match the expected format, None is returned.
 ///
 /// It should be noted that in certain cases (Transcribe-only mode), transcriptions are posted as regular notice messages which do not include
-/// the `> 🦻` prefixing. This function will not handle these properly.
+/// the `> 🦻` prefix. This function will not handle these properly.
 pub fn parse_transcribed_message_text(text: &str) -> Option<String> {
     if !text.starts_with("> ") {
         return None;

@@ -1,11 +1,11 @@
 use crate::{agent::AgentPurpose, conversation::llm::Conversation};
 
 use super::{
+    ImageGenerationParams, SpeechToTextParams, SpeechToTextResult,
     entity::{
         ImageGenerationResult, PingResult, TextGenerationParams, TextGenerationResult,
         TextToSpeechParams, TextToSpeechResult,
     },
-    ImageGenerationParams, SpeechToTextParams, SpeechToTextResult,
 };
 
 pub trait ControllerTrait {

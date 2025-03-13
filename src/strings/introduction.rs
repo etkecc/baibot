@@ -1,15 +1,17 @@
-use crate::agent::utils::get_effective_agent_for_purpose;
 use crate::agent::utils::AgentForPurposeDeterminationError;
+use crate::agent::utils::get_effective_agent_for_purpose;
 use crate::agent::{AgentPurpose, Manager as AgentManager};
-use crate::entity::roomconfig::TextGenerationPrefixRequirementType;
 use crate::entity::RoomConfigContext;
+use crate::entity::roomconfig::TextGenerationPrefixRequirementType;
 
 fn hello() -> &'static str {
     "Hello! 👋"
 }
 
 pub fn its_me(name: &str) -> String {
-    let mut message = format!("I'm {name} - a bot exposing the power of [AI](https://en.wikipedia.org/wiki/Artificial_intelligence) ([Large Language Models](https://en.wikipedia.org/wiki/Large_language_model)) to you. 🤖");
+    let mut message = format!(
+        "I'm {name} - a bot exposing the power of [AI](https://en.wikipedia.org/wiki/Artificial_intelligence) ([Large Language Models](https://en.wikipedia.org/wiki/Large_language_model)) to you. 🤖"
+    );
 
     if name == crate::entity::cfg::defaults::name() {
         message.push('\n');
@@ -179,7 +181,9 @@ fn send_a_text_message(
             "**Send a text message** in this room (e.g. `Hello!`) and see me reply.".to_owned()
         }
         TextGenerationPrefixRequirementType::CommandPrefix => {
-            format!("In this room, I'm configured to require the command prefix (`{command_prefix}`) for text messages. **Send a prefixed text message** (e.g. `{command_prefix} Hello!`) and see me reply.")
+            format!(
+                "In this room, I'm configured to require the command prefix (`{command_prefix}`) for text messages. **Send a prefixed text message** (e.g. `{command_prefix} Hello!`) and see me reply."
+            )
         }
     }
 }
@@ -191,9 +195,13 @@ fn learn_more_from_usage_or_help(command_prefix: &str) -> String {
 }
 
 pub fn create_one_or_more_agents(command_prefix: &str) -> String {
-    format!("**Create one or more agents** in this room or globally. The provider help message will show you **🗲 Quick start** commands, but you may also send a `{command_prefix} agent` command to see the guide.")
+    format!(
+        "**Create one or more agents** in this room or globally. The provider help message will show you **🗲 Quick start** commands, but you may also send a `{command_prefix} agent` command to see the guide."
+    )
 }
 
 pub fn set_new_agent_as_handler(command_prefix: &str) -> String {
-    format!("**Set the new agent as a handler** for a given use-purpose like text-generation, image-generation, etc. The agent-creation wizard will tell you how, but you may also send a `{command_prefix} config` command to see the guide (in the 🤖 *Handler Agents* section).")
+    format!(
+        "**Set the new agent as a handler** for a given use-purpose like text-generation, image-generation, etc. The agent-creation wizard will tell you how, but you may also send a `{command_prefix} config` command to see the guide (in the 🤖 *Handler Agents* section)."
+    )
 }

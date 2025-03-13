@@ -32,7 +32,9 @@ pub fn users_command_get(command_prefix: &str) -> String {
 }
 
 pub fn users_command_set(command_prefix: &str) -> String {
-    format!("- **Set** the list of allowed users: `{command_prefix} access set-users SPACE_SEPARATED_PATTERNS`")
+    format!(
+        "- **Set** the list of allowed users: `{command_prefix} access set-users SPACE_SEPARATED_PATTERNS`"
+    )
 }
 
 pub fn example_user_patterns(own_server_name: &str) -> String {
@@ -64,7 +66,9 @@ pub fn room_local_agent_managers_heading() -> String {
 }
 
 pub fn room_local_agent_managers_intro(command_prefix: &str) -> String {
-    format!("Room-local agent managers are users privileged to **create their own agents** (see `{command_prefix} agent`) in rooms.")
+    format!(
+        "Room-local agent managers are users privileged to **create their own agents** (see `{command_prefix} agent`) in rooms."
+    )
 }
 
 pub fn room_local_agent_managers_security_warning() -> String {
@@ -72,9 +76,13 @@ pub fn room_local_agent_managers_security_warning() -> String {
 }
 
 pub fn room_local_agent_managers_command_get(command_prefix: &str) -> String {
-    format!("- **Show** the currently allowed users: `{command_prefix} access room-local-agent-managers`")
+    format!(
+        "- **Show** the currently allowed users: `{command_prefix} access room-local-agent-managers`"
+    )
 }
 
 pub fn room_local_agent_managers_command_set(command_prefix: &str) -> String {
-    format!("- **Set** the list of allowed users: `{command_prefix} access set-room-local-agent-managers SPACE_SEPARATED_PATTERNS`")
+    format!(
+        "- **Set** the list of allowed users: `{command_prefix} access set-room-local-agent-managers SPACE_SEPARATED_PATTERNS`"
+    )
 }

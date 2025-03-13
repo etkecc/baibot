@@ -1,36 +1,36 @@
 use std::ops::Deref;
 
 use async_openai::{
+    Client as OpenAIClient,
     config::OpenAIConfig,
     types::{
         ChatCompletionRequestMessage, CreateChatCompletionRequestArgs, CreateImageRequestArgs,
         CreateSpeechRequestArgs, CreateTranscriptionRequestArgs,
     },
-    Client as OpenAIClient,
 };
 
 use super::super::ControllerTrait;
 use crate::{
     agent::{
+        AgentPurpose,
         provider::{
             entity::{ImageGenerationResult, PingResult, TextToSpeechParams, TextToSpeechResult},
             openai::utils::convert_string_to_enum,
         },
-        AgentPurpose,
     },
     strings,
 };
 use crate::{
     agent::{
         provider::{
-            entity::{TextGenerationParams, TextGenerationResult},
             ImageGenerationParams, SpeechToTextParams, SpeechToTextResult,
+            entity::{TextGenerationParams, TextGenerationResult},
         },
         utils::base64_decode,
     },
     conversation::llm::{
-        shorten_messages_list_to_context_size, Author as LLMAuthor,
-        Conversation as LLMConversation, Message as LLMMessage,
+        Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
+        shorten_messages_list_to_context_size,
     },
 };
 
@@ -142,6 +142,10 @@ impl ControllerTrait for Controller {
 
         if let Some(max_response_tokens) = text_generation_config.max_response_tokens {
             request_builder.max_tokens(max_response_tokens);
+        }
+
+        if let Some(max_completion_tokens) = text_generation_config.max_completion_tokens {
+            request_builder.max_completion_tokens(max_completion_tokens);
         }
 
         let request = request_builder.build()?;

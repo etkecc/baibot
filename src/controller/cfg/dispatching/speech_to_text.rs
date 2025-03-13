@@ -1,5 +1,8 @@
-use crate::entity::roomconfig::{RoomSettings, SpeechToTextFlowType};
-use crate::{entity::MessageContext, Bot};
+use crate::entity::roomconfig::{
+    RoomSettings, SpeechToTextFlowType,
+    SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
+};
+use crate::{Bot, entity::MessageContext};
 
 use super::super::controller_type::{
     ConfigSpeechToTextSettingRelatedControllerType, SettingsStorageSource,
@@ -42,6 +45,39 @@ pub(super) async fn dispatch(
                 }
                 SettingsStorageSource::Global => {
                     global_setting_set::<SpeechToTextFlowType>(
+                        bot,
+                        message_context,
+                        &value,
+                        setter_callback,
+                    )
+                    .await
+                }
+            }
+        }
+
+        ConfigSpeechToTextSettingRelatedControllerType::GetMsgTypeForNonThreadedOnlyTranscribedMessages => {
+            let value = &room_settings.speech_to_text.msg_type_for_non_threaded_only_transcribed_messages;
+            setting_get::<SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages>(bot, message_context, value).await
+        }
+        ConfigSpeechToTextSettingRelatedControllerType::SetMsgTypeForNonThreadedOnlyTranscribedMessages(value) => {
+            let value = value.to_owned();
+
+            let setter_callback = Box::new(move |room_settings: &mut RoomSettings| {
+                room_settings.speech_to_text.msg_type_for_non_threaded_only_transcribed_messages = value;
+            });
+
+            match config_type {
+                SettingsStorageSource::Room => {
+                    room_setting_set::<SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages>(
+                        bot,
+                        message_context,
+                        &value,
+                        setter_callback,
+                    )
+                    .await
+                }
+                SettingsStorageSource::Global => {
+                    global_setting_set::<SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages>(
                         bot,
                         message_context,
                         &value,

@@ -25,8 +25,8 @@ fn test_messages_by_the_bot_are_identified_correctly() {
 }
 
 #[test]
-fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_considered_sent_by_user(
-) {
+fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_considered_sent_by_user()
+ {
     let bot_user_id =
         OwnedUserId::try_from("@bot:example.com").expect("Failed to parse bot user ID");
 

@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
-use mxlink::matrix_sdk::ruma::OwnedEventId;
 use mxlink::MatrixLink;
+use mxlink::matrix_sdk::ruma::OwnedEventId;
 
 use crate::conversation::matrix::MatrixMessage;
 
-use super::llm::{convert_matrix_message_to_llm_message, Conversation, Message};
+use super::llm::{Conversation, Message, convert_matrix_message_to_llm_message};
 use super::matrix::{
-    get_matrix_messages_in_reply_chain, get_matrix_messages_in_thread, process_matrix_messages,
-    MatrixMessageProcessingParams, RoomEventFetcher,
+    MatrixMessageProcessingParams, RoomEventFetcher, get_matrix_messages_in_reply_chain,
+    get_matrix_messages_in_thread, process_matrix_messages,
 };
 
 pub async fn create_llm_conversation_for_matrix_thread(

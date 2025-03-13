@@ -21,8 +21,8 @@ pub use controller::Controller;
 
 use super::super::AgentInstantiationError;
 use super::super::AgentInstantiationResult;
-use super::controller::ControllerType;
 use super::ConfigTrait;
+use super::controller::ControllerType;
 
 pub fn create_controller_from_yaml_value_config(
     agent_id: &str,

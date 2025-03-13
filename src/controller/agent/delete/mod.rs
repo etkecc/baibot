@@ -1,9 +1,9 @@
 use mxlink::MessageResponseType;
 
 use crate::entity::{
-    globalconfig::GlobalConfigurationManager, roomconfig::RoomConfigurationManager, MessageContext,
+    MessageContext, globalconfig::GlobalConfigurationManager, roomconfig::RoomConfigurationManager,
 };
-use crate::{agent::PublicIdentifier, strings, Bot};
+use crate::{Bot, agent::PublicIdentifier, strings};
 
 pub async fn handle(
     bot: &Bot,

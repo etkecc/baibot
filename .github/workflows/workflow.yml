@@ -3,13 +3,14 @@ on:
   push:
     branches: [ "main" ]
     tags: [ "v*" ]
-  schedule:
-    - cron: '0 0 * * 1'
 permissions:
   checks: write
   contents: write
   packages: write
   pull-requests: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   test-and-clippy:
     name: Unit testing and linting
@@ -22,17 +23,41 @@ jobs:
       - run: cargo test --all-features
       - run: cargo clippy
 
-  build-publish:
-    name: Build and Publish
-    runs-on: self-hosted
+  docker-clean-metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      json: ${{ steps.meta.outputs.json }}
     steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          platforms: arm64
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Login to ghcr.io
+          images: |
+            ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
+            type=semver,pattern={{raw}}
+
+  docker-build:
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    strategy:
+      matrix:
+        include:
+          - os: self-hosted
+            arch: amd64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Log in to the GitHub Container registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -42,17 +67,41 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ghcr.io/${{ github.repository }}
-            registry.etke.cc/${{ github.repository }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
             type=semver,pattern={{raw}}
-      - name: Build and push
+          flavor: |
+            latest=auto
+            suffix=-${{ matrix.arch }},onlatest=true
+          images: |
+            ghcr.io/${{ github.repository }}
+
+      - name: Build and push Docker images
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          file: Dockerfile.ci
+
+  docker-manifest:
+    needs:
+      - docker-build
+      - docker-clean-metadata
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        image: ${{ fromJson(needs.docker-clean-metadata.outputs.json).tags }}
+
+    steps:
+      - name: Log in to the GitHub Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest
+        run: |
+          docker manifest create ${{ matrix.image }} ${{ matrix.image }}-amd64 ${{ matrix.image }}-arm64
+          docker manifest push ${{ matrix.image }}

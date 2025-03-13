@@ -1,7 +1,8 @@
 use crate::{
     agent::{AgentPurpose, PublicIdentifier},
     entity::roomconfig::{
-        SpeechToTextFlowType, TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
+        SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
+        TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
         TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
     },
 };
@@ -53,6 +54,11 @@ pub enum ConfigTextGenerationSettingRelatedControllerType {
 pub enum ConfigSpeechToTextSettingRelatedControllerType {
     GetFlowType,
     SetFlowType(Option<SpeechToTextFlowType>),
+
+    GetMsgTypeForNonThreadedOnlyTranscribedMessages,
+    SetMsgTypeForNonThreadedOnlyTranscribedMessages(
+        Option<SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages>,
+    ),
 
     GetLanguage,
     SetLanguage(Option<String>),

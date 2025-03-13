@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use anthropic_rs::models::claude::ClaudeModel;
-
 use crate::agent::{default_prompt, provider::ConfigTrait};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,6 +25,9 @@ impl ConfigTrait for Config {
     fn validate(&self) -> Result<(), String> {
         if self.base_url.is_empty() {
             return Err("The base URL must not be empty.".to_owned());
+        }
+        if !self.base_url.ends_with("/v1") {
+            return Err("The base URL must end with '/v1'.".to_owned());
         }
         if self.api_key.is_empty() {
             return Err("The API key must not be empty.".to_owned());
@@ -67,5 +68,5 @@ impl Default for TextGenerationConfig {
 }
 
 fn default_text_model_id() -> String {
-    ClaudeModel::Claude35Sonnet.as_str().to_owned()
+    "claude-3-7-sonnet-20250219".to_owned()
 }

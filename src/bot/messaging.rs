@@ -1,9 +1,9 @@
 use mxlink::matrix_sdk::{
-    ruma::{
-        api::client::receipt::create_receipt::v3::ReceiptType,
-        events::room::message::OriginalSyncRoomMessageEvent, OwnedEventId,
-    },
     Room,
+    ruma::{
+        OwnedEventId, api::client::receipt::create_receipt::v3::ReceiptType,
+        events::room::message::OriginalSyncRoomMessageEvent,
+    },
 };
 
 use mxlink::{CallbackError, MessageResponseType};

@@ -68,46 +68,50 @@ mod tests {
             // Multiple complex user messages dispersed with assistant messages
             TestCase {
                 original_prompt: "Generate a picture of an elephant",
-                messages: vec![Message {
-                    author: Author::User,
-                    message_text: "Must be blue".to_owned(),
-                    timestamp,
-                },
-                Message {
-                    author: Author::Assistant,
-                    message_text: "Whatever".to_owned(),
-                    timestamp,
-                },
-                Message {
-                    author: Author::User,
-                    message_text: "Must be 3-legged.\nMust be flying.".to_owned(),
-                    timestamp,
-                }],
+                messages: vec![
+                    Message {
+                        author: Author::User,
+                        message_text: "Must be blue".to_owned(),
+                        timestamp,
+                    },
+                    Message {
+                        author: Author::Assistant,
+                        message_text: "Whatever".to_owned(),
+                        timestamp,
+                    },
+                    Message {
+                        author: Author::User,
+                        message_text: "Must be 3-legged.\nMust be flying.".to_owned(),
+                        timestamp,
+                    },
+                ],
                 expected_prompt: "Generate a picture of an elephant\nOther criteria:\n- Must be blue\n- Must be 3-legged.. Must be flying.",
             },
             // "Again" is ignored.
             TestCase {
                 original_prompt: "Generate a picture of a grizzly bear",
-                messages: vec![Message {
-                    author: Author::User,
-                    message_text: "Must be blue".to_owned(),
-                    timestamp,
-                },
-                Message {
-                    author: Author::Assistant,
-                    message_text: "Whatever".to_owned(),
-                    timestamp,
-                },
-                Message {
-                    author: Author::User,
-                    message_text: "Again".to_owned(),
-                    timestamp,
-                },
-                Message {
-                    author: Author::User,
-                    message_text: "again".to_owned(),
-                    timestamp,
-                }],
+                messages: vec![
+                    Message {
+                        author: Author::User,
+                        message_text: "Must be blue".to_owned(),
+                        timestamp,
+                    },
+                    Message {
+                        author: Author::Assistant,
+                        message_text: "Whatever".to_owned(),
+                        timestamp,
+                    },
+                    Message {
+                        author: Author::User,
+                        message_text: "Again".to_owned(),
+                        timestamp,
+                    },
+                    Message {
+                        author: Author::User,
+                        message_text: "again".to_owned(),
+                        timestamp,
+                    },
+                ],
                 expected_prompt: "Generate a picture of a grizzly bear\nOther criteria:\n- Must be blue",
             },
         ];

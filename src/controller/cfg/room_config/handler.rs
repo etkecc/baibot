@@ -1,9 +1,10 @@
 use mxlink::MessageResponseType;
 
 use crate::{
+    Bot,
     agent::{AgentPurpose, PublicIdentifier},
     entity::MessageContext,
-    strings, Bot,
+    strings,
 };
 
 use crate::entity::roomconfig::RoomConfigurationManager;

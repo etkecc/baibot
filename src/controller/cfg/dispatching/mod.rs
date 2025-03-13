@@ -1,5 +1,5 @@
 use crate::strings;
-use crate::{entity::MessageContext, Bot};
+use crate::{Bot, entity::MessageContext};
 use mxlink::MessageResponseType;
 
 use super::controller_type::{

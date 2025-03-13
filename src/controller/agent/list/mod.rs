@@ -2,7 +2,7 @@ use mxlink::MessageResponseType;
 
 use crate::agent::AgentPurpose;
 use crate::strings;
-use crate::{entity::MessageContext, Bot};
+use crate::{Bot, entity::MessageContext};
 
 pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Result<()> {
     let agents = bot

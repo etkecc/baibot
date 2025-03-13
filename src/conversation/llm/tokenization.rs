@@ -1,6 +1,6 @@
+use tiktoken_rs::CoreBPE;
 use tiktoken_rs::get_bpe_from_tokenizer;
 use tiktoken_rs::tokenizer;
-use tiktoken_rs::CoreBPE;
 
 use super::{Author, Message};
 

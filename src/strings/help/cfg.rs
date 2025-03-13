@@ -23,7 +23,9 @@ pub fn status_heading() -> String {
 }
 
 pub fn status_intro(command_prefix: &str) -> String {
-    format!("To **show a summary** of the configuration affecting the current room: `{command_prefix} config status`")
+    format!(
+        "To **show a summary** of the configuration affecting the current room: `{command_prefix} config status`"
+    )
 }
 
 pub fn handlers_heading() -> String {
@@ -57,15 +59,21 @@ pub fn handlers_intro_purposes() -> String {
 }
 
 pub fn handlers_show(command_prefix: &str) -> String {
-    format!("**Show** the currently configured agent for the given purpose: `{command_prefix} config CONFIG_TYPE handler PURPOSE`")
+    format!(
+        "**Show** the currently configured agent for the given purpose: `{command_prefix} config CONFIG_TYPE handler PURPOSE`"
+    )
 }
 
 pub fn handlers_set(command_prefix: &str) -> String {
-    format!("**Set** the agent to be used for the given purpose: `{command_prefix} config CONFIG_TYPE set-handler PURPOSE AGENT_ID`")
+    format!(
+        "**Set** the agent to be used for the given purpose: `{command_prefix} config CONFIG_TYPE set-handler PURPOSE AGENT_ID`"
+    )
 }
 
 pub fn handlers_unset(command_prefix: &str) -> String {
-    format!("**Unset** the agent to be used for the given purpose: `{command_prefix} config CONFIG_TYPE set-handler PURPOSE`")
+    format!(
+        "**Unset** the agent to be used for the given purpose: `{command_prefix} config CONFIG_TYPE set-handler PURPOSE`"
+    )
 }
 
 pub fn text_generation_heading() -> String {
@@ -99,7 +107,9 @@ pub fn text_generation_prefix_requirement_type_intro() -> String {
 }
 
 pub fn text_generation_prefix_requirement_type_outro(bot_username: &str) -> String {
-    format!("Regardless of the setting, the bot will always respond to **direct mentions** (e.g. `@{bot_username}`).")
+    format!(
+        "Regardless of the setting, the bot will always respond to **direct mentions** (e.g. `@{bot_username}`)."
+    )
 }
 
 pub fn text_generation_auto_usage_heading() -> &'static str {
@@ -198,6 +208,15 @@ pub fn speech_to_text_flow_type_heading() -> &'static str {
 
 pub fn speech_to_text_flow_type_intro() -> &'static str {
     "Controls how voice messages are handled."
+}
+
+pub fn speech_to_text_msg_type_for_non_threaded_only_transcribed_messages_heading() -> &'static str
+{
+    "🪄 Message Type for non-threaded only-transcribed messages"
+}
+
+pub fn speech_to_text_msg_type_for_non_threaded_only_transcribed_messages_intro() -> &'static str {
+    "Controls how the transcribed text of voice messages is sent to the chat when Flow Type = `only_transcribe`."
 }
 
 pub fn speech_to_text_language_heading() -> &'static str {

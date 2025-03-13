@@ -1,7 +1,7 @@
 use mxlink::{MatrixLink, MessageResponseType};
 
 use mxlink::matrix_sdk::ruma::{
-    events::room::message::TextMessageEventContent, OwnedEventId, OwnedUserId,
+    OwnedEventId, OwnedUserId, events::room::message::TextMessageEventContent,
 };
 
 use crate::entity::roomconfig::{
@@ -9,8 +9,8 @@ use crate::entity::roomconfig::{
 };
 
 use crate::{
-    agent::AgentPurpose, controller::utils::agent::get_effective_agent_for_purpose_or_complain,
-    entity::MessageContext, Bot,
+    Bot, agent::AgentPurpose,
+    controller::utils::agent::get_effective_agent_for_purpose_or_complain, entity::MessageContext,
 };
 
 pub(super) async fn handle(
@@ -34,7 +34,9 @@ pub(super) async fn handle(
         reacted_to_event_sender_id,
         matrix_link.user_id(),
     ) {
-        tracing::debug!("Ignoring request for on-demand text-to-speech (via reaction) due to room configuration");
+        tracing::debug!(
+            "Ignoring request for on-demand text-to-speech (via reaction) due to room configuration"
+        );
         return Ok(());
     }
 

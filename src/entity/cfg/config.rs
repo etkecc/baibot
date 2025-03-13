@@ -21,6 +21,9 @@ pub struct Config {
     #[serde(default = "super::defaults::command_prefix")]
     pub command_prefix: String,
 
+    #[serde(default)]
+    pub room: ConfigRoom,
+
     pub access: ConfigAccess,
 
     pub agents: ConfigAgents,
@@ -45,6 +48,7 @@ impl Config {
         self.homeserver.validate()?;
         self.user.validate()?;
         self.persistence.validate()?;
+        self.room.validate()?;
         self.access.validate()?;
 
         if self.command_prefix.is_empty() {
@@ -248,6 +252,27 @@ impl PersistenceConfig {
         };
 
         Ok(key)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConfigRoom {
+    #[serde(default = "super::defaults::room_post_join_self_introduction_enabled")]
+    pub post_join_self_introduction_enabled: bool,
+}
+
+impl ConfigRoom {
+    pub fn validate(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
+}
+
+impl Default for ConfigRoom {
+    fn default() -> Self {
+        Self {
+            post_join_self_introduction_enabled:
+                super::defaults::room_post_join_self_introduction_enabled(),
+        }
     }
 }
 

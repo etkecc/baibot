@@ -93,6 +93,7 @@ impl TryInto<OpenAITextGenerationConfig> for TextGenerationConfig {
             prompt: self.prompt,
             temperature: self.temperature,
             max_response_tokens: self.max_response_tokens,
+            max_completion_tokens: None,
             max_context_tokens: self.max_context_tokens,
         })
     }

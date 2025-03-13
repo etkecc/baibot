@@ -1,8 +1,8 @@
 use mxlink::MessageResponseType;
 
 use crate::{
-    entity::{MessageContext, MessagePayload},
     Bot,
+    entity::{MessageContext, MessagePayload},
 };
 
 pub mod agent;

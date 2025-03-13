@@ -2,11 +2,11 @@ use std::path::Path;
 use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 
+use mxlink::matrix_sdk::Room;
 use mxlink::matrix_sdk::media::{MediaFormat, MediaRequestParameters};
 use mxlink::matrix_sdk::ruma::{
-    events::room::MediaSource, MilliSecondsSinceUnixEpoch, OwnedUserId,
+    MilliSecondsSinceUnixEpoch, OwnedUserId, events::room::MediaSource,
 };
-use mxlink::matrix_sdk::Room;
 
 use mxlink::{
     InitConfig, LoginConfig, LoginCredentials, LoginEncryption, MatrixLink, PersistenceConfig,
@@ -164,6 +164,10 @@ impl Bot {
 
     pub(crate) fn command_prefix(&self) -> &str {
         &self.inner.config.command_prefix
+    }
+
+    pub(crate) fn post_join_self_introduction_enabled(&self) -> bool {
+        self.inner.config.room.post_join_self_introduction_enabled
     }
 
     pub(crate) fn homeserver_name(&self) -> &str {

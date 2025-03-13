@@ -3,32 +3,34 @@ pub use message_aggregator::handle;
 
 use mxlink::matrix_sdk::ruma::events::room::message::AudioMessageEventContent;
 use mxlink::matrix_sdk::ruma::OwnedEventId;
+use mxlink::matrix_sdk::ruma::events::room::message::AudioMessageEventContent;
 use mxlink::{MatrixLink, MessageResponseType};
 
 use tracing::Instrument;
 
-use crate::agent::provider::{
-    SpeechToTextParams, TextGenerationParams, TextGenerationPromptVariables,
-};
 use crate::agent::AgentInstance;
 use crate::agent::AgentPurpose;
 use crate::agent::ControllerTrait;
+use crate::agent::provider::{
+    SpeechToTextParams, TextGenerationParams, TextGenerationPromptVariables,
+};
 use crate::controller::utils::agent::get_effective_agent_for_purpose_or_complain;
 use crate::conversation::matrix::MatrixMessageProcessingParams;
-use crate::entity::roomconfig::{
-    SpeechToTextFlowType, TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
-};
 use crate::entity::MessagePayload;
 use crate::repository::Response;
+use crate::entity::roomconfig::{
+    SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
+    TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
+};
 use crate::strings;
 use crate::utils::text_to_speech::create_transcribed_message_text;
 use crate::{
+    Bot,
     conversation::{
         create_llm_conversation_for_matrix_reply_chain, create_llm_conversation_for_matrix_thread,
         matrix::create_list_of_bot_user_prefixes_to_strip,
     },
     entity::MessageContext,
-    Bot,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -75,21 +77,35 @@ pub async fn handle_message(
     if let MessagePayload::Audio(audio_content) = &message_context.payload() {
         original_message_is_audio = true;
 
-        let response_type = match speech_to_text_flow_type {
+        let (response_type, msg_type) = match speech_to_text_flow_type {
             SpeechToTextFlowType::Ignore => {
                 tracing::debug!("Intentionally ignoring audio message");
                 return Ok(());
             }
             SpeechToTextFlowType::TranscribeAndGenerateText => {
                 tracing::debug!("Will be transcribing and possibly generating text..");
-                MessageResponseType::InThread(message_context.thread_info().clone())
+                (
+                    MessageResponseType::InThread(message_context.thread_info().clone()),
+                    SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages::Notice,
+                )
             }
             SpeechToTextFlowType::OnlyTranscribe => {
                 tracing::debug!("Will only be transcribing audio to text..");
                 if message_context.thread_info().is_thread_root_only() {
-                    MessageResponseType::Reply(message_context.thread_info().root_event_id.clone())
+                    let msg_type = message_context
+                        .room_config_context()
+                        .speech_to_text_msg_type_for_non_threaded_only_transcribed_messages();
+                    (
+                        MessageResponseType::Reply(
+                            message_context.thread_info().root_event_id.clone(),
+                        ),
+                        msg_type,
+                    )
                 } else {
-                    MessageResponseType::InThread(message_context.thread_info().clone())
+                    (
+                        MessageResponseType::InThread(message_context.thread_info().clone()),
+                        SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages::Notice,
+                    )
                 }
             }
         };
@@ -98,8 +114,14 @@ pub async fn handle_message(
             _typing_notice_guard = Some(bot.start_typing_notice(message_context.room()).await);
         }
 
-        let Some(speech_to_text_created_event_id_result) =
-            handle_stage_speech_to_text(bot, message_context, audio_content, response_type).await
+        let Some(speech_to_text_created_event_id_result) = handle_stage_speech_to_text(
+            bot,
+            message_context,
+            audio_content,
+            response_type,
+            msg_type,
+        )
+        .await
         else {
             return Ok(());
         };
@@ -286,6 +308,7 @@ async fn handle_stage_speech_to_text(
     message_context: &MessageContext,
     audio_content: &AudioMessageEventContent,
     response_type: MessageResponseType,
+    msg_type: SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
 ) -> Option<OwnedEventId> {
     let agent = get_effective_agent_for_purpose_or_complain(
         bot,
@@ -306,7 +329,7 @@ async fn handle_stage_speech_to_text(
         .react_no_fail(
             message_context.room(),
             message_context.event_id().clone(),
-            AgentPurpose::SpeechToText.emoji().to_owned(),
+            strings::PROGRESS_INDICATOR_EMOJI.to_owned(),
         )
         .await;
 
@@ -316,6 +339,7 @@ async fn handle_stage_speech_to_text(
         &agent,
         audio_content,
         response_type.clone(),
+        msg_type,
     )
     .await;
 
@@ -585,6 +609,7 @@ async fn handle_stage_speech_to_text_actual_transcribing(
     agent: &AgentInstance,
     audio_content: &AudioMessageEventContent,
     response_type: MessageResponseType,
+    msg_type: SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
 ) -> anyhow::Result<OwnedEventId> {
     let src = &audio_content.source;
 
@@ -639,9 +664,6 @@ async fn handle_stage_speech_to_text_actual_transcribing(
     //
     // When sending a bare reply, we'd better annotate the message with a 🦻 reaction instead,
     // to make it clear to users that it's a transcription.
-    //
-    // Regardless of how we post this message, it will be posted as a notice,
-    // which can indicate to the bot (for potential future text-generation purposes) that this message is not a bot message.
     let (transcribed_text, annotate_message_with_reaction) =
         if let MessageResponseType::InThread(_) = response_type {
             (
@@ -652,10 +674,22 @@ async fn handle_stage_speech_to_text_actual_transcribing(
             (speech_to_text_result.text, true)
         };
 
-    let result = bot
-        .messaging()
-        .send_notice_markdown_no_fail(message_context.room(), transcribed_text, response_type)
-        .await;
+    let result = match msg_type {
+        SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages::Text => {
+            bot.messaging()
+                .send_text_markdown_no_fail(message_context.room(), transcribed_text, response_type)
+                .await
+        }
+        SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages::Notice => {
+            bot.messaging()
+                .send_notice_markdown_no_fail(
+                    message_context.room(),
+                    transcribed_text,
+                    response_type,
+                )
+                .await
+        }
+    };
 
     let event_id = result
         .map(|result| result.event_id)

@@ -6,9 +6,9 @@ text_generation:
   prompt: null
   temperature: 1.0
   # o1 models do not support max_response_tokens.
-  # They use `max_completion_tokens` as an alternative,
-  # but we don't support it yet (see https://github.com/64bit/async-openai/issues/272).
+  # They use `max_completion_tokens` as an alternative
   max_response_tokens: null
+  max_completion_tokens: 16384
   max_context_tokens: 128000
 speech_to_text:
   model_id: whisper-1

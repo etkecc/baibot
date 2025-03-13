@@ -5,7 +5,7 @@ use anyhow::anyhow;
 
 use crate::agent::AgentPurpose;
 
-pub use crate::entity::cfg::{defaults as cfg_defaults, env as cfg_env, Config};
+pub use crate::entity::cfg::{Config, defaults as cfg_defaults, env as cfg_env};
 
 pub fn load() -> anyhow::Result<Config> {
     let config_file_path = env::var(cfg_env::BAIBOT_CONFIG_FILE_PATH)
@@ -35,6 +35,9 @@ pub fn load() -> anyhow::Result<Config> {
             }
             cfg_env::BAIBOT_USER_NAME => config.user.name = value,
             cfg_env::BAIBOT_COMMAND_PREFIX => config.command_prefix = value,
+            cfg_env::BAIBOT_ROOM_POST_JOIN_SELF_INTRODUCTION_ENABLED => {
+                config.room.post_join_self_introduction_enabled = value.parse::<bool>()?;
+            }
             cfg_env::BAIBOT_LOGGING => {
                 config.logging = value;
             }

@@ -1,9 +1,9 @@
 use mxlink::{
-    matrix_sdk::{
-        ruma::events::{room::member::StrippedRoomMemberEvent, AnySyncTimelineEvent},
-        Room,
-    },
     InvitationDecision,
+    matrix_sdk::{
+        Room,
+        ruma::events::{AnySyncTimelineEvent, room::member::StrippedRoomMemberEvent},
+    },
 };
 
 use mxlink::CallbackError;

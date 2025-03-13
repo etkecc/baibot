@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  baibot-service:
+    image: salarmotevalli/baibot:latest
+    container_name: baibot-container
+    volumes:
+      - .:/app
+    command: "/app/baibot"

@@ -36,6 +36,10 @@ run-in-container *extra_args: app-container-prepare build-container-image-debug
 test *extra_args:
 	RUST_BACKTRACE=1 cargo test {{ extra_args }}
 
+# Formats the code
+fmt:
+	RUST_BACKTRACE=1 cargo fmt --all
+
 # Builds a debug binary (target/debug/*)
 build-debug *extra_args:
 	RUST_BACKTRACE=1 cargo build {{ extra_args }}

@@ -1,7 +1,7 @@
 use mxlink::MessageResponseType;
 
-use crate::entity::{roomconfig::RoomSettings, MessageContext};
-use crate::{strings, Bot};
+use crate::entity::{MessageContext, roomconfig::RoomSettings};
+use crate::{Bot, strings};
 
 pub async fn handle_set<T>(
     bot: &Bot,

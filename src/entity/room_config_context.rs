@@ -4,9 +4,9 @@ use super::globalconfig::GlobalConfig;
 use super::roomconfig::RoomConfig;
 
 use crate::entity::roomconfig::{
-    defaults as roomconfig_defaults, SpeechToTextFlowType, TextGenerationAutoUsage,
-    TextGenerationPrefixRequirementType, TextToSpeechBotMessagesFlowType,
-    TextToSpeechUserMessagesFlowType,
+    SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
+    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextToSpeechBotMessagesFlowType,
+    TextToSpeechUserMessagesFlowType, defaults as roomconfig_defaults,
 };
 
 #[derive(Debug, Clone)]
@@ -35,6 +35,24 @@ impl RoomConfigContext {
                     .flow_type
             })
             .unwrap_or(roomconfig_defaults::SPEECH_TO_TEXT_FLOW_TYPE)
+    }
+
+    pub fn speech_to_text_msg_type_for_non_threaded_only_transcribed_messages(
+        &self,
+    ) -> SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages {
+        self.room_config
+            .settings
+            .speech_to_text
+            .msg_type_for_non_threaded_only_transcribed_messages
+            .or({
+                self.global_config
+                    .fallback_room_settings
+                    .speech_to_text
+                    .msg_type_for_non_threaded_only_transcribed_messages
+            })
+            .unwrap_or(
+                roomconfig_defaults::SPEECH_TO_TEXT_ONLY_TRANSCRIBE_NON_THREADED_MESSAGE_TYPE,
+            )
     }
 
     pub fn speech_to_text_language(&self) -> Option<String> {

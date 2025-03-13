@@ -1,12 +1,12 @@
 use mxlink::matrix_sdk::{
-    ruma::{
-        events::{
-            room::message::Relation, AnySyncMessageLikeEvent, AnySyncTimelineEvent,
-            SyncMessageLikeEvent,
-        },
-        OwnedEventId, OwnedUserId,
-    },
     Room,
+    ruma::{
+        OwnedEventId, OwnedUserId,
+        events::{
+            AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
+            room::message::Relation,
+        },
+    },
 };
 
 use mxlink::CallbackError;

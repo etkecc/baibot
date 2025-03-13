@@ -70,6 +70,8 @@ pub enum TextGenerationAutoUsage {
     /// Text Generation is to be performed when the original message was sent as audio (voice).
     /// The voice message would be transcribed to text (subject to other configuration)
     /// and text generation would be triggered.
+    ///
+    /// Also see `SpeechToTextFlowType`.
     #[serde(rename = "only_for_voice")]
     OnlyForVoice,
 

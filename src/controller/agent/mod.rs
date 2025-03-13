@@ -1,4 +1,4 @@
-use crate::{entity::MessageContext, Bot};
+use crate::{Bot, entity::MessageContext};
 
 pub mod create;
 pub mod delete;
@@ -7,7 +7,7 @@ pub mod determination;
 pub mod help;
 pub mod list;
 
-pub use determination::{determine_controller, AgentControllerType};
+pub use determination::{AgentControllerType, determine_controller};
 
 pub async fn dispatch_controller(
     handler: &AgentControllerType,

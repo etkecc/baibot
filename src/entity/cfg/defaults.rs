@@ -18,6 +18,10 @@ pub(super) fn command_prefix() -> String {
     COMMAND_PREFIX.to_owned()
 }
 
+pub(super) fn room_post_join_self_introduction_enabled() -> bool {
+    true
+}
+
 pub(super) fn persistence_data_dir_path() -> Option<String> {
     None
 }

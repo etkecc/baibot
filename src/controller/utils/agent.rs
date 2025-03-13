@@ -1,16 +1,17 @@
 use mxlink::MessageResponseType;
 
 use crate::{
+    Bot,
     agent::{
-        utils::{get_effective_agent_for_purpose, AgentForPurposeDeterminationError},
         AgentInstance, AgentPurpose,
+        utils::{AgentForPurposeDeterminationError, get_effective_agent_for_purpose},
     },
     entity::MessageContext,
-    strings, Bot,
+    strings,
 };
 
-pub async fn get_effective_agent_for_purpose_or_complain<'a>(
-    bot: &'a Bot,
+pub async fn get_effective_agent_for_purpose_or_complain(
+    bot: &Bot,
     message_context: &MessageContext,
     agent_purpose: AgentPurpose,
     response_type: MessageResponseType,
