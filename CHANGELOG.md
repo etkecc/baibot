@@ -1,3 +1,7 @@
+# (2025-03-31) Version 1.5.1
+
+- (**Internal Improvement**) Dependency updates
+
 # (2025-02-27) Version 1.5.0
 
 - (**Feature**) Add support for sending Speech-to-Text replies for [Transcribe-only mode](./docs/features.md#transcribe-only-mode) as regular text messages instead of notices and doing it so by default ([a1bd292752](https://github.com/etkecc/baibot/commit/a1bd292752bdd37a196788c73d00b5619e843a78)) - improvement for [issue #14](https://github.com/etkecc/baibot/issues/14). See [🦻 Speech-to-Text / 🪄 Message Type for non-threaded only-transcribed messages](./docs/configuration/speech-to-text.md#-message-type-for-non-threaded-only-transcribed-messages) for details.
