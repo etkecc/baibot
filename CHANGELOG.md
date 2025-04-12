@@ -1,3 +1,7 @@
+# (2025-04-12) Version 1.6.0
+
+- (**Internal Improvement**) Dependency updates. This version is based on [mxlink](https://crates.io/crates/mxlink)@1.7.0 (which is based on the newly released [matrix-sdk](https://crates.io/crates/matrix-sdk)@[0.11.0](https://github.com/matrix-org/matrix-rust-sdk/releases/tag/matrix-sdk-0.11.0))
+
 # (2025-03-31) Version 1.5.1
 
 - (**Internal Improvement**) Dependency updates
