@@ -357,7 +357,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "etke_openai_api_rust",
- "matrix-sdk 0.11.0",
+ "matrix-sdk",
  "mxidwc",
  "mxlink",
  "quick_cache",
@@ -501,12 +501,6 @@ name = "bytes"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f61dac84819c6588b558454b194026eb1f09c293b9036ae9b159e74e73ab6cf9"
-
-[[package]]
-name = "bytesize"
-version = "1.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e93abca9e28e0a1b9877922aacb20576e05d4679ffa78c3d6dc22a26a216659"
 
 [[package]]
 name = "bytesize"
@@ -831,9 +825,9 @@ dependencies = [
 
 [[package]]
 name = "deadpool-sqlite"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "656f14fc1ab819c65f332045ea7cb38841bbe551f3b2bc7e3abefb559af4155c"
+checksum = "d84a12c51972a50e54895427e43743da9737af66395a609283be01ec72efd9fb"
 dependencies = [
  "deadpool",
  "deadpool-sync",
@@ -1094,24 +1088,12 @@ dependencies = [
 
 [[package]]
 name = "eyeball-im"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bce23da1ef2af356501c395426370ef09d778989557a749a874645ec74aba23"
-dependencies = [
- "futures-core",
- "imbl 4.0.1",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "eyeball-im"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43e8e9d31591be508826b875d8fe6056aebcaec3281ac0e45434ff303686c566"
 dependencies = [
  "futures-core",
- "imbl 5.0.0",
+ "imbl",
  "tokio",
  "tracing",
 ]
@@ -1178,6 +1160,12 @@ name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
+
+[[package]]
+name = "foldhash"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
 name = "foreign-types"
@@ -1419,23 +1407,23 @@ name = "hashbrown"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
-dependencies = [
- "ahash",
-]
 
 [[package]]
 name = "hashbrown"
 version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf151400ff0baff5465007dd2f3e717f3fe502074ca563069ce3a6629d07b289"
+dependencies = [
+ "foldhash",
+]
 
 [[package]]
 name = "hashlink"
-version = "0.9.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ba4ff7128dee98c7dc9794b6a411377e1404dba1c97deb8d1a55297bd25d8af"
+checksum = "7382cf6263419f2d8df38c55d7da83da5c18aef87fc7a7fc1fb1e344edfe14c1"
 dependencies = [
- "hashbrown 0.14.5",
+ "hashbrown 0.15.2",
 ]
 
 [[package]]
@@ -1818,20 +1806,6 @@ dependencies = [
 
 [[package]]
 name = "imbl"
-version = "4.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ae128b3bc67ed43ec0a7bb1c337a9f026717628b3c4033f07ded1da3e854951"
-dependencies = [
- "bitmaps",
- "imbl-sized-chunks",
- "rand_core 0.6.4",
- "rand_xoshiro 0.6.0",
- "serde",
- "version_check",
-]
-
-[[package]]
-name = "imbl"
 version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4308a675e4cfc1920f36a8f4d8fb62d5533b7da106844bd1ec51c6f1fa94a0c"
@@ -1840,7 +1814,7 @@ dependencies = [
  "bitmaps",
  "imbl-sized-chunks",
  "rand_core 0.9.2",
- "rand_xoshiro 0.7.0",
+ "rand_xoshiro",
  "serde",
  "version_check",
 ]
@@ -2018,9 +1992,9 @@ checksum = "875b3680cb2f8f71bdcf9a30f38d48282f5d3c95cbf9b3fa57269bb5d5c06828"
 
 [[package]]
 name = "libsqlite3-sys"
-version = "0.30.1"
+version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e99fb7a497b1e3339bc746195567ed8d3e24945ecd636e3619d20b9de9e9149"
+checksum = "ad8935b44e7c13394a179a438e0cebba0fe08fe01b54f152e29a93b5cf993fd4"
 dependencies = [
  "pkg-config",
  "vcpkg",
@@ -2141,58 +2115,6 @@ dependencies = [
 
 [[package]]
 name = "matrix-sdk"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e27119e566a60f5681eb8d05f51ef10862dd9af611ac6c6e0dc9aa9bf3bcc493"
-dependencies = [
- "anymap2",
- "aquamarine",
- "as_variant",
- "async-channel",
- "async-stream",
- "async-trait",
- "backoff",
- "bytes",
- "bytesize 1.3.3",
- "event-listener",
- "eyeball",
- "eyeball-im 0.6.1",
- "futures-core",
- "futures-util",
- "gloo-timers",
- "growable-bloom-filter",
- "http 1.2.0",
- "imbl 4.0.1",
- "indexmap",
- "js_int",
- "matrix-sdk-base 0.10.0",
- "matrix-sdk-common 0.10.0",
- "matrix-sdk-indexeddb",
- "matrix-sdk-sqlite",
- "mime",
- "mime2ext",
- "once_cell",
- "percent-encoding",
- "pin-project-lite",
- "reqwest 0.12.12",
- "ruma",
- "serde",
- "serde_html_form",
- "serde_json",
- "tempfile",
- "thiserror 2.0.11",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "tracing",
- "url",
- "urlencoding",
- "vodozemac",
- "zeroize",
-]
-
-[[package]]
-name = "matrix-sdk"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55232f098ff360b58b8bfc2605b995222dc4adbe0ea21bb94c220dd5f9a6dc54"
@@ -2205,21 +2127,23 @@ dependencies = [
  "async-trait",
  "backon",
  "bytes",
- "bytesize 2.0.1",
+ "bytesize",
  "event-listener",
  "eyeball",
- "eyeball-im 0.7.0",
+ "eyeball-im",
  "futures-core",
  "futures-util",
  "gloo-timers",
  "growable-bloom-filter",
  "http 1.2.0",
- "imbl 5.0.0",
+ "imbl",
  "indexmap",
  "js_int",
  "language-tags",
- "matrix-sdk-base 0.11.0",
- "matrix-sdk-common 0.11.0",
+ "matrix-sdk-base",
+ "matrix-sdk-common",
+ "matrix-sdk-indexeddb",
+ "matrix-sdk-sqlite",
  "mime",
  "mime2ext",
  "oauth2",
@@ -2246,34 +2170,6 @@ dependencies = [
 
 [[package]]
 name = "matrix-sdk-base"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58884b338e0c2eb4aa09d63ba2a5937fb5bd691525884f09935900137fc6b908"
-dependencies = [
- "as_variant",
- "async-trait",
- "bitflags 2.9.0",
- "decancer",
- "eyeball",
- "eyeball-im 0.6.1",
- "futures-util",
- "growable-bloom-filter",
- "matrix-sdk-common 0.10.0",
- "matrix-sdk-crypto",
- "matrix-sdk-store-encryption 0.10.0",
- "once_cell",
- "regex",
- "ruma",
- "serde",
- "serde_json",
- "thiserror 2.0.11",
- "tokio",
- "tracing",
- "unicode-normalization",
-]
-
-[[package]]
-name = "matrix-sdk-base"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe69467f921319733354fa5d5fb47a4e147e645c929d62519da7928cd6d203a9"
@@ -2283,11 +2179,12 @@ dependencies = [
  "bitflags 2.9.0",
  "decancer",
  "eyeball",
- "eyeball-im 0.7.0",
+ "eyeball-im",
  "futures-util",
  "growable-bloom-filter",
- "matrix-sdk-common 0.11.0",
- "matrix-sdk-store-encryption 0.11.0",
+ "matrix-sdk-common",
+ "matrix-sdk-crypto",
+ "matrix-sdk-store-encryption",
  "once_cell",
  "regex",
  "ruma",
@@ -2301,16 +2198,16 @@ dependencies = [
 
 [[package]]
 name = "matrix-sdk-common"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "072d77e461933834e12810d63906409f37a039acad31a16dda62b63e1f4c31cf"
+checksum = "75aa988a96e4a85e2b854f4f6487d31f1833e8abf3eebc1b8c13274a68dacf45"
 dependencies = [
  "async-trait",
- "eyeball-im 0.6.1",
+ "eyeball-im",
  "futures-core",
  "futures-util",
  "gloo-timers",
- "imbl 4.0.1",
+ "imbl",
  "ruma",
  "serde",
  "serde_json",
@@ -2324,33 +2221,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "matrix-sdk-common"
+name = "matrix-sdk-crypto"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75aa988a96e4a85e2b854f4f6487d31f1833e8abf3eebc1b8c13274a68dacf45"
-dependencies = [
- "async-trait",
- "eyeball-im 0.7.0",
- "futures-core",
- "futures-util",
- "gloo-timers",
- "imbl 5.0.0",
- "ruma",
- "serde",
- "serde_json",
- "thiserror 2.0.11",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
-name = "matrix-sdk-crypto"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed1ec9d645eb86630b2ed71e5890565ca023f569d9d0ebdcb25bfca8a088c2f3"
+checksum = "fe2a8a811f9809f37c360f7005350e76661cb2bed2624b87b8d772c444bf572a"
 dependencies = [
  "aes",
  "aquamarine",
@@ -2367,7 +2241,7 @@ dependencies = [
  "hmac",
  "itertools 0.14.0",
  "js_option",
- "matrix-sdk-common 0.10.0",
+ "matrix-sdk-common",
  "pbkdf2",
  "rand 0.8.5",
  "rmp-serde",
@@ -2389,9 +2263,9 @@ dependencies = [
 
 [[package]]
 name = "matrix-sdk-indexeddb"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da30f51dbfcd03297a04f49f92c365a41cb2b012ad3338c0fc5d4efafcbff88b"
+checksum = "63da8893fc9062f4b7874f766fd5dcf048f8ea456b08ba89320cc68926b1112e"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2402,7 +2276,7 @@ dependencies = [
  "indexed_db_futures",
  "js-sys",
  "matrix-sdk-crypto",
- "matrix-sdk-store-encryption 0.10.0",
+ "matrix-sdk-store-encryption",
  "ruma",
  "serde",
  "serde-wasm-bindgen",
@@ -2418,16 +2292,17 @@ dependencies = [
 
 [[package]]
 name = "matrix-sdk-sqlite"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74d07fb4e87c6ace1d05a87a91404acc3fd0b480ba9de75c08685ed18f1ea79f"
+checksum = "ddbf4f588b93ad08b760d3e51b046c4701dd7d900e75582d87c99d606e23e4b8"
 dependencies = [
  "async-trait",
  "deadpool-sqlite",
  "itertools 0.14.0",
- "matrix-sdk-base 0.10.0",
+ "matrix-sdk-base",
  "matrix-sdk-crypto",
- "matrix-sdk-store-encryption 0.10.0",
+ "matrix-sdk-store-encryption",
+ "num_cpus",
  "rmp-serde",
  "ruma",
  "rusqlite",
@@ -2437,26 +2312,6 @@ dependencies = [
  "tokio",
  "tracing",
  "vodozemac",
-]
-
-[[package]]
-name = "matrix-sdk-store-encryption"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcc8b6650757f953664e5f906988690cef05c09d83081946adce446c45810a2d"
-dependencies = [
- "base64 0.22.1",
- "blake3",
- "chacha20poly1305",
- "hmac",
- "pbkdf2",
- "rand 0.8.5",
- "rmp-serde",
- "serde",
- "serde_json",
- "sha2",
- "thiserror 2.0.11",
- "zeroize",
 ]
 
 [[package]]
@@ -2544,14 +2399,14 @@ dependencies = [
 
 [[package]]
 name = "mxlink"
-version = "1.6.1"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32831d33af51b33a86f18cc052536ea6310754cb8e624cefdd7780930c4b1f16"
+checksum = "9e15b49fa2584bcd4eb431b964b026030c5a581b4369623dc84a430ea86498be"
 dependencies = [
  "base64 0.22.1",
  "chacha20poly1305",
  "hex",
- "matrix-sdk 0.10.0",
+ "matrix-sdk",
  "mime",
  "quick_cache",
  "rand 0.9.0",
@@ -3042,15 +2897,6 @@ dependencies = [
 
 [[package]]
 name = "rand_xoshiro"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f97cdb2a36ed4183de61b2f824cc45c9f1037f28afe0a322e9fff4c108b5aaa"
-dependencies = [
- "rand_core 0.6.4",
-]
-
-[[package]]
-name = "rand_xoshiro"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f703f4665700daf5512dcca5f43afa6af89f09db47fb56be587f80636bda2d41"
@@ -3441,9 +3287,9 @@ dependencies = [
 
 [[package]]
 name = "rusqlite"
-version = "0.32.1"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7753b721174eb8ff87a9a0e799e2d7bc3749323e773db92e0984debb00019d6e"
+checksum = "1c6d5e5acb6f6129fe3f7ba0a7fc77bca1942cb568535e18e7bc40262baf3110"
 dependencies = [
  "bitflags 2.9.0",
  "fallible-iterator",
