@@ -64,11 +64,37 @@ pub async fn handle_image(
         agent_id = agent.identifier().as_string()
     );
 
-    let response = agent
+    let result = agent
         .controller()
         .generate_image(&prompt, ImageGenerationParams::default())
         .instrument(span)
-        .await?;
+        .await;
+
+    let response = match result {
+        Ok(response) => response,
+        Err(err) => {
+            tracing::warn!(
+                "Error in room {} while trying to generate image via agent {}: {:?}",
+                message_context.room_id(),
+                agent.identifier(),
+                err,
+            );
+
+            bot.messaging()
+                .send_error_markdown_no_fail(
+                    message_context.room(),
+                    &strings::agent::error_while_serving_purpose(
+                        agent.identifier(),
+                        &AgentPurpose::ImageGeneration,
+                        &err,
+                    ),
+                    response_type,
+                )
+                .await;
+
+            return Ok(());
+        }
+    };
 
     let actual_prompt = response.revised_prompt.as_deref().unwrap_or(&prompt);
 
@@ -155,11 +181,37 @@ pub async fn handle_sticker(
         .with_cheaper_model_switching_allowed(true)
         .with_cheaper_quality_switching_allowed(true);
 
-    let response = agent
+    let result = agent
         .controller()
         .generate_image(original_prompt, params)
         .instrument(span)
-        .await?;
+        .await;
+
+    let response = match result {
+        Ok(response) => response,
+        Err(err) => {
+            tracing::warn!(
+                "Error in room {} while trying to generate sticker via agent {}: {:?}",
+                message_context.room_id(),
+                agent.identifier(),
+                err,
+            );
+
+            bot.messaging()
+                .send_error_markdown_no_fail(
+                    message_context.room(),
+                    &strings::agent::error_while_serving_purpose(
+                        agent.identifier(),
+                        &AgentPurpose::ImageGeneration,
+                        &err,
+                    ),
+                    response_type,
+                )
+                .await;
+
+            return Ok(());
+        }
+    };
 
     let attachment_body_text = format!(
         "generated-sticker.{}",
