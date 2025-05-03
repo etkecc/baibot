@@ -36,6 +36,8 @@ use crate::{
 
 use super::config::Config;
 
+use super::OPENAI_IMAGE_MODEL_GPT_IMAGE_1;
+
 #[derive(Debug, Clone)]
 pub struct Controller {
     config: Config,
@@ -291,6 +293,7 @@ impl ControllerTrait for Controller {
             async_openai::types::ImageModel::DallE2 => Some(async_openai::types::ImageResponseFormat::B64Json),
             async_openai::types::ImageModel::DallE3 => Some(async_openai::types::ImageResponseFormat::B64Json),
             async_openai::types::ImageModel::Other(model_str) => match model_str.as_str() {
+                OPENAI_IMAGE_MODEL_GPT_IMAGE_1 => None,
                 _ => Some(async_openai::types::ImageResponseFormat::B64Json),
             },
         };
