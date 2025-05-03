@@ -79,7 +79,7 @@ impl Default for TextGenerationConfig {
 }
 
 fn default_text_model_id() -> String {
-    "gpt-4o".to_owned()
+    "gpt-4.1".to_owned()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
