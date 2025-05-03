@@ -230,15 +230,15 @@ impl TryInto<OpenAIImageGenerationConfig> for ImageGenerationConfig {
         };
 
         let style = if let Some(style) = &self.style {
-            convert_string_to_enum::<async_openai::types::ImageStyle>(style)?
+            Some(convert_string_to_enum::<async_openai::types::ImageStyle>(style)?)
         } else {
-            async_openai::types::ImageStyle::Vivid
+            None
         };
 
         let quality = if let Some(quality) = &self.quality {
-            convert_string_to_enum::<async_openai::types::ImageQuality>(quality)?
+            Some(convert_string_to_enum::<async_openai::types::ImageQuality>(quality)?)
         } else {
-            async_openai::types::ImageQuality::Standard
+            None
         };
 
         Ok(OpenAIImageGenerationConfig {

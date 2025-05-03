@@ -265,12 +265,15 @@ impl ControllerTrait for Controller {
         let quality = if params.cheaper_quality_switching_allowed {
             // Switch to a cheaper quality
             match &image_generation_config.quality {
-                async_openai::types::ImageQuality::Standard => {
-                    async_openai::types::ImageQuality::Standard
+                Some(quality) => match quality {
+                    async_openai::types::ImageQuality::Standard => {
+                        Some(async_openai::types::ImageQuality::Standard)
+                    }
+                    async_openai::types::ImageQuality::HD => {
+                        Some(async_openai::types::ImageQuality::Standard)
+                    }
                 }
-                async_openai::types::ImageQuality::HD => {
-                    async_openai::types::ImageQuality::Standard
-                }
+                None => None
             }
         } else {
             image_generation_config.quality.clone()
@@ -284,14 +287,34 @@ impl ControllerTrait for Controller {
             })
             .unwrap_or(image_generation_config.size);
 
-        let request = CreateImageRequestArgs::default()
+        let response_format = match model.clone() {
+            async_openai::types::ImageModel::DallE2 => Some(async_openai::types::ImageResponseFormat::B64Json),
+            async_openai::types::ImageModel::DallE3 => Some(async_openai::types::ImageResponseFormat::B64Json),
+            async_openai::types::ImageModel::Other(model_str) => match model_str.as_str() {
+                _ => Some(async_openai::types::ImageResponseFormat::B64Json),
+            },
+        };
+
+        let mut request_builder = CreateImageRequestArgs::default();
+
+        request_builder
             .model(model)
             .prompt(prompt.to_owned())
-            .response_format(async_openai::types::ImageResponseFormat::B64Json)
-            .size(size)
-            .style(image_generation_config.style.clone())
-            .quality(quality)
-            .build()?;
+            .size(size);
+
+        if let Some(response_format) = response_format {
+            request_builder.response_format(response_format);
+        }
+
+        if let Some(style) = &image_generation_config.style {
+            request_builder.style(style.clone());
+        }
+
+        if let Some(quality) = quality {
+            request_builder.quality(quality.clone());
+        }
+
+        let request = request_builder.build()?;
 
         tracing::trace!(
             ?prompt,
