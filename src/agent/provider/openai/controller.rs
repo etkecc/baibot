@@ -6,7 +6,7 @@ use async_openai::{
     types::{
         ChatCompletionRequestMessage, CreateChatCompletionRequestArgs, CreateImageRequestArgs,
         CreateSpeechRequestArgs, CreateTranscriptionRequestArgs, CreateImageEditRequestArgs,
-        ImageInput, ImageModel, DallE2ImageSize, ImageResponseFormat, Image,
+        ImageModel, DallE2ImageSize, ImageResponseFormat, Image,
     },
 };
 
@@ -209,6 +209,7 @@ impl ControllerTrait for Controller {
             .file(async_openai::types::AudioInput::from_vec_u8(
                 filename,
                 media,
+                mime_type.to_string(),
             ))
             .language(language.clone())
             .build()?;
@@ -368,11 +369,14 @@ impl ControllerTrait for Controller {
             ));
         };
 
-        let Some(first_image) = images.into_iter().next() else {
+        if images.is_empty() {
             return Err(anyhow::anyhow!("No image sources provided"));
-        };
+        }
 
-        let image_input: ImageInput = first_image.into();
+        let mut image_inputs = Vec::new();
+        for image in images {
+            image_inputs.push(image.into());
+        }
 
         let dalle2_size = match image_generation_config.size {
             async_openai::types::ImageSize::S256x256 => Some(DallE2ImageSize::S256x256),
@@ -397,7 +401,7 @@ impl ControllerTrait for Controller {
         let mut request_builder = CreateImageEditRequestArgs::default();
 
         request_builder
-            .image(image_input)
+            .image(image_inputs)
             .prompt(prompt.to_owned())
             .model(model);
 
