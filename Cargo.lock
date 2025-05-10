@@ -90,8 +90,7 @@ dependencies = [
 [[package]]
 name = "anthropic"
 version = "0.0.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "092086afb8afa8a2bf24820213e22a57662eace03bd6b3c2680f6baf022ef6ba"
+source = "git+https://github.com/etkecc/anthropic-rs.git?branch=fix-content-block-image#58d8492450304ca9c4d0fdbfd023668231862d2c"
 dependencies = [
  "backoff",
  "config",

@@ -176,15 +176,8 @@ impl ControllerTrait for Controller {
                 ContentBlock::Text { text } => {
                     text_parts.push(text);
                 }
-                ContentBlock::Image {
-                    source,
-                    media_type,
-                    data: _,
-                } => {
-                    text_parts.push(format!(
-                        "The model responded with an image of type {}: {}",
-                        media_type, source
-                    ));
+                ContentBlock::Image { .. } => {
+                    text_parts.push("The model responded with an image".to_string());
                 }
             }
         }
