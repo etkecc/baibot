@@ -7,7 +7,8 @@ use super::super::ControllerTrait;
 use crate::utils::base64::base64_decode;
 use crate::{
     agent::provider::{
-        ImageGenerationParams, ImageEditParams, ImageSource, SpeechToTextParams, SpeechToTextResult,
+        ImageEditParams, ImageGenerationParams, ImageSource, SpeechToTextParams,
+        SpeechToTextResult,
         entity::{TextGenerationParams, TextGenerationResult},
     },
     conversation::llm::{
@@ -19,7 +20,7 @@ use crate::{
     agent::{
         AgentPurpose,
         provider::entity::{
-            ImageGenerationResult, ImageEditResult, PingResult, TextToSpeechParams,
+            ImageEditResult, ImageGenerationResult, PingResult, TextToSpeechParams,
             TextToSpeechResult,
         },
     },

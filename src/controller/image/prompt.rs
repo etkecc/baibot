@@ -29,9 +29,7 @@ pub fn build(original_prompt: &str, other_messages: Vec<Message>) -> String {
         prompt.push_str("\nOther criteria:");
         for message in other_messages {
             if let MessageContent::Text(text) = &message.content {
-                prompt.push_str(
-                    format!("\n- {}", text.replace("\n", ". ").as_str()).as_str(),
-                );
+                prompt.push_str(format!("\n- {}", text.replace("\n", ". ").as_str()).as_str());
             }
         }
     }
@@ -87,7 +85,9 @@ mod tests {
                     },
                     Message {
                         author: Author::User,
-                        content: MessageContent::Text("Must be 3-legged.\nMust be flying.".to_owned()),
+                        content: MessageContent::Text(
+                            "Must be 3-legged.\nMust be flying.".to_owned(),
+                        ),
                         timestamp,
                     },
                 ],

@@ -33,7 +33,8 @@ pub async fn create_llm_conversation_for_matrix_reply_chain(
     event_id: OwnedEventId,
     params: &MatrixMessageProcessingParams,
 ) -> Result<Conversation, mxlink::matrix_sdk::Error> {
-    let messages = get_matrix_messages_in_reply_chain(matrix_link, event_fetcher, room, event_id).await?;
+    let messages =
+        get_matrix_messages_in_reply_chain(matrix_link, event_fetcher, room, event_id).await?;
 
     let llm_messages = filter_messages_and_convert_to_llm_messages(messages, params).await;
 

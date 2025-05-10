@@ -78,13 +78,8 @@ pub async fn dispatch_controller(
             .await
         }
         ControllerType::ImageEdit(prompt) => {
-            super::image::edit::handle(
-                bot,
-                bot.matrix_link().clone(),
-                message_context,
-                prompt,
-            )
-            .await
+            super::image::edit::handle(bot, bot.matrix_link().clone(), message_context, prompt)
+                .await
         }
         ControllerType::StickerGeneration(prompt) => {
             super::image::generation::handle_sticker(

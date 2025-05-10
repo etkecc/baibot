@@ -27,11 +27,18 @@ pub struct ImageDetails {
 
 impl ImageDetails {
     pub fn new(event_content: ImageMessageEventContent, mime: Mime, data: Vec<u8>) -> Self {
-        Self { event_content, mime, data }
+        Self {
+            event_content,
+            mime,
+            data,
+        }
     }
 
     pub fn filename(&self) -> String {
-        self.event_content.filename.clone().unwrap_or(self.event_content.body.clone())
+        self.event_content
+            .filename
+            .clone()
+            .unwrap_or(self.event_content.body.clone())
     }
 }
 
@@ -54,7 +61,7 @@ impl PartialEq for MessageContent {
             (MessageContent::Image(a), MessageContent::Image(b)) => {
                 // We can probably do better than this by inspecting `.event_conten1t.source`, but for now this is good enough.
                 a.filename() == b.filename()
-            },
+            }
             _ => false,
         }
     }

@@ -4,26 +4,16 @@ use async_openai::{
     Client as OpenAIClient,
     config::OpenAIConfig,
     types::{
-        ChatCompletionRequestMessage, CreateChatCompletionRequestArgs, CreateImageRequestArgs,
-        CreateSpeechRequestArgs, CreateTranscriptionRequestArgs, CreateImageEditRequestArgs,
-        ImageModel, DallE2ImageSize, ImageResponseFormat, Image,
+        ChatCompletionRequestMessage, CreateChatCompletionRequestArgs, CreateImageEditRequestArgs,
+        CreateImageRequestArgs, CreateSpeechRequestArgs, CreateTranscriptionRequestArgs,
+        DallE2ImageSize, Image, ImageModel, ImageResponseFormat,
     },
 };
 
 use super::super::ControllerTrait;
 use crate::{
-    agent::{
-        AgentPurpose,
-        provider::{
-            entity::{ImageGenerationResult, ImageEditResult, ImageSource, PingResult, TextToSpeechParams, TextToSpeechResult},
-            openai::utils::convert_string_to_enum,
-        },
-    },
-    strings,
-};
-use crate::{
     agent::provider::{
-        ImageGenerationParams, ImageEditParams, SpeechToTextParams, SpeechToTextResult,
+        ImageEditParams, ImageGenerationParams, SpeechToTextParams, SpeechToTextResult,
         entity::{TextGenerationParams, TextGenerationResult},
     },
     conversation::llm::{
@@ -31,6 +21,19 @@ use crate::{
         MessageContent as LLMMessageContent, shorten_messages_list_to_context_size,
     },
     utils::base64::base64_decode,
+};
+use crate::{
+    agent::{
+        AgentPurpose,
+        provider::{
+            entity::{
+                ImageEditResult, ImageGenerationResult, ImageSource, PingResult,
+                TextToSpeechParams, TextToSpeechResult,
+            },
+            openai::utils::convert_string_to_enum,
+        },
+    },
+    strings,
 };
 
 use super::config::Config;
@@ -272,8 +275,8 @@ impl ControllerTrait for Controller {
                     async_openai::types::ImageQuality::HD => {
                         Some(async_openai::types::ImageQuality::Standard)
                     }
-                }
-                None => None
+                },
+                None => None,
             }
         } else {
             image_generation_config.quality.clone()
@@ -390,8 +393,12 @@ impl ControllerTrait for Controller {
             .map_err(|err| anyhow::anyhow!(err))?;
 
         let response_format = match model.clone() {
-            async_openai::types::ImageModel::DallE2 => Some(async_openai::types::ImageResponseFormat::B64Json),
-            async_openai::types::ImageModel::DallE3 => Some(async_openai::types::ImageResponseFormat::B64Json),
+            async_openai::types::ImageModel::DallE2 => {
+                Some(async_openai::types::ImageResponseFormat::B64Json)
+            }
+            async_openai::types::ImageModel::DallE3 => {
+                Some(async_openai::types::ImageResponseFormat::B64Json)
+            }
             async_openai::types::ImageModel::Other(model_str) => match model_str.as_str() {
                 OPENAI_IMAGE_MODEL_GPT_IMAGE_1 => None,
                 _ => Some(async_openai::types::ImageResponseFormat::B64Json),
@@ -413,7 +420,8 @@ impl ControllerTrait for Controller {
             request_builder.response_format(response_format);
         }
 
-        let request = request_builder.build()
+        let request = request_builder
+            .build()
             .map_err(|e| anyhow::anyhow!("Failed to build CreateImageEditRequest: {}", e))?;
 
         tracing::trace!(

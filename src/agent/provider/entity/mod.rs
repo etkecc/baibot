@@ -6,7 +6,9 @@ mod text_generation;
 mod text_to_speech;
 
 pub use agent_provider::{AgentProvider, AgentProviderInfo};
-pub use image::{ImageGenerationParams, ImageGenerationResult, ImageEditParams, ImageEditResult, ImageSource};
+pub use image::{
+    ImageEditParams, ImageEditResult, ImageGenerationParams, ImageGenerationResult, ImageSource,
+};
 pub use ping::PingResult;
 pub use speech_to_text::{SpeechToTextParams, SpeechToTextResult};
 pub use text_generation::{

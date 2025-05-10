@@ -20,11 +20,15 @@ fn test_messages_by_the_bot_are_identified_correctly() {
     let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
 
     assert_eq!(llm_message.author, Author::Assistant);
-    assert_eq!(llm_message.content, MessageContent::Text("Hello!".to_string()));
+    assert_eq!(
+        llm_message.content,
+        MessageContent::Text("Hello!".to_string())
+    );
 }
 
 #[test]
-fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_considered_sent_by_user() {
+fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_considered_sent_by_user()
+ {
     let bot_user_id =
         OwnedUserId::try_from("@bot:example.com").expect("Failed to parse bot user ID");
 
@@ -43,7 +47,10 @@ fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_con
     let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
 
     assert_eq!(llm_message.author, Author::User);
-    assert_eq!(llm_message.content, MessageContent::Text(source_message_text.to_string()));
+    assert_eq!(
+        llm_message.content,
+        MessageContent::Text(source_message_text.to_string())
+    );
 }
 
 #[test]

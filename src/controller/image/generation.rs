@@ -6,10 +6,10 @@ use crate::agent::AgentPurpose;
 use crate::agent::ControllerTrait;
 use crate::agent::provider::ImageGenerationParams;
 use crate::controller::utils::agent::get_effective_agent_for_purpose_or_complain;
-use crate::utils::mime::get_file_extension;
 use crate::conversation::create_llm_conversation_for_matrix_thread;
 use crate::conversation::matrix::MatrixMessageProcessingParams;
 use crate::strings;
+use crate::utils::mime::get_file_extension;
 use crate::{Bot, entity::MessageContext};
 
 // We may make this configurable (per room, etc.) in the future, but for now it's hardcoded.

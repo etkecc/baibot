@@ -1,9 +1,7 @@
 use crate::controller::ControllerType;
 mod tests;
 
-pub fn determine_controller(
-    text: &str,
-) -> ControllerType {
+pub fn determine_controller(text: &str) -> ControllerType {
     let text = text.trim();
 
     if let Some(prompt) = text.strip_prefix("create") {

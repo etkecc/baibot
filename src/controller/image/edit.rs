@@ -2,15 +2,15 @@ use mxlink::{MatrixLink, MessageResponseType};
 
 use tracing::Instrument;
 
-use crate::agent::provider::ImageSource;
 use crate::agent::AgentPurpose;
 use crate::agent::ControllerTrait;
 use crate::agent::provider::ImageEditParams;
+use crate::agent::provider::ImageSource;
 use crate::controller::utils::agent::get_effective_agent_for_purpose_or_complain;
-use crate::utils::mime::get_file_extension;
 use crate::conversation::create_llm_conversation_for_matrix_thread;
 use crate::conversation::matrix::MatrixMessageProcessingParams;
 use crate::strings;
+use crate::utils::mime::get_file_extension;
 use crate::{Bot, entity::MessageContext};
 
 pub async fn handle(
@@ -69,23 +69,25 @@ pub async fn handle(
         }
     });
 
-    let image_sources: Vec<ImageSource> = conversation.messages.iter().filter_map(|message| {
-        if let crate::conversation::llm::MessageContent::Image(image_content) = &message.content {
-            Some(image_content.clone().into())
-        } else {
-            None
-        }
-    }).collect();
+    let image_sources: Vec<ImageSource> = conversation
+        .messages
+        .iter()
+        .filter_map(|message| {
+            if let crate::conversation::llm::MessageContent::Image(image_content) = &message.content
+            {
+                Some(image_content.clone().into())
+            } else {
+                None
+            }
+        })
+        .collect();
 
     if !got_go_signal || image_sources.is_empty() {
         // We don't send the guide again here to avoid being annoying.
         return Ok(());
     }
 
-    let span = tracing::debug_span!(
-        "image_edit",
-        agent_id = agent.identifier().as_string()
-    );
+    let span = tracing::debug_span!("image_edit", agent_id = agent.identifier().as_string());
 
     let result = agent
         .controller()
@@ -147,10 +149,7 @@ pub async fn handle(
     Ok(())
 }
 
-async fn send_guide(
-    bot: &Bot,
-    message_context: &MessageContext,
-) -> anyhow::Result<()> {
+async fn send_guide(bot: &Bot, message_context: &MessageContext) -> anyhow::Result<()> {
     bot.messaging()
         .send_text_markdown_no_fail(
             message_context.room(),

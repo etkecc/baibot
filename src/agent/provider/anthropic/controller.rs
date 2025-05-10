@@ -7,15 +7,15 @@ use anthropic::types::ContentBlock;
 use super::super::ControllerTrait;
 use crate::agent::AgentPurpose;
 use crate::agent::provider::entity::{
-    ImageGenerationResult, ImageEditResult, ImageSource, PingResult, TextGenerationParams,
+    ImageEditResult, ImageGenerationResult, ImageSource, PingResult, TextGenerationParams,
     TextGenerationResult, TextToSpeechParams, TextToSpeechResult,
 };
 use crate::agent::provider::{
-    ImageGenerationParams, ImageEditParams, SpeechToTextParams, SpeechToTextResult,
+    ImageEditParams, ImageGenerationParams, SpeechToTextParams, SpeechToTextResult,
 };
 use crate::conversation::llm::{
-    Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage, MessageContent as LLMMessageContent,
-    shorten_messages_list_to_context_size,
+    Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
+    MessageContent as LLMMessageContent, shorten_messages_list_to_context_size,
 };
 use crate::strings;
 

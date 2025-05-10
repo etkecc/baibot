@@ -1,9 +1,9 @@
 use crate::{agent::AgentPurpose, conversation::llm::Conversation};
 
 use super::{
-    ImageGenerationParams, ImageEditParams, SpeechToTextParams, SpeechToTextResult,
+    ImageEditParams, ImageGenerationParams, SpeechToTextParams, SpeechToTextResult,
     entity::{
-        ImageGenerationResult, ImageEditResult, ImageSource, PingResult, TextGenerationParams,
+        ImageEditResult, ImageGenerationResult, ImageSource, PingResult, TextGenerationParams,
         TextGenerationResult, TextToSpeechParams, TextToSpeechResult,
     },
 };
@@ -180,7 +180,9 @@ impl ControllerTrait for ControllerType {
         params: ImageEditParams,
     ) -> anyhow::Result<ImageEditResult> {
         match &self {
-            ControllerType::OpenAI(controller) => controller.create_image_edit(prompt, images, params).await,
+            ControllerType::OpenAI(controller) => {
+                controller.create_image_edit(prompt, images, params).await
+            }
             ControllerType::OpenAICompat(controller) => {
                 controller.create_image_edit(prompt, images, params).await
             }

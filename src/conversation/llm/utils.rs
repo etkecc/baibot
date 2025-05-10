@@ -23,17 +23,15 @@ fn convert_bot_message(matrix_message: &MatrixMessage) -> Option<Message> {
         MatrixMessageContent::Notice(text) => {
             convert_bot_notice_message(text, &matrix_message.timestamp)
         }
-        MatrixMessageContent::Image(image_content, mime_type, media_bytes) => {
-            Some(Message {
-                author: Author::Assistant,
-                content: MessageContent::Image(ImageDetails::new(
-                    image_content.clone(),
-                    mime_type.clone(),
-                    media_bytes.clone()
-                )),
-                timestamp: matrix_message.timestamp.to_owned(),
-            })
-        }
+        MatrixMessageContent::Image(image_content, mime_type, media_bytes) => Some(Message {
+            author: Author::Assistant,
+            content: MessageContent::Image(ImageDetails::new(
+                image_content.clone(),
+                mime_type.clone(),
+                media_bytes.clone(),
+            )),
+            timestamp: matrix_message.timestamp.to_owned(),
+        }),
     }
 }
 
@@ -73,30 +71,24 @@ fn convert_bot_notice_message(
 
 fn convert_user_message(matrix_message: &MatrixMessage) -> Option<Message> {
     match &matrix_message.content {
-        MatrixMessageContent::Text(text) => {
-            Some(Message {
-                author: Author::User,
-                content: MessageContent::Text(text.clone()),
-                timestamp: matrix_message.timestamp.to_owned(),
-            })
-        }
-        MatrixMessageContent::Notice(text) => {
-            Some(Message {
-                author: Author::User,
-                content: MessageContent::Text(text.clone()),
-                timestamp: matrix_message.timestamp.to_owned(),
-            })
-        }
-        MatrixMessageContent::Image(image_content, mime_type, media_bytes) => {
-            Some(Message {
-                author: Author::User,
-                content: MessageContent::Image(ImageDetails::new(
-                    image_content.clone(),
-                    mime_type.clone(),
-                    media_bytes.clone(),
-                )),
-                timestamp: matrix_message.timestamp.to_owned(),
-            })
-        }
+        MatrixMessageContent::Text(text) => Some(Message {
+            author: Author::User,
+            content: MessageContent::Text(text.clone()),
+            timestamp: matrix_message.timestamp.to_owned(),
+        }),
+        MatrixMessageContent::Notice(text) => Some(Message {
+            author: Author::User,
+            content: MessageContent::Text(text.clone()),
+            timestamp: matrix_message.timestamp.to_owned(),
+        }),
+        MatrixMessageContent::Image(image_content, mime_type, media_bytes) => Some(Message {
+            author: Author::User,
+            content: MessageContent::Image(ImageDetails::new(
+                image_content.clone(),
+                mime_type.clone(),
+                media_bytes.clone(),
+            )),
+            timestamp: matrix_message.timestamp.to_owned(),
+        }),
     }
 }

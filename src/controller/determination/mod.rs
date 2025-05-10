@@ -42,9 +42,7 @@ pub fn determine_controller(
                 .text_generation_prefix_requirement_type();
 
             match prefix_requirement_type {
-                TextGenerationPrefixRequirementType::CommandPrefix => {
-                    ControllerType::Ignore
-                }
+                TextGenerationPrefixRequirementType::CommandPrefix => ControllerType::Ignore,
                 TextGenerationPrefixRequirementType::No => {
                     ControllerType::ChatCompletion(ChatCompletionControllerType::Image)
                 }

@@ -20,6 +20,7 @@ pub use controller::{ControllerTrait, ControllerType};
 pub use config::ConfigTrait;
 
 pub use entity::{
-    AgentProvider, AgentProviderInfo, ImageGenerationParams, ImageEditParams, ImageSource, PingResult, SpeechToTextParams,
-    SpeechToTextResult, TextGenerationParams, TextGenerationPromptVariables, TextToSpeechParams,
+    AgentProvider, AgentProviderInfo, ImageEditParams, ImageGenerationParams, ImageSource,
+    PingResult, SpeechToTextParams, SpeechToTextResult, TextGenerationParams,
+    TextGenerationPromptVariables, TextToSpeechParams,
 };

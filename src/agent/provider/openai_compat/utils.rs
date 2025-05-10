@@ -2,7 +2,9 @@ use etke_openai_api_rust::{Message, Role};
 
 use crate::agent::provider::openai::Config as OpenAIConfig;
 
-use crate::conversation::llm::{Author as LLMAuthor, Message as LLMMessage, MessageContent as LLMMessageContent};
+use crate::conversation::llm::{
+    Author as LLMAuthor, Message as LLMMessage, MessageContent as LLMMessageContent,
+};
 
 pub fn convert_llm_messages_to_openai_messages(
     conversation_messages: Vec<LLMMessage>,
@@ -28,16 +30,16 @@ fn convert_llm_message_to_openai_message(llm_message: LLMMessage) -> Option<Mess
     };
 
     match &llm_message.content {
-        LLMMessageContent::Text(text) => {
-            Some(Message {
-                role,
-                content: text.clone(),
-            })
-        },
+        LLMMessageContent::Text(text) => Some(Message {
+            role,
+            content: text.clone(),
+        }),
         LLMMessageContent::Image(_image_details) => {
-            tracing::warn!("The OpenAI-compat provider's library does not support image content. This image message will be skipped.");
+            tracing::warn!(
+                "The OpenAI-compat provider's library does not support image content. This image message will be skipped."
+            );
             None
-        },
+        }
     }
 }
 

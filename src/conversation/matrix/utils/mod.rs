@@ -42,7 +42,9 @@ pub async fn get_matrix_messages_in_thread(
     let mut messages: Vec<MatrixMessage> = Vec::new();
 
     for matrix_native_message in messages_native {
-        let message_result = convert_matrix_native_event_to_matrix_message(matrix_link, &matrix_native_message).await?;
+        let message_result =
+            convert_matrix_native_event_to_matrix_message(matrix_link, &matrix_native_message)
+                .await?;
 
         if let Some(message) = message_result {
             messages.push(message);
@@ -64,7 +66,9 @@ pub async fn get_matrix_messages_in_reply_chain(
     let mut messages: Vec<MatrixMessage> = Vec::new();
 
     for matrix_native_message in messages_native {
-        let message_result = convert_matrix_native_event_to_matrix_message(matrix_link, &matrix_native_message).await?;
+        let message_result =
+            convert_matrix_native_event_to_matrix_message(matrix_link, &matrix_native_message)
+                .await?;
 
         if let Some(message) = message_result {
             messages.push(message);
@@ -261,7 +265,10 @@ pub async fn convert_matrix_native_event_to_matrix_message(
             format: mxlink::matrix_sdk::media::MediaFormat::File,
         };
 
-        let file_name = image_content.filename.clone().unwrap_or(image_content.body.clone());
+        let file_name = image_content
+            .filename
+            .clone()
+            .unwrap_or(image_content.body.clone());
 
         let mime_type = get_mime_type_from_file_name(&file_name);
 

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::agent::{default_prompt, provider::ConfigTrait};
 use super::OPENAI_IMAGE_MODEL_GPT_IMAGE_1;
+use crate::agent::{default_prompt, provider::ConfigTrait};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {

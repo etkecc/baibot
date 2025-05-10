@@ -33,8 +33,7 @@ pub struct ImageGenerationResult {
 }
 
 #[derive(Default)]
-pub struct ImageEditParams {
-}
+pub struct ImageEditParams {}
 
 pub struct ImageEditResult {
     pub bytes: Vec<u8>,
@@ -49,7 +48,11 @@ pub struct ImageSource {
 
 impl ImageSource {
     pub fn new(filename: String, bytes: Vec<u8>, mime_type: mime::Mime) -> Self {
-        Self { filename, bytes, mime_type }
+        Self {
+            filename,
+            bytes,
+            mime_type,
+        }
     }
 }
 

@@ -22,11 +22,12 @@ fn determine_controller() {
             input: "create Some prompt",
             expected: super::ControllerType::ImageGeneration("Some prompt".to_owned()),
         },
-
         TestCase {
             name: "Image edit triggered by edit prefix",
             input: "edit Turn this into an anime-style image",
-            expected: super::ControllerType::ImageEdit("Turn this into an anime-style image".to_owned()),
+            expected: super::ControllerType::ImageEdit(
+                "Turn this into an anime-style image".to_owned(),
+            ),
         },
     ];
 

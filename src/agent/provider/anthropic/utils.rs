@@ -1,6 +1,10 @@
-use anthropic::types::{ContentBlock, ImageSource, Message, MessagesRequest, MessagesRequestBuilder, Role};
+use anthropic::types::{
+    ContentBlock, ImageSource, Message, MessagesRequest, MessagesRequestBuilder, Role,
+};
 
-use crate::conversation::llm::{Author as LLMAuthor, Message as LLMMessage, MessageContent as LLMMessageContent};
+use crate::conversation::llm::{
+    Author as LLMAuthor, Message as LLMMessage, MessageContent as LLMMessageContent,
+};
 
 pub(super) fn create_anthropic_message_request(llm_messages: Vec<LLMMessage>) -> MessagesRequest {
     let mut messages = vec![];

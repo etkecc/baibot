@@ -150,8 +150,7 @@ pub mod test {
         let third = super::Message {
             author: super::Author::User,
             content: super::MessageContent::Text(
-                "This is the 3rd message in this conversation. It shall be preserved."
-                    .to_owned(),
+                "This is the 3rd message in this conversation. It shall be preserved.".to_owned(),
             ),
             timestamp: chrono::Utc::now(),
         };
