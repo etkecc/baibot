@@ -206,12 +206,10 @@ impl ControllerTrait for Controller {
 
         let request = CreateTranscriptionRequestArgs::default()
             .model(&speech_to_text_config.model_id)
-            .file(async_openai::types::AudioInput {
-                source: async_openai::types::InputSource::VecU8 {
-                    filename,
-                    vec: media,
-                },
-            })
+            .file(async_openai::types::AudioInput::from_vec_u8(
+                filename,
+                media,
+            ))
             .language(language.clone())
             .build()?;
 
