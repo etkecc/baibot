@@ -1,6 +1,23 @@
+# (2025-05-10) Version 1.7.0
+
+- (**Feature**) Add vision support to the OpenAI and Anthropic providers. You can now mix text and images in your conversations - fixes [issue #5](https://github.com/etkecc/baibot/issues/5)
+
+- (**Feature**) Add [image-editing](./docs/features.md#-image-editing) support to the OpenAI provider
+
+- (**Improvement**) Add compatibility with OpenAI's `gpt-image-1` model - fixes [issue #40](https://github.com/etkecc/baibot/issues/40)
+
+- (**Change**) Rework [image-creation](./docs/features.md#-image-creation) to avoid command conflicts with [image-editing](./docs/features.md#-image-editing). The image-creation command syntax is now `!bai image create <prompt>` (previously: `!bai image <prompt>`).
+
+- (**Internal Improvement**) Dependency and compiler updates
+
+> [!WARNING]
+> Unlike other releases, this release is not published to [crates.io](https://crates.io), because it relies on multiple library forks (`async-openai` and `anthropic-rs`) sourced from Github.
+
+
 # (2025-04-12) Version 1.6.0
 
 - (**Internal Improvement**) Dependency updates. This version is based on [mxlink](https://crates.io/crates/mxlink)@1.7.0 (which is based on the newly released [matrix-sdk](https://crates.io/crates/matrix-sdk)@[0.11.0](https://github.com/matrix-org/matrix-rust-sdk/releases/tag/matrix-sdk-0.11.0))
+
 
 # (2025-03-31) Version 1.5.1
 
