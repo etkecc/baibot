@@ -53,11 +53,11 @@ impl ImageSource {
     }
 }
 
-impl Into<async_openai::types::ImageInput> for ImageSource {
-    fn into(self) -> async_openai::types::ImageInput {
+impl From<ImageSource> for async_openai::types::ImageInput {
+    fn from(value: ImageSource) -> Self {
         async_openai::types::ImageInput::from_vec_u8(
-            self.filename,
-            self.bytes,
+            value.filename,
+            value.bytes,
         )
     }
 }

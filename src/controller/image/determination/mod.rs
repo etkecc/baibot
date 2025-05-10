@@ -6,11 +6,11 @@ pub fn determine_controller(
 ) -> ControllerType {
     let text = text.trim();
 
-    if let Some(prompt) = text.strip_prefix(&format!("create")) {
+    if let Some(prompt) = text.strip_prefix("create") {
         return ControllerType::ImageGeneration(prompt.trim().to_owned());
     }
 
-    if let Some(prompt) = text.strip_prefix(&format!("edit")) {
+    if let Some(prompt) = text.strip_prefix("edit") {
         return ControllerType::ImageEdit(prompt.trim().to_owned());
     }
 

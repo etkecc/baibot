@@ -35,9 +35,9 @@ impl ImageDetails {
     }
 }
 
-impl Into<ImageSource> for &ImageDetails {
-    fn into(self) -> ImageSource {
-        ImageSource::new(self.filename(), self.data.clone(), self.mime.clone())
+impl From<ImageDetails> for ImageSource {
+    fn from(value: ImageDetails) -> Self {
+        ImageSource::new(value.filename(), value.data.clone(), value.mime.clone())
     }
 }
 

@@ -71,7 +71,7 @@ pub async fn handle(
 
     let image_sources: Vec<ImageSource> = conversation.messages.iter().filter_map(|message| {
         if let crate::conversation::llm::MessageContent::Image(image_content) = &message.content {
-            Some(image_content.into())
+            Some(image_content.clone().into())
         } else {
             None
         }
