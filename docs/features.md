@@ -159,7 +159,7 @@ You may also wish to see:
 
 Image editing is the bot's ability to **edit images** based on a prompt and one or more existing images.
 
-See a [🖼️ Screenshot of the Image Editing feature](./screenshots/image-editing.webp).
+See a [🖼️ Screenshot of the Image Editing feature (manipulating a single image)](./screenshots/image-editing-single-image.webp) and a [🖼️ Screenshot of the Image Editing feature (manipulating multiple images)](./screenshots/image-editing-multiple-images.webp).
 
 You may also wish to see:
 

@@ -87,7 +87,7 @@ You can then, respond in the same message thread with:
 
 Simply send a command like `!bai image edit Turn the following image into an anime-style drawing` and the bot will start a threaded conversation asking for more details.
 
-See a [🖼️ Screenshot of the Image Editing feature](./screenshots/image-editing.webp).
+See a [🖼️ Screenshot of the Image Editing feature (manipulating a single image)](./screenshots/image-editing-single-image.webp) and a [🖼️ Screenshot of the Image Editing feature (manipulating multiple images)](./screenshots/image-editing-multiple-images.webp).
 
 You can then, respond in the same message thread with:
 
