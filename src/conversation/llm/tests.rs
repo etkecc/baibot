@@ -12,8 +12,7 @@ fn test_messages_by_the_bot_are_identified_correctly() {
 
     let matrix_message = super::super::matrix::MatrixMessage {
         sender_id: bot_user_id.to_owned(),
-        message_type: super::super::matrix::MatrixMessageType::Text,
-        message_text: "Hello!".to_owned(),
+        content: super::super::matrix::MatrixMessageContent::Text("Hello!".to_owned()),
         mentioned_users: vec![],
         timestamp: chrono::Utc::now(),
     };
@@ -21,12 +20,11 @@ fn test_messages_by_the_bot_are_identified_correctly() {
     let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
 
     assert_eq!(llm_message.author, Author::Assistant);
-    assert_eq!(llm_message.message_text, "Hello!");
+    assert_eq!(llm_message.content, MessageContent::Text("Hello!".to_string()));
 }
 
 #[test]
-fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_considered_sent_by_user()
- {
+fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_considered_sent_by_user() {
     let bot_user_id =
         OwnedUserId::try_from("@bot:example.com").expect("Failed to parse bot user ID");
 
@@ -37,8 +35,7 @@ fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_con
 
     let matrix_message = super::super::matrix::MatrixMessage {
         sender_id: bot_user_id.to_owned(),
-        message_type: super::super::matrix::MatrixMessageType::Notice,
-        message_text,
+        content: super::super::matrix::MatrixMessageContent::Notice(message_text),
         mentioned_users: vec![],
         timestamp: chrono::Utc::now(),
     };
@@ -46,7 +43,7 @@ fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_con
     let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
 
     assert_eq!(llm_message.author, Author::User);
-    assert_eq!(llm_message.message_text, source_message_text);
+    assert_eq!(llm_message.content, MessageContent::Text(source_message_text.to_string()));
 }
 
 #[test]
@@ -61,8 +58,7 @@ fn test_notice_error_messages_by_bot_are_ignored() {
 
     let matrix_message = super::super::matrix::MatrixMessage {
         sender_id: bot_user_id.to_owned(),
-        message_type: super::super::matrix::MatrixMessageType::Notice,
-        message_text,
+        content: super::super::matrix::MatrixMessageContent::Notice(message_text),
         mentioned_users: vec![],
         timestamp: chrono::Utc::now(),
     };
@@ -86,8 +82,7 @@ fn test_other_notice_messages_by_the_bot_are_ignored() {
 
     let matrix_message = super::super::matrix::MatrixMessage {
         sender_id: bot_user_id.to_owned(),
-        message_type: super::super::matrix::MatrixMessageType::Notice,
-        message_text: message_text.to_owned(),
+        content: super::super::matrix::MatrixMessageContent::Notice(message_text.to_owned()),
         mentioned_users: vec![],
         timestamp: chrono::Utc::now(),
     };

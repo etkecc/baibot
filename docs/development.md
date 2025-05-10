@@ -93,7 +93,7 @@ For getting started most quickly (and locally), we recommend using [LocalAI](#lo
 
 **Ollama is most lightweight** (~2GB for the container image + ~1.6GB for the model), but supports only [💬 text-generation](./features.md#-text-generation).
 
-**LocalAI requires 4x more disk space** (~6GB for the container image + ~12GB for the models), but supports [💬 text-generation](./features.md#-text-generation), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text) and [🖼️ image-generation](./features.md#️-image-generation).
+**LocalAI requires 4x more disk space** (~6GB for the container image + ~12GB for the models), but supports [💬 text-generation](./features.md#-text-generation), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text) and [🖼️ image-generation](./features.md#️-image-creation).
 
 **OpenAI supports all of these capabilities** as well and does not require powerful hardware or lots of disk space. However, it requires signup and an API key.
 

@@ -2,7 +2,7 @@ use tiktoken_rs::CoreBPE;
 use tiktoken_rs::get_bpe_from_tokenizer;
 use tiktoken_rs::tokenizer;
 
-use super::{Author, Message};
+use super::{Author, Message, MessageContent};
 
 fn get_bpe_for_model(model: &str) -> CoreBPE {
     let tokenizer = tokenizer::get_tokenizer(model)
@@ -71,7 +71,10 @@ fn calculate_token_size_for_message(bpe: &CoreBPE, model: &str, message: &Messag
         Author::Prompt => bpe.encode_with_special_tokens("system").len() as i32,
     };
 
-    let text_length = bpe.encode_with_special_tokens(&message.message_text).len() as i32;
+    let text_length = match &message.content {
+        MessageContent::Text(text) => bpe.encode_with_special_tokens(text).len() as i32,
+        MessageContent::Image(..) => 0,
+    };
 
     (text_length + role_length + tokens_per_message + tokens_per_name) as u32
 }
@@ -85,7 +88,7 @@ pub mod test {
 
         let message = super::Message {
             author: super::Author::User,
-            message_text: "Hello there!".to_owned(),
+            content: super::MessageContent::Text("Hello there!".to_string()),
             timestamp: chrono::Utc::now(),
         };
 
@@ -104,7 +107,7 @@ pub mod test {
 
         let prompt = super::Message {
             author: super::Author::Prompt,
-            message_text: "You are a bot!".to_owned(),
+            content: super::MessageContent::Text("You are a bot!".to_string()),
             timestamp: chrono::Utc::now(),
         };
         let prompt_length = 10;
@@ -118,7 +121,7 @@ pub mod test {
 
         let first = super::Message {
             author: super::Author::User,
-            message_text: "Hello there!".to_owned(),
+            content: super::MessageContent::Text("Hello there!".to_string()),
             timestamp: chrono::Utc::now(),
         };
         let first_length = 8;
@@ -132,7 +135,7 @@ pub mod test {
 
         let second = super::Message {
             author: super::Author::Assistant,
-            message_text: "Hello!".to_owned(),
+            content: super::MessageContent::Text("Hello!".to_string()),
             timestamp: chrono::Utc::now(),
         };
         let second_length = 7;
@@ -146,8 +149,10 @@ pub mod test {
 
         let third = super::Message {
             author: super::Author::User,
-            message_text: "This is the 3rd message in this conversation. It shall be preserved."
-                .to_owned(),
+            content: super::MessageContent::Text(
+                "This is the 3rd message in this conversation. It shall be preserved."
+                    .to_owned(),
+            ),
             timestamp: chrono::Utc::now(),
         };
         let third_length = 21;
@@ -161,7 +166,9 @@ pub mod test {
 
         let forth = super::Message {
             author: super::Author::Assistant,
-            message_text: "This is yet another message that shall be preserved.".to_owned(),
+            content: super::MessageContent::Text(
+                "This is yet another message that shall be preserved.".to_owned(),
+            ),
             timestamp: chrono::Utc::now(),
         };
         let forth_length = 15;
@@ -186,13 +193,13 @@ pub mod test {
         assert_eq!(2, new_conversation_messages.len());
 
         assert_eq!(
-            new_conversation_messages.first().unwrap().message_text,
-            third.message_text
+            new_conversation_messages.first().unwrap().content,
+            third.content
         );
 
         assert_eq!(
-            new_conversation_messages.last().unwrap().message_text,
-            forth.message_text
+            new_conversation_messages.last().unwrap().content,
+            forth.content
         );
     }
 
@@ -206,7 +213,7 @@ pub mod test {
 
         let prompt = super::Message {
             author: super::Author::User,
-            message_text: "あなたはボットです。".to_owned(),
+            content: super::MessageContent::Text("あなたはボットです。".to_string()),
             timestamp: chrono::Utc::now(),
         };
         let prompt_length = 14;
@@ -220,7 +227,7 @@ pub mod test {
 
         let first = super::Message {
             author: super::Author::User,
-            message_text: "こんにちは!".to_owned(),
+            content: super::MessageContent::Text("こんにちは!".to_string()),
             timestamp: chrono::Utc::now(),
         };
         let first_length = 7;
@@ -234,7 +241,7 @@ pub mod test {
 
         let second = super::Message {
             author: super::Author::Assistant,
-            message_text: "こんにちは。今日は元気ですか。".to_owned(),
+            content: super::MessageContent::Text("こんにちは。今日は元気ですか。".to_string()),
             timestamp: chrono::Utc::now(),
         };
         let second_length = 15;
@@ -248,7 +255,9 @@ pub mod test {
 
         let third = super::Message {
             author: super::Author::User,
-            message_text: "これは第3のメッセージなので、保存されます。".to_owned(),
+            content: super::MessageContent::Text(
+                "これは第3のメッセージなので、保存されます。".to_string(),
+            ),
             timestamp: chrono::Utc::now(),
         };
         let third_length = 22;
@@ -262,7 +271,9 @@ pub mod test {
 
         let forth = super::Message {
             author: super::Author::Assistant,
-            message_text: "これはもう一つの保存されますメッセージです。".to_owned(),
+            content: super::MessageContent::Text(
+                "これはもう一つの保存されますメッセージです。".to_string(),
+            ),
             timestamp: chrono::Utc::now(),
         };
         let forth_length = 21;
@@ -287,13 +298,13 @@ pub mod test {
         assert_eq!(2, new_conversation_messages.len());
 
         assert_eq!(
-            new_conversation_messages.first().unwrap().message_text,
-            third.message_text
+            new_conversation_messages.first().unwrap().content,
+            third.content
         );
 
         assert_eq!(
-            new_conversation_messages.last().unwrap().message_text,
-            forth.message_text
+            new_conversation_messages.last().unwrap().content,
+            forth.content
         );
     }
 }

@@ -3,7 +3,7 @@ use chrono::{TimeZone, Utc};
 use mxlink::matrix_sdk::ruma::OwnedUserId;
 
 use crate::conversation::matrix::{
-    MatrixMessage, MatrixMessageProcessingParams, MatrixMessageType,
+    MatrixMessage, MatrixMessageContent, MatrixMessageProcessingParams,
 };
 
 #[test]
@@ -17,24 +17,21 @@ fn is_message_from_allowed_sender() {
 
     let bot_message = MatrixMessage {
         sender_id: bot_user_id.to_owned(),
-        message_type: MatrixMessageType::Text,
-        message_text: "Hello!".to_owned(),
+        content: MatrixMessageContent::Text("Hello!".to_owned()),
         mentioned_users: vec![],
         timestamp,
     };
 
     let allowed_user_message = MatrixMessage {
         sender_id: allowed_user_id.to_owned(),
-        message_type: MatrixMessageType::Text,
-        message_text: "Hello!".to_owned(),
+        content: MatrixMessageContent::Text("Hello!".to_owned()),
         mentioned_users: vec![],
         timestamp,
     };
 
     let unallowed_user_message = MatrixMessage {
         sender_id: unallowed_user_id.to_owned(),
-        message_type: MatrixMessageType::Text,
-        message_text: "Hello!".to_owned(),
+        content: MatrixMessageContent::Text("Hello!".to_owned()),
         mentioned_users: vec![],
         timestamp,
     };
@@ -88,48 +85,42 @@ async fn process_matrix_messages() {
 
     let allowed_user_message = MatrixMessage {
         sender_id: allowed_user_id.to_owned(),
-        message_type: MatrixMessageType::Text,
-        message_text: "Hello from the user!".to_owned(),
+        content: MatrixMessageContent::Text("Hello from the user!".to_owned()),
         mentioned_users: vec![],
         timestamp,
     };
 
     let allowed_user_message_with_prefix = MatrixMessage {
         sender_id: allowed_user_id.to_owned(),
-        message_type: MatrixMessageType::Text,
-        message_text: "!bai Hello from the user!".to_owned(),
+        content: MatrixMessageContent::Text("!bai Hello from the user!".to_owned()),
         mentioned_users: vec![],
         timestamp,
     };
 
     let allowed_user_message_with_prefix_no_space = MatrixMessage {
         sender_id: allowed_user_id.to_owned(),
-        message_type: MatrixMessageType::Text,
-        message_text: "!baiHello from the user!".to_owned(),
+        content: MatrixMessageContent::Text("!baiHello from the user!".to_owned()),
         mentioned_users: vec![],
         timestamp,
     };
 
     let allowed_user_message_with_prefix_full_width_space = MatrixMessage {
         sender_id: allowed_user_id.to_owned(),
-        message_type: MatrixMessageType::Text,
-        message_text: "!bai　Hello from the user!".to_owned(),
+        content: MatrixMessageContent::Text("!bai　Hello from the user!".to_owned()),
         mentioned_users: vec![],
         timestamp,
     };
 
     let bot_message = MatrixMessage {
         sender_id: bot_user_id.to_owned(),
-        message_type: MatrixMessageType::Text,
-        message_text: "Hello from the bot!".to_owned(),
+        content: MatrixMessageContent::Text("Hello from the bot!".to_owned()),
         mentioned_users: vec![],
         timestamp,
     };
 
     let allowed_user_message_with_bot_mention = MatrixMessage {
         sender_id: allowed_user_id.to_owned(),
-        message_type: MatrixMessageType::Text,
-        message_text: "@baibot: Hello from the user!".to_owned(),
+        content: MatrixMessageContent::Text("@baibot: Hello from the user!".to_owned()),
         mentioned_users: vec![bot_user_id.to_owned()],
         timestamp,
     };
@@ -137,16 +128,14 @@ async fn process_matrix_messages() {
     // The message text is the same as above - it mentions the bot, but the actually-mentioned user is another user.
     let allowed_user_message_with_another_user_mention = MatrixMessage {
         sender_id: allowed_user_id.to_owned(),
-        message_type: MatrixMessageType::Text,
-        message_text: allowed_user_message_with_bot_mention.message_text.clone(),
+        content: allowed_user_message_with_bot_mention.content.clone(),
         mentioned_users: vec![allowed_user_id.to_owned()],
         timestamp,
     };
 
     let unallowed_user_message = MatrixMessage {
         sender_id: unallowed_user_id.to_owned(),
-        message_type: MatrixMessageType::Text,
-        message_text: "Hello from an unallowed user!".to_owned(),
+        content: MatrixMessageContent::Text("Hello from an unallowed user!".to_owned()),
         mentioned_users: vec![],
         timestamp,
     };
@@ -285,7 +274,10 @@ async fn process_matrix_messages() {
 
         let processed_message_texts = processed_messages
             .iter()
-            .map(|message| message.message_text.clone())
+            .map(|message| match &message.content {
+                MatrixMessageContent::Text(text) => text.clone(),
+                _ => "".to_owned(),
+            })
             .collect::<Vec<String>>();
 
         assert_eq!(

@@ -69,7 +69,7 @@ pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Resu
     );
     message.push_str("\n\n");
 
-    // Image Generation
+    // Image Creation
     message.push_str(
         &generate_image_generation_section(agent_manager, message_context.room_config_context())
             .await,

@@ -1,7 +1,7 @@
-use matrix_sdk::ruma::OwnedUserId;
+use mxlink::matrix_sdk::ruma::OwnedUserId;
 
-use super::{Author, Message};
-use crate::conversation::matrix::{MatrixMessage, MatrixMessageType};
+use super::entity::{Author, ImageDetails, Message, MessageContent};
+use crate::conversation::matrix::{MatrixMessage, MatrixMessageContent};
 use crate::utils::text_to_speech as text_to_speech_utils;
 
 pub fn convert_matrix_message_to_llm_message(
@@ -16,12 +16,23 @@ pub fn convert_matrix_message_to_llm_message(
 }
 
 fn convert_bot_message(matrix_message: &MatrixMessage) -> Option<Message> {
-    match matrix_message.message_type {
-        MatrixMessageType::Text => {
-            convert_bot_text_message(&matrix_message.message_text, &matrix_message.timestamp)
+    match &matrix_message.content {
+        MatrixMessageContent::Text(text) => {
+            convert_bot_text_message(text, &matrix_message.timestamp)
         }
-        MatrixMessageType::Notice => {
-            convert_bot_notice_message(&matrix_message.message_text, &matrix_message.timestamp)
+        MatrixMessageContent::Notice(text) => {
+            convert_bot_notice_message(text, &matrix_message.timestamp)
+        }
+        MatrixMessageContent::Image(image_content, mime_type, media_bytes) => {
+            Some(Message {
+                author: Author::Assistant,
+                content: MessageContent::Image(ImageDetails::new(
+                    image_content.clone(),
+                    mime_type.clone(),
+                    media_bytes.clone()
+                )),
+                timestamp: matrix_message.timestamp.to_owned(),
+            })
         }
     }
 }
@@ -32,7 +43,7 @@ fn convert_bot_text_message(
 ) -> Option<Message> {
     Some(Message {
         author: Author::Assistant,
-        message_text: text.to_owned(),
+        content: MessageContent::Text(text.to_owned()),
         timestamp: timestamp.to_owned(),
     })
 }
@@ -52,7 +63,7 @@ fn convert_bot_notice_message(
         // This is a transcription message. We remove the prefix and consider it as a message sent by the user.
         return Some(Message {
             author: Author::User,
-            message_text: text.to_owned(),
+            content: MessageContent::Text(text.to_owned()),
             timestamp: timestamp.to_owned(),
         });
     }
@@ -61,9 +72,31 @@ fn convert_bot_notice_message(
 }
 
 fn convert_user_message(matrix_message: &MatrixMessage) -> Option<Message> {
-    Some(Message {
-        author: Author::User,
-        message_text: matrix_message.message_text.clone(),
-        timestamp: matrix_message.timestamp.to_owned(),
-    })
+    match &matrix_message.content {
+        MatrixMessageContent::Text(text) => {
+            Some(Message {
+                author: Author::User,
+                content: MessageContent::Text(text.clone()),
+                timestamp: matrix_message.timestamp.to_owned(),
+            })
+        }
+        MatrixMessageContent::Notice(text) => {
+            Some(Message {
+                author: Author::User,
+                content: MessageContent::Text(text.clone()),
+                timestamp: matrix_message.timestamp.to_owned(),
+            })
+        }
+        MatrixMessageContent::Image(image_content, mime_type, media_bytes) => {
+            Some(Message {
+                author: Author::User,
+                content: MessageContent::Image(ImageDetails::new(
+                    image_content.clone(),
+                    mime_type.clone(),
+                    media_bytes.clone(),
+                )),
+                timestamp: matrix_message.timestamp.to_owned(),
+            })
+        }
+    }
 }

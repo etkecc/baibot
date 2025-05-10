@@ -23,7 +23,7 @@ The list of supported providers is below.
 
 ### How to choose a provider
 
-If you're not sure which provider to start with, **we recommend [OpenAI](#openai)** as it's the most popular and has the **widest range of capabilities**: [💬 text-generation](./features.md#-text-generation), [🖌️ image-generation](./features.md#️-image-generation), [🦻 speech-to-text](./features.md#-speech-to-text), [🗣️ text-to-speech](./features.md#️-text-to-speech).
+If you're not sure which provider to start with, **we recommend [OpenAI](#openai)** as it's the most popular and has the **widest range of capabilities**: [💬 text-generation](./features.md#-text-generation), [🖌️ image-generation](./features.md#️image-generation), [🦻 speech-to-text](./features.md#-speech-to-text), [🗣️ text-to-speech](./features.md#️-text-to-speech).
 
 You don't need to choose just one though. The bot supports [mixing & matching models](./features.md#-mixing--matching-models), so you can use multiple providers at the same time.
 
@@ -120,7 +120,7 @@ For services which are not fully compatible with the OpenAI API, consider using 
 
 - 🆔 Identifier: `openai`
 - 🔗 Links: [🏠 Home page](https://openai.com/), [🌐 Wiki](https://en.wikipedia.org/wiki/OpenAI), [👤 Sign up](https://platform.openai.com/signup), [📋 Models list](https://platform.openai.com/docs/models)
-- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-generation), [💬 text-generation](./features.md#-text-generation), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
+- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation), [💬 text-generation](./features.md#-text-generation), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local openai my-openai-agent`
   - create a global agent: `!bai agent create-global openai my-openai-agent`
@@ -140,7 +140,7 @@ Some of these popular services already have **shortcut** providers (leading to t
 This provider is just as featureful as the [OpenAI](#openai) provider, but is more compatible with services which do not fully adhere to the [OpenAI API spec](https://github.com/openai/openai-openapi/).
 
 - 🆔 Identifier: `openai-compatible`
-- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-generation), [💬 text-generation](./features.md#-text-generation), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
+- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation), [💬 text-generation](./features.md#-text-generation), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local openai-compatible my-openai-compatible-agent`
   - create a global agent: `!bai agent create-global openai-compatible my-openai-compatible-agent`

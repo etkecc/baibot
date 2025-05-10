@@ -7,12 +7,14 @@ use anthropic::types::ContentBlock;
 use super::super::ControllerTrait;
 use crate::agent::AgentPurpose;
 use crate::agent::provider::entity::{
-    ImageGenerationResult, PingResult, TextGenerationParams, TextGenerationResult,
-    TextToSpeechParams, TextToSpeechResult,
+    ImageGenerationResult, ImageEditResult, ImageSource, PingResult, TextGenerationParams,
+    TextGenerationResult, TextToSpeechParams, TextToSpeechResult,
 };
-use crate::agent::provider::{ImageGenerationParams, SpeechToTextParams, SpeechToTextResult};
+use crate::agent::provider::{
+    ImageGenerationParams, ImageEditParams, SpeechToTextParams, SpeechToTextResult,
+};
 use crate::conversation::llm::{
-    Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
+    Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage, MessageContent as LLMMessageContent,
     shorten_messages_list_to_context_size,
 };
 use crate::strings;
@@ -69,7 +71,7 @@ impl ControllerTrait for Controller {
 
         let messages = vec![LLMMessage {
             author: LLMAuthor::User,
-            message_text: "Hello!".to_string(),
+            content: LLMMessageContent::Text("Hello!".to_string()),
             timestamp: chrono::Utc::now(),
         }];
 
@@ -106,7 +108,7 @@ impl ControllerTrait for Controller {
         } else {
             Some(LLMMessage {
                 author: LLMAuthor::Prompt,
-                message_text: prompt_text,
+                content: LLMMessageContent::Text(prompt_text),
                 timestamp: chrono::Utc::now(),
             })
         };
@@ -145,7 +147,9 @@ impl ControllerTrait for Controller {
             .unwrap_or(text_generation_config.temperature);
 
         if let Some(prompt_message) = prompt_message {
-            request.system = prompt_message.message_text;
+            if let LLMMessageContent::Text(text) = &prompt_message.content {
+                request.system = text.clone();
+            }
         }
 
         request.model = text_generation_config.model_id.clone();
@@ -211,6 +215,15 @@ impl ControllerTrait for Controller {
         _params: ImageGenerationParams,
     ) -> anyhow::Result<ImageGenerationResult> {
         Err(anyhow::anyhow!("Image generation not supported"))
+    }
+
+    async fn create_image_edit(
+        &self,
+        _prompt: &str,
+        _images: Vec<ImageSource>,
+        _params: ImageEditParams,
+    ) -> anyhow::Result<ImageEditResult> {
+        Err(anyhow::anyhow!("Image editing is not supported"))
     }
 
     async fn text_to_speech(

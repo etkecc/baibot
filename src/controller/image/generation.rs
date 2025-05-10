@@ -6,7 +6,7 @@ use crate::agent::AgentPurpose;
 use crate::agent::ControllerTrait;
 use crate::agent::provider::ImageGenerationParams;
 use crate::controller::utils::agent::get_effective_agent_for_purpose_or_complain;
-use crate::controller::utils::mime::get_file_extension;
+use crate::utils::mime::get_file_extension;
 use crate::conversation::create_llm_conversation_for_matrix_thread;
 use crate::conversation::matrix::MatrixMessageProcessingParams;
 use crate::strings;
@@ -43,7 +43,7 @@ pub async fn handle_image(
     );
 
     let conversation = create_llm_conversation_for_matrix_thread(
-        matrix_link.clone(),
+        &matrix_link,
         message_context.room(),
         message_context.thread_info().root_event_id.clone(),
         &params,

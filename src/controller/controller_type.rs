@@ -23,5 +23,6 @@ pub enum ControllerType {
     ChatCompletion(super::chat_completion::ChatCompletionControllerType),
 
     ImageGeneration(String),
+    ImageEdit(String),
     StickerGeneration(String),
 }

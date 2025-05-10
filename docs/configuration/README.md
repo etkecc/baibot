@@ -40,7 +40,7 @@ You can adjust the following settings per room and/or globally:
 - [💬 Text Generation](text-generation.md)
 - [🦻 Speech-to-Text](speech-to-text.md)
 - [🗣️ Text-to-Speech](text-to-speech.md)
-- [🖌️ Image Generation](image-generation.md)
+- [🖌️ Image Creation](image-generation.md)
 - [🤝 Handlers](handlers.md)
 
 Refer to the bot's help messages (as a response to a `!bai config` help command) for the most up-to-date information on what Room Settings can be configured.

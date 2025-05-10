@@ -11,7 +11,7 @@ The bot supports the following use-purposes:
 - [💬 text-generation](../features.md#-text-generation): communicating with you via text
 - [🦻 speech-to-text](../features.md#-speech-to-text): turning your voice messages into text
 - [🗣️ text-to-speech](../features.md#️-text-to-speech): turning bot or users text messages into voice messages
-- [🖌️ image-generation](../features.md#-image-generation): generating images based on instructions
+- [🖌️ image-generation](../features.md#image-generation): generating images based on instructions
 
 In a given room, each different purpose can be served by a different [provider](../providers.md) and model. This combination of provider and model configuration is called an [🤖 agent](../agents.md). Each purpose can be served by a different **handler** agent.
 

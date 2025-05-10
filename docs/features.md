@@ -139,26 +139,42 @@ To operate in this mode, you can:
 - optionally adjust [🦻 Speech-to-Text / 🪄 Message Type for non-threaded only-transcribed messages](./configuration/speech-to-text.md#-message-type-for-non-threaded-only-transcribed-messages), if you'd like to bot to send messages of type `notice` (for better compatibility with other bots in the room) instead of sending regular `text` messages (default)
 
 
-### 🖌️ Image Generation
+### Image Generation
 
-Image generation is the bot's ability to **generate images** based on text prompts.
+#### 🖌️ Image Creation
 
-See a [🖼️ Screenshot of the Image Generation feature](./screenshots/image-generation.webp).
+Image creation is the bot's ability to **create images** based on text prompts.
+
+See a [🖼️ Screenshot of the Image Creation feature](./screenshots/image-creation.webp).
 
 You may also wish to see:
 
 - [🛠️ Configuration / 🖌️ Image Generation](./configuration/image-generation.md) for configuration options related to Image Generation
-- [📖 Usage / 🖌️ Image Generation](./usage.md#-image-generation) section for more details on how to use the bot for Image Generation in a room
-- [🫵 Sticker Generation](#-sticker-generation) - a special case of Image Generation
+- [📖 Usage / Image Generation / 🖌️ Creating Images](./usage.md#-creating-images) section for more details on how to use the bot for Image Creation in a room
+- [🖌️ Image Editing](#️-image-editing) - another image generation feature
+- [🫵 Sticker Creation](#-sticker-creation) - a special case of Image Creation
 
 
-### 🫵 Sticker Generation
+#### 🎨 Image Editing
 
-Sticker generation is the bot's ability to **generate sticker** images based on text prompts. It's a special case of [🖌️ Image Generation](#️-image-generation).
+Image editing is the bot's ability to **edit images** based on a prompt and one or more existing images.
 
-See a [🖼️ Screenshot of the Sticker Generation feature](./screenshots/sticker-generation.webp).
+See a [🖼️ Screenshot of the Image Editing feature](./screenshots/image-editing.webp).
 
-See [📖 Usage / 🖌️ Image Generation / Generating Stickers](./usage.md#generating-stickers) for details.
+You may also wish to see:
+
+- [🛠️ Configuration / 🖌️ Image Generation](./configuration/image-generation.md) for configuration options related to Image Generation
+- [📖 Usage / Image Generation / 🎨 Editing images](./usage.md#-editing-images) section for more details on how to use the bot for Image Editing in a room
+- [🖌️ Image Creation](#️-image-creation) - another image generation feature
+
+
+#### 🫵 Sticker Creation
+
+Sticker generation is the bot's ability to **generate sticker** images based on text prompts. It's a special case of [🖌️ Image Creation](#️-image-creation).
+
+See a [🖼️ Screenshot of the Sticker Creation feature](./screenshots/sticker-generation.webp).
+
+See [📖 Usage / Image Generation / 🫵 Creating Stickers](./usage.md#-creating-stickers) for details.
 
 
 ### 🔒 Encryption

@@ -39,6 +39,8 @@ pub enum ChatCompletionControllerType {
 
     Audio,
 
+    Image,
+
     ThreadMention,
     ReplyMention,
 }
@@ -416,7 +418,8 @@ async fn handle_stage_text_generation(
         ChatCompletionControllerType::TextCommand
         | ChatCompletionControllerType::TextMention
         | ChatCompletionControllerType::TextDirect
-        | ChatCompletionControllerType::Audio => {
+        | ChatCompletionControllerType::Audio
+        | ChatCompletionControllerType::Image => {
             Some(message_context.combined_admin_and_user_regexes())
         }
 
@@ -438,6 +441,7 @@ async fn handle_stage_text_generation(
         // When we're triggered via a reply mention, the context is the whole reply chain upward of the message that triggered us.
         ChatCompletionControllerType::ReplyMention => {
             create_llm_conversation_for_matrix_reply_chain(
+                &matrix_link,
                 &bot.room_event_fetcher().clone(),
                 message_context.room(),
                 message_context.thread_info().last_event_id.clone(),
@@ -449,7 +453,7 @@ async fn handle_stage_text_generation(
         // Everything else is happening in a thread, so the context is the whole thread.
         _ => {
             create_llm_conversation_for_matrix_thread(
-                matrix_link.clone(),
+                &matrix_link,
                 message_context.room(),
                 message_context.thread_info().root_event_id.clone(),
                 &params,

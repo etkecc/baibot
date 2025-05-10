@@ -64,18 +64,18 @@ The speech-to-text feature triggers automatically by default, but can be adjuste
 If all your messages are in the same language, you can improve accuracy & latency by configuring the language (see [🦻 Speech-to-Text / 🔤 Language](./configuration/speech-to-text.md#-language)).
 
 
-### 🖌️ Image Generation
-
-This is related to the [🖌️ Image Generation](./features.md#️-image-generation) feature.
+### Image Generation
 
 This feature is not configurable at the moment. The configuration (size, quality, style) specified at the [🤖 agent](./agents.md) level will be used.
 
+Capabilities depend on the [☁️ provider](./providers.md) and model used.
 
-#### Generating images
 
-Simply send a command like `!bai image A beautiful sunset over the ocean` and the bot will start a threaded conversation and post an image based on your prompt.
+#### 🖌️ Creating images
 
-See a [🖼️ Screenshot of the Image Generation feature](./screenshots/image-generation.webp).
+Simply send a command like `!bai image create A beautiful sunset over the ocean` and the bot will start a threaded conversation and post an image based on your prompt.
+
+See a [🖼️ Screenshot of the Image Creation feature](./screenshots/image-creation.webp).
 
 You can then, respond in the same message thread with:
 
@@ -83,15 +83,29 @@ You can then, respond in the same message thread with:
 - a message saying `again`, to generate one more image with the current prompt.
 
 
-#### Generating stickers
+#### 🎨 Editing images
 
-A variation of [generating images](#generating-images) is to generate "sticker images".
+Simply send a command like `!bai image edit Turn the following image into an anime-style drawing` and the bot will start a threaded conversation asking for more details.
 
-See a [🖼️ Screenshot of the Sticker Generation feature](./screenshots/sticker-generation.webp).
+See a [🖼️ Screenshot of the Image Editing feature](./screenshots/image-editing.webp).
 
-To generate a sticker, send a command like `!bai sticker A huge ramen bowl with lots of chashu and a mountain of beansprouts on top`.
+You can then, respond in the same message thread with:
 
-The difference from [generating images](#generating-images) is that the bot will:
+- more messages, to add more criteria to your prompt.
+- one or more images, to provide the images that the bot will operate on.
+- a message saying `go`, to start the image generation process.
+- a message saying `again`, to prompt the bot to generate one more image edit with the current prompt.
+
+
+#### 🫵 Creating stickers
+
+A variation of [creating images](#creating-images) is to create "sticker images".
+
+See a [🖼️ Screenshot of the Sticker Creation feature](./screenshots/sticker-generation.webp).
+
+To create a sticker, send a command like `!bai sticker A huge ramen bowl with lots of chashu and a mountain of beansprouts on top`.
+
+The difference from [creating images](#creating-images) is that the bot will:
 
 - generate a smaller-resolution image (currently hardcoded to `256x256`) - smaller/quicker, but still good enough for a sticker
 - potentially switch to a different (cheaper or otherwise more suitable) model, if available

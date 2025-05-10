@@ -2,20 +2,22 @@ use chrono::{DateTime, Utc};
 use regex::Regex;
 
 use mxlink::matrix_sdk::ruma::OwnedUserId;
+use mxlink::matrix_sdk::ruma::events::room::message::ImageMessageEventContent;
+use mxlink::mime::Mime;
 
 #[derive(Clone)]
 pub struct MatrixMessage {
     pub sender_id: OwnedUserId,
-    pub message_type: MatrixMessageType,
-    pub message_text: String,
+    pub content: MatrixMessageContent,
     pub mentioned_users: Vec<OwnedUserId>,
     pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Clone)]
-pub enum MatrixMessageType {
-    Text,
-    Notice,
+pub enum MatrixMessageContent {
+    Text(String),
+    Notice(String),
+    Image(ImageMessageEventContent, Mime, Vec<u8>),
 }
 
 #[derive(Clone)]

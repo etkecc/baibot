@@ -4,22 +4,23 @@ use etke_openai_api_rust::images::{ImagesApi, ImagesBody};
 use etke_openai_api_rust::{Auth, Message, OpenAI};
 
 use super::super::ControllerTrait;
-use crate::agent::utils::base64_decode;
+use crate::utils::base64::base64_decode;
 use crate::{
     agent::provider::{
-        ImageGenerationParams, SpeechToTextParams, SpeechToTextResult,
+        ImageGenerationParams, ImageEditParams, ImageSource, SpeechToTextParams, SpeechToTextResult,
         entity::{TextGenerationParams, TextGenerationResult},
     },
     conversation::llm::{
         Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
-        shorten_messages_list_to_context_size,
+        MessageContent as LLMMessageContent, shorten_messages_list_to_context_size,
     },
 };
 use crate::{
     agent::{
         AgentPurpose,
         provider::entity::{
-            ImageGenerationResult, PingResult, TextToSpeechParams, TextToSpeechResult,
+            ImageGenerationResult, ImageEditResult, PingResult, TextToSpeechParams,
+            TextToSpeechResult,
         },
     },
     strings,
@@ -60,7 +61,7 @@ impl ControllerTrait for Controller {
 
         let messages = vec![LLMMessage {
             author: LLMAuthor::User,
-            message_text: "Hello!".to_string(),
+            content: LLMMessageContent::Text("Hello!".to_string()),
             timestamp: chrono::Utc::now(),
         }];
 
@@ -97,7 +98,7 @@ impl ControllerTrait for Controller {
         } else {
             Some(LLMMessage {
                 author: LLMAuthor::Prompt,
-                message_text: prompt_text,
+                content: LLMMessageContent::Text(prompt_text),
                 timestamp: chrono::Utc::now(),
             })
         };
@@ -363,6 +364,17 @@ impl ControllerTrait for Controller {
 
         Err(anyhow::anyhow!(
             "The OpenAI image generation API returned no images"
+        ))
+    }
+
+    async fn create_image_edit(
+        &self,
+        _prompt: &str,
+        _images: Vec<ImageSource>,
+        _params: ImageEditParams,
+    ) -> anyhow::Result<ImageEditResult> {
+        Err(anyhow::anyhow!(
+            "The OpenAI image edit API is not supported by the OpenAI-compat provider"
         ))
     }
 

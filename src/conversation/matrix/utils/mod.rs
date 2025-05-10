@@ -18,9 +18,11 @@ use mxlink::matrix_sdk::{
     },
 };
 use mxlink::{MatrixLink, ThreadGetMessagesParams, ThreadInfo};
+use tracing::Instrument;
 
-use super::{MatrixMessage, MatrixMessageProcessingParams, MatrixMessageType, RoomEventFetcher};
+use super::{MatrixMessage, MatrixMessageContent, MatrixMessageProcessingParams, RoomEventFetcher};
 use crate::entity::{InteractionContext, InteractionTrigger, MessagePayload};
+use crate::utils::mime::get_mime_type_from_file_name;
 
 struct DetailedMessagePayload {
     is_mentioning_bot: bool,
@@ -28,7 +30,7 @@ struct DetailedMessagePayload {
 }
 
 pub async fn get_matrix_messages_in_thread(
-    matrix_link: MatrixLink,
+    matrix_link: &MatrixLink,
     room: &Room,
     thread_id: OwnedEventId,
 ) -> Result<Vec<MatrixMessage>, mxlink::matrix_sdk::Error> {
@@ -40,18 +42,18 @@ pub async fn get_matrix_messages_in_thread(
     let mut messages: Vec<MatrixMessage> = Vec::new();
 
     for matrix_native_message in messages_native {
-        let Some(message) = convert_matrix_native_event_to_matrix_message(&matrix_native_message)
-        else {
-            continue;
-        };
+        let message_result = convert_matrix_native_event_to_matrix_message(matrix_link, &matrix_native_message).await?;
 
-        messages.push(message);
+        if let Some(message) = message_result {
+            messages.push(message);
+        }
     }
 
     Ok(messages)
 }
 
 pub async fn get_matrix_messages_in_reply_chain(
+    matrix_link: &MatrixLink,
     event_fetcher: &Arc<RoomEventFetcher>,
     room: &Room,
     event_id: OwnedEventId,
@@ -62,12 +64,11 @@ pub async fn get_matrix_messages_in_reply_chain(
     let mut messages: Vec<MatrixMessage> = Vec::new();
 
     for matrix_native_message in messages_native {
-        let Some(message) = convert_matrix_native_event_to_matrix_message(&matrix_native_message)
-        else {
-            continue;
-        };
+        let message_result = convert_matrix_native_event_to_matrix_message(matrix_link, &matrix_native_message).await?;
 
-        messages.push(message);
+        if let Some(message) = message_result {
+            messages.push(message);
+        }
     }
 
     Ok(messages)
@@ -150,30 +151,34 @@ pub async fn process_matrix_messages(
         let mut message = message.clone();
 
         if i == 0 && !params.first_message_prefixes_to_strip.is_empty() {
-            let mut message_text = message.message_text.clone();
+            if let MatrixMessageContent::Text(message_text) = &message.content {
+                let mut message_text = message_text.clone();
 
-            for prefix in &params.first_message_prefixes_to_strip {
-                if let Some(message_text_stripped) = message_text.strip_prefix(prefix) {
-                    message_text = message_text_stripped.to_owned();
+                for prefix in &params.first_message_prefixes_to_strip {
+                    if let Some(message_text_stripped) = message_text.strip_prefix(prefix) {
+                        message_text = message_text_stripped.to_owned();
+                    }
                 }
-            }
 
-            message.message_text = message_text.trim().to_owned();
+                message.content = MatrixMessageContent::Text(message_text.trim().to_owned());
+            }
         }
 
         // We only strip `bot_user_prefixes_to_strip`-defined prefixes from messages that mention the bot user.
         if !params.bot_user_prefixes_to_strip.is_empty()
             && message.mentioned_users.contains(&params.bot_user_id)
         {
-            let mut message_text = message.message_text.clone();
+            if let MatrixMessageContent::Text(message_text) = &message.content {
+                let mut message_text = message_text.clone();
 
-            for prefix in &params.bot_user_prefixes_to_strip {
-                if let Some(message_text_stripped) = message_text.strip_prefix(prefix) {
-                    message_text = message_text_stripped.to_owned();
+                for prefix in &params.bot_user_prefixes_to_strip {
+                    if let Some(message_text_stripped) = message_text.strip_prefix(prefix) {
+                        message_text = message_text_stripped.to_owned();
+                    }
                 }
-            }
 
-            message.message_text = message_text.trim().to_owned();
+                message.content = MatrixMessageContent::Text(message_text.trim().to_owned());
+            }
         }
 
         messages_filtered.push(message);
@@ -207,23 +212,25 @@ fn is_message_from_allowed_sender(
     false
 }
 
-pub fn convert_matrix_native_event_to_matrix_message(
+pub async fn convert_matrix_native_event_to_matrix_message(
+    matrix_link: &MatrixLink,
     matrix_native_event: &AnySyncMessageLikeEvent,
-) -> Option<MatrixMessage> {
+) -> Result<Option<MatrixMessage>, mxlink::matrix_sdk::Error> {
     let Some(content) = matrix_native_event.original_content() else {
         // Redacted message
-        return None;
+        return Ok(None);
     };
 
     let AnyMessageLikeEventContent::RoomMessage(room_message) = content else {
         // Some state event, etc.
-        return None;
+        return Ok(None);
     };
 
     let (text, is_notice) = match &room_message.msgtype {
         MessageType::Text(text_content) => (text_content.body.clone(), false),
         MessageType::Notice(notice_content) => (notice_content.body.clone(), true),
-        _ => return None,
+        MessageType::Image(image_content) => (image_content.body.clone(), false),
+        _ => return Ok(None),
     };
 
     let is_reply = matches!(room_message.relates_to, Some(Relation::Reply { .. }));
@@ -248,17 +255,45 @@ pub fn convert_matrix_native_event_to_matrix_message(
         .map(|m| m.user_ids.iter().map(|u| u.to_owned()).collect())
         .unwrap_or(vec![]);
 
-    Some(MatrixMessage {
+    if let MessageType::Image(image_content) = &room_message.msgtype {
+        let media_request = mxlink::matrix_sdk::media::MediaRequestParameters {
+            source: image_content.source.to_owned(),
+            format: mxlink::matrix_sdk::media::MediaFormat::File,
+        };
+
+        let file_name = image_content.filename.clone().unwrap_or(image_content.body.clone());
+
+        let mime_type = get_mime_type_from_file_name(&file_name);
+
+        tracing::debug!("Determined mime type {} for file {}", mime_type, file_name);
+
+        let span = tracing::debug_span!("get_media_content", file_name = %file_name, mime_type = %mime_type);
+
+        let media_bytes = matrix_link
+            .client()
+            .media()
+            .get_media_content(&media_request, true)
+            .instrument(span)
+            .await?;
+
+        return Ok(Some(MatrixMessage {
+            sender_id: matrix_native_event.sender().to_owned(),
+            content: MatrixMessageContent::Image(image_content.clone(), mime_type, media_bytes),
+            mentioned_users,
+            timestamp,
+        }));
+    }
+
+    Ok(Some(MatrixMessage {
         sender_id: matrix_native_event.sender().to_owned(),
-        message_type: if is_notice {
-            MatrixMessageType::Notice
+        content: if is_notice {
+            MatrixMessageContent::Notice(text)
         } else {
-            MatrixMessageType::Text
+            MatrixMessageContent::Text(text)
         },
-        message_text: text,
         mentioned_users,
         timestamp,
-    })
+    }))
 }
 
 /// Determines the interaction context for an incoming (new) room event.

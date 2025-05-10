@@ -5,6 +5,7 @@ pub mod error;
 pub mod global_config;
 pub mod help;
 pub mod image_generation;
+pub mod image_edit;
 pub mod introduction;
 pub mod provider;
 pub mod room_config;

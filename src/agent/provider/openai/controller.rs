@@ -5,7 +5,8 @@ use async_openai::{
     config::OpenAIConfig,
     types::{
         ChatCompletionRequestMessage, CreateChatCompletionRequestArgs, CreateImageRequestArgs,
-        CreateSpeechRequestArgs, CreateTranscriptionRequestArgs,
+        CreateSpeechRequestArgs, CreateTranscriptionRequestArgs, CreateImageEditRequestArgs,
+        ImageInput, ImageModel, DallE2ImageSize, ImageResponseFormat, Image,
     },
 };
 
@@ -14,24 +15,22 @@ use crate::{
     agent::{
         AgentPurpose,
         provider::{
-            entity::{ImageGenerationResult, PingResult, TextToSpeechParams, TextToSpeechResult},
+            entity::{ImageGenerationResult, ImageEditResult, ImageSource, PingResult, TextToSpeechParams, TextToSpeechResult},
             openai::utils::convert_string_to_enum,
         },
     },
     strings,
 };
 use crate::{
-    agent::{
-        provider::{
-            ImageGenerationParams, SpeechToTextParams, SpeechToTextResult,
-            entity::{TextGenerationParams, TextGenerationResult},
-        },
-        utils::base64_decode,
+    agent::provider::{
+        ImageGenerationParams, ImageEditParams, SpeechToTextParams, SpeechToTextResult,
+        entity::{TextGenerationParams, TextGenerationResult},
     },
     conversation::llm::{
         Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
-        shorten_messages_list_to_context_size,
+        MessageContent as LLMMessageContent, shorten_messages_list_to_context_size,
     },
+    utils::base64::base64_decode,
 };
 
 use super::config::Config;
@@ -64,7 +63,7 @@ impl ControllerTrait for Controller {
 
         let messages = vec![LLMMessage {
             author: LLMAuthor::User,
-            message_text: "Hello!".to_string(),
+            content: LLMMessageContent::Text("Hello!".to_string()),
             timestamp: chrono::Utc::now(),
         }];
 
@@ -101,7 +100,7 @@ impl ControllerTrait for Controller {
         } else {
             Some(LLMMessage {
                 author: LLMAuthor::Prompt,
-                message_text: prompt_text,
+                content: LLMMessageContent::Text(prompt_text),
                 timestamp: chrono::Utc::now(),
             })
         };
@@ -290,11 +289,13 @@ impl ControllerTrait for Controller {
             .unwrap_or(image_generation_config.size);
 
         let response_format = match model.clone() {
-            async_openai::types::ImageModel::DallE2 => Some(async_openai::types::ImageResponseFormat::B64Json),
-            async_openai::types::ImageModel::DallE3 => Some(async_openai::types::ImageResponseFormat::B64Json),
-            async_openai::types::ImageModel::Other(model_str) => match model_str.as_str() {
+            ImageModel::DallE2 => Some(ImageResponseFormat::B64Json),
+            ImageModel::DallE3 => Some(ImageResponseFormat::B64Json),
+            ImageModel::Other(model_str) => match model_str.as_str() {
+                // gpt-image-1 only outputs base64 and we don't need to specify the response format.
+                // In fact, specifying the response format results in an error.
                 OPENAI_IMAGE_MODEL_GPT_IMAGE_1 => None,
-                _ => Some(async_openai::types::ImageResponseFormat::B64Json),
+                _ => Some(ImageResponseFormat::B64Json),
             },
         };
 
@@ -352,6 +353,96 @@ impl ControllerTrait for Controller {
 
         Err(anyhow::anyhow!(
             "The OpenAI image generation API returned no images"
+        ))
+    }
+
+    async fn create_image_edit(
+        &self,
+        prompt: &str,
+        images: Vec<ImageSource>,
+        _params: ImageEditParams,
+    ) -> anyhow::Result<ImageEditResult> {
+        let Some(image_generation_config) = &self.config.image_generation else {
+            return Err(anyhow::anyhow!(
+                strings::agent::no_configuration_for_purpose_so_cannot_be_used(
+                    &AgentPurpose::ImageGeneration
+                ),
+            ));
+        };
+
+        let Some(first_image) = images.into_iter().next() else {
+            return Err(anyhow::anyhow!("No image sources provided"));
+        };
+
+        let image_input: ImageInput = first_image.into();
+
+        let dalle2_size = match image_generation_config.size {
+            async_openai::types::ImageSize::S256x256 => Some(DallE2ImageSize::S256x256),
+            async_openai::types::ImageSize::S512x512 => Some(DallE2ImageSize::S512x512),
+            async_openai::types::ImageSize::S1024x1024 => Some(DallE2ImageSize::S1024x1024),
+            _ => None,
+        };
+
+        let model = image_generation_config
+            .model_id_as_openai_image_model()
+            .map_err(|err| anyhow::anyhow!(err))?;
+
+        let response_format = match model.clone() {
+            async_openai::types::ImageModel::DallE2 => Some(async_openai::types::ImageResponseFormat::B64Json),
+            async_openai::types::ImageModel::DallE3 => Some(async_openai::types::ImageResponseFormat::B64Json),
+            async_openai::types::ImageModel::Other(model_str) => match model_str.as_str() {
+                OPENAI_IMAGE_MODEL_GPT_IMAGE_1 => None,
+                _ => Some(async_openai::types::ImageResponseFormat::B64Json),
+            },
+        };
+
+        let mut request_builder = CreateImageEditRequestArgs::default();
+
+        request_builder
+            .image(image_input)
+            .prompt(prompt.to_owned())
+            .model(model);
+
+        if let Some(size) = dalle2_size {
+            request_builder.size(size);
+        }
+
+        if let Some(response_format) = response_format {
+            request_builder.response_format(response_format);
+        }
+
+        let request = request_builder.build()
+            .map_err(|e| anyhow::anyhow!("Failed to build CreateImageEditRequest: {}", e))?;
+
+        tracing::trace!(
+            model = format!("{:?}", request.model),
+            size = format!("{:?}", request.size),
+            response_format = format!("{:?}", request.response_format),
+            "Sending OpenAI image edit API request"
+        );
+
+        let response = self.client.images().create_edit(request).await?;
+
+        if let Some(image_data) = response.data.into_iter().next() {
+            match image_data.deref() {
+                Image::B64Json { b64_json, .. } => {
+                    let bytes = base64_decode(b64_json)?;
+                    return Ok(ImageEditResult {
+                        bytes,
+                        mime_type: mxlink::mime::IMAGE_PNG,
+                    });
+                }
+                Image::Url { url, .. } => {
+                    tracing::warn!(?url, "Received URL instead of B64Json for image edit");
+                    return Err(anyhow::anyhow!(
+                        "Unexpected image type (URL) when B64Json was requested"
+                    ));
+                }
+            }
+        }
+
+        Err(anyhow::anyhow!(
+            "The OpenAI image edit API returned no images"
         ))
     }
 

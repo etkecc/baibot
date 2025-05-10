@@ -2,7 +2,7 @@ use etke_openai_api_rust::{Message, Role};
 
 use crate::agent::provider::openai::Config as OpenAIConfig;
 
-use crate::conversation::llm::{Author as LLMAuthor, Message as LLMMessage};
+use crate::conversation::llm::{Author as LLMAuthor, Message as LLMMessage, MessageContent as LLMMessageContent};
 
 pub fn convert_llm_messages_to_openai_messages(
     conversation_messages: Vec<LLMMessage>,
@@ -11,22 +11,33 @@ pub fn convert_llm_messages_to_openai_messages(
         Vec::with_capacity(conversation_messages.len());
 
     for message in conversation_messages {
-        openai_conversation_messages.push(convert_llm_message_to_openai_message(message));
+        let openai_message = convert_llm_message_to_openai_message(message);
+        if let Some(openai_message) = openai_message {
+            openai_conversation_messages.push(openai_message);
+        }
     }
 
     openai_conversation_messages
 }
 
-fn convert_llm_message_to_openai_message(llm_message: LLMMessage) -> Message {
+fn convert_llm_message_to_openai_message(llm_message: LLMMessage) -> Option<Message> {
     let role = match llm_message.author {
         LLMAuthor::Prompt => Role::System,
         LLMAuthor::Assistant => Role::Assistant,
         LLMAuthor::User => Role::User,
     };
 
-    Message {
-        role,
-        content: llm_message.message_text,
+    match &llm_message.content {
+        LLMMessageContent::Text(text) => {
+            Some(Message {
+                role,
+                content: text.clone(),
+            })
+        },
+        LLMMessageContent::Image(_image_details) => {
+            tracing::warn!("The OpenAI-compat provider's library does not support image content. This image message will be skipped.");
+            None
+        },
     }
 }
 

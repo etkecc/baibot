@@ -8,7 +8,7 @@ pub fn guide_how_to_proceed() -> String {
     message.push_str("💡 Respond in this thread with:\n");
     message.push_str("- more messages: to expand on your original prompt\n");
     message.push_str(
-        "- a message saying `again`: to generate one more image with the current prompt.\n",
+        "- a message saying `again`: to generate one more image with the current prompt\n",
     );
 
     message

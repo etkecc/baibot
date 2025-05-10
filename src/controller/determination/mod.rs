@@ -36,6 +36,20 @@ pub fn determine_controller(
                 first_thread_message.is_mentioning_bot,
             )
         }
+        MessagePayload::Image(_image_message_content) => {
+            let prefix_requirement_type = message_context
+                .room_config_context()
+                .text_generation_prefix_requirement_type();
+
+            match prefix_requirement_type {
+                TextGenerationPrefixRequirementType::CommandPrefix => {
+                    ControllerType::Ignore
+                }
+                TextGenerationPrefixRequirementType::No => {
+                    ControllerType::ChatCompletion(ChatCompletionControllerType::Image)
+                }
+            }
+        }
         MessagePayload::Encrypted(thread_info) => {
             if thread_info.is_thread_root_only() {
                 ControllerType::Error(strings::error::message_is_encrypted().to_owned())
@@ -84,7 +98,7 @@ fn determine_text_controller(
     }
 
     if let Some(prompt) = text.strip_prefix(&format!("{command_prefix} image")) {
-        return ControllerType::ImageGeneration(prompt.trim().to_owned());
+        return super::image::determine_controller(prompt.trim());
     }
 
     if let Some(prompt) = text.strip_prefix(&format!("{command_prefix} sticker")) {

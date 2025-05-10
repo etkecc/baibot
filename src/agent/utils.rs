@@ -1,5 +1,3 @@
-use base64::{Engine as _, engine::general_purpose::STANDARD};
-
 use crate::{
     agent::{
         AgentInstance, AgentPurpose, ControllerTrait, Manager as AgentManager, PublicIdentifier,
@@ -139,8 +137,4 @@ async fn get_global_agent_id_for_purpose(
         .fallback_room_settings
         .handler
         .get_by_purpose_with_catch_all_fallback(purpose)
-}
-
-pub(crate) fn base64_decode(base64_string: &str) -> Result<Vec<u8>, base64::DecodeError> {
-    STANDARD.decode(base64_string)
 }

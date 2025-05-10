@@ -1,10 +1,10 @@
 use crate::{agent::AgentPurpose, conversation::llm::Conversation};
 
 use super::{
-    ImageGenerationParams, SpeechToTextParams, SpeechToTextResult,
+    ImageGenerationParams, ImageEditParams, SpeechToTextParams, SpeechToTextResult,
     entity::{
-        ImageGenerationResult, PingResult, TextGenerationParams, TextGenerationResult,
-        TextToSpeechParams, TextToSpeechResult,
+        ImageGenerationResult, ImageEditResult, ImageSource, PingResult, TextGenerationParams,
+        TextGenerationResult, TextToSpeechParams, TextToSpeechResult,
     },
 };
 
@@ -41,6 +41,13 @@ pub trait ControllerTrait {
         prompt: &str,
         params: ImageGenerationParams,
     ) -> impl std::future::Future<Output = anyhow::Result<ImageGenerationResult>> + Send;
+
+    fn create_image_edit(
+        &self,
+        prompt: &str,
+        images: Vec<ImageSource>,
+        params: ImageEditParams,
+    ) -> impl std::future::Future<Output = anyhow::Result<ImageEditResult>> + Send;
 
     fn text_to_speech(
         &self,
@@ -162,6 +169,23 @@ impl ControllerTrait for ControllerType {
             }
             ControllerType::Anthropic(controller) => {
                 controller.generate_image(prompt, params).await
+            }
+        }
+    }
+
+    async fn create_image_edit(
+        &self,
+        prompt: &str,
+        images: Vec<ImageSource>,
+        params: ImageEditParams,
+    ) -> anyhow::Result<ImageEditResult> {
+        match &self {
+            ControllerType::OpenAI(controller) => controller.create_image_edit(prompt, images, params).await,
+            ControllerType::OpenAICompat(controller) => {
+                controller.create_image_edit(prompt, images, params).await
+            }
+            ControllerType::Anthropic(controller) => {
+                controller.create_image_edit(prompt, images, params).await
             }
         }
     }

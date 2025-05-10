@@ -1,11 +1,11 @@
-use crate::conversation::llm::{Author, Message};
+use crate::conversation::llm::{Author, Message, MessageContent};
 
 /// Builds a prompt from the original prompt and other messages in the conversation.
 ///
 /// Only messages authored by the user are considered.
 ///
-/// Messages that say "Again" (regardless of casing) are ignored. They are considered special messages
-/// which trigger re-generation, but do not need to be included in the prompt criteria.
+/// Messages that say "Again" or "Go" (regardless of casing) are ignored. They are considered special messages
+/// which trigger re-generation and "start" respectively, and do not need to be included in the prompt criteria.
 pub fn build(original_prompt: &str, other_messages: Vec<Message>) -> String {
     let mut prompt = original_prompt.to_owned();
 
@@ -14,7 +14,11 @@ pub fn build(original_prompt: &str, other_messages: Vec<Message>) -> String {
         .into_iter()
         .filter(|message| {
             if let Author::User = message.author {
-                message.message_text.to_lowercase() != "again"
+                if let MessageContent::Text(text) = &message.content {
+                    text.to_lowercase() != "again" && text.to_lowercase() != "go"
+                } else {
+                    false
+                }
             } else {
                 false
             }
@@ -24,9 +28,11 @@ pub fn build(original_prompt: &str, other_messages: Vec<Message>) -> String {
     if !other_messages.is_empty() {
         prompt.push_str("\nOther criteria:");
         for message in other_messages {
-            prompt.push_str(
-                format!("\n- {}", message.message_text.replace("\n", ". ").as_str()).as_str(),
-            );
+            if let MessageContent::Text(text) = &message.content {
+                prompt.push_str(
+                    format!("\n- {}", text.replace("\n", ". ").as_str()).as_str(),
+                );
+            }
         }
     }
 
@@ -36,7 +42,7 @@ pub fn build(original_prompt: &str, other_messages: Vec<Message>) -> String {
 #[cfg(test)]
 mod tests {
     use super::build;
-    use super::{Author, Message};
+    use super::{Author, Message, MessageContent};
 
     struct TestCase {
         original_prompt: &'static str,
@@ -60,7 +66,7 @@ mod tests {
                 original_prompt: "Generate a picture of a dog",
                 messages: vec![Message {
                     author: Author::User,
-                    message_text: "Must be blue".to_owned(),
+                    content: MessageContent::Text("Must be blue".to_owned()),
                     timestamp,
                 }],
                 expected_prompt: "Generate a picture of a dog\nOther criteria:\n- Must be blue",
@@ -71,17 +77,17 @@ mod tests {
                 messages: vec![
                     Message {
                         author: Author::User,
-                        message_text: "Must be blue".to_owned(),
+                        content: MessageContent::Text("Must be blue".to_owned()),
                         timestamp,
                     },
                     Message {
                         author: Author::Assistant,
-                        message_text: "Whatever".to_owned(),
+                        content: MessageContent::Text("Whatever".to_owned()),
                         timestamp,
                     },
                     Message {
                         author: Author::User,
-                        message_text: "Must be 3-legged.\nMust be flying.".to_owned(),
+                        content: MessageContent::Text("Must be 3-legged.\nMust be flying.".to_owned()),
                         timestamp,
                     },
                 ],
@@ -93,22 +99,22 @@ mod tests {
                 messages: vec![
                     Message {
                         author: Author::User,
-                        message_text: "Must be blue".to_owned(),
+                        content: MessageContent::Text("Must be blue".to_owned()),
                         timestamp,
                     },
                     Message {
                         author: Author::Assistant,
-                        message_text: "Whatever".to_owned(),
+                        content: MessageContent::Text("Whatever".to_owned()),
                         timestamp,
                     },
                     Message {
                         author: Author::User,
-                        message_text: "Again".to_owned(),
+                        content: MessageContent::Text("Again".to_owned()),
                         timestamp,
                     },
                     Message {
                         author: Author::User,
-                        message_text: "again".to_owned(),
+                        content: MessageContent::Text("again".to_owned()),
                         timestamp,
                     },
                 ],

@@ -84,8 +84,16 @@ fn determine_text_controller() {
             expected: ControllerType::Config(controller::cfg::ConfigControllerType::Help),
         },
         TestCase {
-            name: "Image generation",
+            name: "Generic image command causes usage help",
             input: "!bai image Draw a cat!",
+            is_mentioning_bot: false,
+            room_text_generation_prefix_requirement_type:
+                super::TextGenerationPrefixRequirementType::No,
+            expected: ControllerType::UsageHelp,
+        },
+        TestCase {
+            name: "Image generation",
+            input: "!bai image create Draw a cat!",
             is_mentioning_bot: false,
             room_text_generation_prefix_requirement_type:
                 super::TextGenerationPrefixRequirementType::No,

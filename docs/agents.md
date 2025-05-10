@@ -35,7 +35,7 @@ Depending on where the agent is defined (within a room, globally, or [statically
 
 When creating an agent, you will be given some sample [YAML](https://en.wikipedia.org/wiki/YAML) configuration which you can use to customize the agent's behavior.
 
-This configuration varies depending on the [☁️ provider](./providers.md) used and the capabilities of the agent. Based on the configuration keys you pass, certain features will be enabled or disabled. For example, if you skip the `image_generation` key for an [OpenAI](./providers.md#openai) agent, it won't be able to generate images (see [🖌️ Image Generation](./features.md#-image-generation)).
+This configuration varies depending on the [☁️ provider](./providers.md) used and the capabilities of the agent. Based on the configuration keys you pass, certain features will be enabled or disabled. For example, if you skip the `image_generation` key for an [OpenAI](./providers.md#openai) agent, it won't be able to generate images (see [🖌️ Image Creation](./features.md#-image-creation), [🎨 Image Editing](./features.md#-image-editing), [🫵 Sticker Creation](./features.md#-sticker-creation)).
 
 After making your modifications to the sample YAML, you submit it back to the bot and the new agent will be created.
 

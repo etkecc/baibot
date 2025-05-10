@@ -34,26 +34,26 @@ By default, the bot will also perform 💬 Text Generation on the text. This is 
 If all your messages are in the same language, you can improve accuracy & latency by configuring the language via the **🦻 Speech-to-Text / 🔤 Language** setting.
 
 
-### 🖌️ Image Generation
+### 🖌️ Image Creation
 
-#### Generating images
+#### Creating images
 
-Simply send a command like `%command_prefix% image A beautiful sunset over the ocean` and the bot will start a threaded conversation and post an image based on your prompt.
+Simply send a command like `%command_prefix% image create A beautiful sunset over the ocean` and the bot will start a threaded conversation and post an image based on your prompt.
 
 You can then, respond in the same message thread with:
 
 - more messages, to add more criteria to your prompt.
 - a message saying `again`, to generate one more image with the current prompt.
 
-#### Generating stickers
+#### Creating stickers
 
-A variation of **generating images** is to generate "sticker images".
+A variation of **creating images** is to create "sticker images".
 
-To generate a sticker, send a command like `%command_prefix% sticker A huge bowl of steaming ramen with a mountain of beansprouts on top`.
+To create a sticker, send a command like `%command_prefix% sticker A huge bowl of steaming ramen with a mountain of beansprouts on top`.
 
-The difference from **generating images** is that the bot will:
+The difference from **creating images** is that the bot will:
 
-- generate a smaller-resolution image (`256x256`) - smaller/quicker, but still good enough for a sticker
+- create a smaller-resolution image (`256x256`) - smaller/quicker, but still good enough for a sticker
 - potentially switch to a different (cheaper or otherwise more suitable) model, if available
 - post the image directly to the room (as a reply to your message), without starting a threaded conversation
 "#;

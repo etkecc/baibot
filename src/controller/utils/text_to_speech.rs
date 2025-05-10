@@ -3,7 +3,7 @@ use mxlink::{MatrixLink, MessageResponseType};
 
 use tracing::Instrument;
 
-use crate::controller::utils::mime::get_file_extension;
+use crate::utils::mime::get_file_extension;
 use crate::{
     Bot,
     agent::{AgentInstance, AgentPurpose, ControllerTrait, provider::TextToSpeechParams},
