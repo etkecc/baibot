@@ -8,7 +8,7 @@ You can also use **different models within the same room** (e.g. [💬 text-gene
 
 The bot supports the following use-purposes:
 
-- [💬 text-generation](../features.md#-text-generation): communicating with you via text
+- [💬 text-generation](../features.md#-text-generation): communicating with you via text (though certain models may "see" images as well)
 - [🦻 speech-to-text](../features.md#-speech-to-text): turning your voice messages into text
 - [🗣️ text-to-speech](../features.md#️-text-to-speech): turning bot or users text messages into voice messages
 - [🖌️ image-generation](../features.md#image-generation): generating images based on instructions

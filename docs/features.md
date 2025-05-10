@@ -8,7 +8,7 @@ You can also use **different models within the same room** (e.g. [💬 text-gene
 
 The bot supports the following use-purposes:
 
-- [💬 text-generation](#-text-generation): communicating with you via text
+- [💬 text-generation](#-text-generation): communicating with you via text (though certain models may "see" images as well)
 - [🦻 speech-to-text](#-speech-to-text): turning your voice messages into text
 - [🗣️ text-to-speech](#%EF%B8%8F-text-to-speech): turning bot or users text messages into voice messages
 - [🖌️ image-generation](#%EF%B8%8F-image-generation): generating images based on instructions
@@ -22,9 +22,11 @@ For more information about configuring handlers, see the [🤝 Handlers / Config
 
 ### 💬 Text Generation
 
-Text Generation is the bot's ability to **respond to users' text messages with text**.
+Text Generation is the bot's ability to **respond to users' messages with text**.
 
 ![Screenshot of Text Generation - a user sends a message and the bot replies in a new conversation thread](./screenshots/text-generation.webp)
+
+Some models also support vision, so you may be able to mix text and images in the same conversation.
 
 In multi-user (group) rooms, to avoid disturbing the normal conversation between people, the bot is auto-configured to only respond to messages starting with the command prefix (`!bai`) or direct mentions via the [💬 Text Generation / 🗟 Prefix Requirement Type](./configuration/text-generation.md#-prefix-requirement-type) setting.
 
