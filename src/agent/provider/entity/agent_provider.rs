@@ -68,6 +68,7 @@ impl AgentProvider {
                 sign_up_url: Some("https://console.anthropic.com/"),
                 models_list_url: Some("https://docs.anthropic.com/en/docs/about-claude/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
+                text_generation_supports_vision: true,
             },
             Self::Groq => AgentProviderInfo {
                 id: Self::Groq.to_static_str(),
@@ -78,6 +79,7 @@ impl AgentProvider {
                 sign_up_url: Some("https://console.groq.com/login"),
                 models_list_url: Some("https://console.groq.com/docs/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration, AgentPurpose::SpeechToText],
+                text_generation_supports_vision: false,
             },
             Self::LocalAI => AgentProviderInfo {
                 id: Self::LocalAI.to_static_str(),
@@ -92,6 +94,7 @@ impl AgentProvider {
                     AgentPurpose::TextToSpeech,
                     AgentPurpose::SpeechToText,
                 ],
+                text_generation_supports_vision: false,
             },
             Self::Mistral => AgentProviderInfo {
                 id: Self::Mistral.to_static_str(),
@@ -102,6 +105,7 @@ impl AgentProvider {
                 sign_up_url: Some("https://auth.mistral.ai/ui/registration"),
                 models_list_url: Some("https://docs.mistral.ai/getting-started/models/"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
+                text_generation_supports_vision: false,
             },
             Self::Ollama => AgentProviderInfo {
                 id: Self::Ollama.to_static_str(),
@@ -112,6 +116,7 @@ impl AgentProvider {
                 sign_up_url: None,
                 models_list_url: Some("https://ollama.com/library"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
+                text_generation_supports_vision: false,
             },
             Self::OpenAI => AgentProviderInfo {
                 id: Self::OpenAI.to_static_str(),
@@ -127,6 +132,7 @@ impl AgentProvider {
                     AgentPurpose::TextToSpeech,
                     AgentPurpose::SpeechToText,
                 ],
+                text_generation_supports_vision: true,
             },
             Self::OpenAICompat => AgentProviderInfo {
                 id: Self::OpenAICompat.to_static_str(),
@@ -142,6 +148,7 @@ impl AgentProvider {
                     AgentPurpose::TextToSpeech,
                     AgentPurpose::SpeechToText,
                 ],
+                text_generation_supports_vision: false,
             },
             Self::OpenRouter => AgentProviderInfo {
                 id: Self::OpenRouter.to_static_str(),
@@ -152,6 +159,7 @@ impl AgentProvider {
                 sign_up_url: Some("https://openrouter.ai/"),
                 models_list_url: Some("https://openrouter.ai/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
+                text_generation_supports_vision: false,
             },
             Self::TogetherAI => AgentProviderInfo {
                 id: Self::TogetherAI.to_static_str(),
@@ -162,6 +170,7 @@ impl AgentProvider {
                 sign_up_url: Some("https://api.together.ai/signup"),
                 models_list_url: Some("https://api.together.xyz/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
+                text_generation_supports_vision: false,
             },
         }
     }
@@ -182,4 +191,5 @@ pub struct AgentProviderInfo {
     pub sign_up_url: Option<&'static str>,
     pub models_list_url: Option<&'static str>,
     pub supported_purposes: Vec<AgentPurpose>,
+    pub text_generation_supports_vision: bool,
 }

@@ -23,7 +23,7 @@ The list of supported providers is below.
 
 ### How to choose a provider
 
-If you're not sure which provider to start with, **we recommend [OpenAI](#openai)** as it's the most popular and has the **widest range of capabilities**: [💬 text-generation](./features.md#-text-generation), [🖌️ image-generation](./features.md#️image-generation), [🦻 speech-to-text](./features.md#-speech-to-text), [🗣️ text-to-speech](./features.md#️-text-to-speech).
+If you're not sure which provider to start with, **we recommend [OpenAI](#openai)** as it's the most popular and has the **widest range of capabilities**: [💬 text-generation](./features.md#-text-generation) (no vision), [🖌️ image-generation](./features.md#️image-generation), [🦻 speech-to-text](./features.md#-speech-to-text), [🗣️ text-to-speech](./features.md#️-text-to-speech).
 
 You don't need to choose just one though. The bot supports [mixing & matching models](./features.md#-mixing--matching-models), so you can use multiple providers at the same time.
 
@@ -47,7 +47,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
 
 - 🆔 Identifier: `anthropic`
 - 🔗 Links: [🏠 Home page](https://www.anthropic.com/), [🌐 Wiki](https://en.wikipedia.org/wiki/Anthropic), [👤 Sign up](https://console.anthropic.com/), [📋 Models list](https://docs.anthropic.com/en/docs/about-claude/models)
-- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation)
+- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation) (incl. vision)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local anthropic my-anthropic-agent`
   - create a global agent: `!bai agent create-global anthropic my-anthropic-agent`
@@ -61,7 +61,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
 
 - 🆔 Identifier: `groq`
 - 🔗 Links: [🏠 Home page](https://groq.com/), [🌐 Wiki](https://en.wikipedia.org/wiki/Groq), [👤 Sign up](https://console.groq.com/login), [📋 Models list](https://console.groq.com/docs/models)
-- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation), [🦻 speech-to-text](./features.md#-speech-to-text)
+- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation) (no vision), [🦻 speech-to-text](./features.md#-speech-to-text)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local groq my-groq-agent`
   - create a global agent: `!bai agent create-global groq my-groq-agent`
@@ -75,7 +75,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
 
 - 🆔 Identifier: `localai`
 - 🔗 Links: [🏠 Home page](https://localai.io/), [📋 Models list](https://localai.io/gallery.html)
-- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
+- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation) (no vision), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local localai my-localai-agent`
   - create a global agent: `!bai agent create-global localai my-localai-agent`
@@ -89,7 +89,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
 
 - 🆔 Identifier: `mistral`
 - 🔗 Links: [🏠 Home page](https://mistral.ai/), [🌐 Wiki](https://en.wikipedia.org/wiki/Mistral_AI), [👤 Sign up](https://auth.mistral.ai/ui/registration), [📋 Models list](https://docs.mistral.ai/getting-started/models/)
-- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation)
+- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation) (no vision)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local mistral my-mistral-agent`
   - create a global agent: `!bai agent create-global mistral my-mistral-agent`
@@ -103,7 +103,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
 
 - 🆔 Identifier: `ollama`
 - 🔗 Links: [🏠 Home page](https://ollama.com/), [📋 Models list](https://ollama.com/library)
-- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation)
+- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation) (no vision)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local ollama my-ollama-agent`
   - create a global agent: `!bai agent create-global ollama my-ollama-agent`
@@ -120,7 +120,7 @@ For services which are not fully compatible with the OpenAI API, consider using 
 
 - 🆔 Identifier: `openai`
 - 🔗 Links: [🏠 Home page](https://openai.com/), [🌐 Wiki](https://en.wikipedia.org/wiki/OpenAI), [👤 Sign up](https://platform.openai.com/signup), [📋 Models list](https://platform.openai.com/docs/models)
-- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation), [💬 text-generation](./features.md#-text-generation), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
+- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation), [💬 text-generation](./features.md#-text-generation) (incl. vision), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local openai my-openai-agent`
   - create a global agent: `!bai agent create-global openai my-openai-agent`
@@ -140,7 +140,7 @@ Some of these popular services already have **shortcut** providers (leading to t
 This provider is just as featureful as the [OpenAI](#openai) provider, but is more compatible with services which do not fully adhere to the [OpenAI API spec](https://github.com/openai/openai-openapi/).
 
 - 🆔 Identifier: `openai-compatible`
-- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation), [💬 text-generation](./features.md#-text-generation), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
+- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation), [💬 text-generation](./features.md#-text-generation) (no vision), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local openai-compatible my-openai-compatible-agent`
   - create a global agent: `!bai agent create-global openai-compatible my-openai-compatible-agent`
@@ -154,7 +154,7 @@ This provider is just as featureful as the [OpenAI](#openai) provider, but is mo
 
 - 🆔 Identifier: `openrouter`
 - 🔗 Links: [🏠 Home page](https://openrouter.ai/), [👤 Sign up](https://openrouter.ai/), [📋 Models list](https://openrouter.ai/models)
-- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation)
+- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation) (no vision)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local openrouter my-openrouter-agent`
   - create a global agent: `!bai agent create-global openrouter my-openrouter-agent`
@@ -168,7 +168,7 @@ This provider is just as featureful as the [OpenAI](#openai) provider, but is mo
 
 - 🆔 Identifier: `together-ai`
 - 🔗 Links: [🏠 Home page](https://www.together.ai/), [👤 Sign up](https://api.together.ai/signup), [📋 Models list](https://api.together.xyz/models)
-- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation)
+- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation) (no vision)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local together-ai my-together-ai-agent`
   - create a global agent: `!bai agent create-global together-ai my-together-ai-agent`

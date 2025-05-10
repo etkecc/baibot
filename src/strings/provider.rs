@@ -1,6 +1,7 @@
 use crate::agent::AgentInstantiationError;
 use crate::agent::AgentProvider;
 use crate::agent::AgentProviderInfo;
+use crate::agent::AgentPurpose;
 
 pub fn invalid(provider: &str) -> String {
     let choices_string = AgentProvider::choices()
@@ -105,7 +106,17 @@ pub fn help_provider_details(id: &str, info: &AgentProviderInfo) -> String {
 
     let mut capabilities = vec![];
     for purpose in info.supported_purposes.iter() {
-        capabilities.push(format!("{} {}", purpose.emoji(), purpose.as_str()));
+        let mut purpose_line = format!("{} {}", purpose.emoji(), purpose.as_str());
+
+        if let AgentPurpose::TextGeneration = purpose {
+            if info.text_generation_supports_vision {
+                purpose_line = format!("{} ({})", purpose_line, "incl. vision");
+            } else {
+                purpose_line = format!("{} ({})", purpose_line, "no vision");
+            }
+        }
+
+        capabilities.push(purpose_line);
     }
 
     message.push_str(&format!("- 🌟 Capabilities: {}\n", capabilities.join(", ")));
