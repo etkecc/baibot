@@ -93,7 +93,7 @@ agents:
     #     image_generation:
     #       model_id: gpt-image-1
     #       style: null
-    #       size: 1024x1024
+    #       size: null
     #       quality: null
     #
     # - id: localai

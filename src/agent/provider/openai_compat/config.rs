@@ -224,9 +224,11 @@ impl TryInto<OpenAIImageGenerationConfig> for ImageGenerationConfig {
 
     fn try_into(self) -> Result<OpenAIImageGenerationConfig, Self::Error> {
         let size = if let Some(size) = &self.size {
-            convert_string_to_enum::<async_openai::types::ImageSize>(size)?
+            Some(convert_string_to_enum::<async_openai::types::ImageSize>(
+                size,
+            )?)
         } else {
-            async_openai::types::ImageSize::S1024x1024
+            None
         };
 
         let style = if let Some(style) = &self.style {

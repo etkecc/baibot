@@ -153,7 +153,7 @@ pub struct ImageGenerationConfig {
     pub style: Option<async_openai::types::ImageStyle>,
 
     #[serde(default = "default_image_size")]
-    pub size: async_openai::types::ImageSize,
+    pub size: Option<async_openai::types::ImageSize>,
 
     #[serde(default = "default_image_quality")]
     pub quality: Option<async_openai::types::ImageQuality>,
@@ -186,8 +186,8 @@ fn default_image_style() -> Option<async_openai::types::ImageStyle> {
     None
 }
 
-fn default_image_size() -> async_openai::types::ImageSize {
-    async_openai::types::ImageSize::S1024x1024
+fn default_image_size() -> Option<async_openai::types::ImageSize> {
+    None
 }
 
 fn default_image_quality() -> Option<async_openai::types::ImageQuality> {

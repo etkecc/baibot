@@ -284,11 +284,8 @@ impl ControllerTrait for Controller {
 
         let size = params
             .size_override
-            .map(|s| {
-                convert_string_to_enum::<async_openai::types::ImageSize>(&s)
-                    .unwrap_or(image_generation_config.size)
-            })
-            .unwrap_or(image_generation_config.size);
+            .map(|s| convert_string_to_enum::<async_openai::types::ImageSize>(&s).unwrap())
+            .or(image_generation_config.size);
 
         let response_format = match model.clone() {
             ImageModel::DallE2 => Some(ImageResponseFormat::B64Json),
@@ -303,10 +300,7 @@ impl ControllerTrait for Controller {
 
         let mut request_builder = CreateImageRequestArgs::default();
 
-        request_builder
-            .model(model)
-            .prompt(prompt.to_owned())
-            .size(size);
+        request_builder.model(model).prompt(prompt.to_owned());
 
         if let Some(response_format) = response_format {
             request_builder.response_format(response_format);
@@ -318,6 +312,10 @@ impl ControllerTrait for Controller {
 
         if let Some(quality) = quality {
             request_builder.quality(quality.clone());
+        }
+
+        if let Some(size) = size {
+            request_builder.size(size);
         }
 
         let request = request_builder.build()?;
@@ -382,9 +380,9 @@ impl ControllerTrait for Controller {
         }
 
         let dalle2_size = match image_generation_config.size {
-            async_openai::types::ImageSize::S256x256 => Some(DallE2ImageSize::S256x256),
-            async_openai::types::ImageSize::S512x512 => Some(DallE2ImageSize::S512x512),
-            async_openai::types::ImageSize::S1024x1024 => Some(DallE2ImageSize::S1024x1024),
+            Some(async_openai::types::ImageSize::S256x256) => Some(DallE2ImageSize::S256x256),
+            Some(async_openai::types::ImageSize::S512x512) => Some(DallE2ImageSize::S512x512),
+            Some(async_openai::types::ImageSize::S1024x1024) => Some(DallE2ImageSize::S1024x1024),
             _ => None,
         };
 
