@@ -79,7 +79,7 @@ Simply send a command like `!bai image create A beautiful sunset over the ocean`
 
 See a [🖼️ Screenshot of the Image Creation feature](./screenshots/image-creation.webp).
 
-You can then, respond in the same message thread with:
+You can then respond in the same message thread with:
 
 - more messages, to add more criteria to your prompt.
 - a message saying `again`, to generate one more image with the current prompt.
@@ -91,7 +91,7 @@ Simply send a command like `!bai image edit Turn the following image into an ani
 
 See a [🖼️ Screenshot of the Image Editing feature (manipulating a single image)](./screenshots/image-editing-single-image.webp) and a [🖼️ Screenshot of the Image Editing feature (manipulating multiple images)](./screenshots/image-editing-multiple-images.webp).
 
-You can then, respond in the same message thread with:
+You can then respond in the same message thread with:
 
 - more messages, to add more criteria to your prompt.
 - one or more images, to provide the images that the bot will operate on.
@@ -101,7 +101,7 @@ You can then, respond in the same message thread with:
 
 #### 🫵 Creating stickers
 
-A variation of [creating images](#creating-images) is to create "sticker images".
+A variation of [creating images](#creating-images) is creating "sticker images".
 
 See a [🖼️ Screenshot of the Sticker Creation feature](./screenshots/sticker-generation.webp).
 
