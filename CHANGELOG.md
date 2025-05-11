@@ -1,3 +1,7 @@
+# (2025-05-11) Version 1.7.2
+
+- (**Bugfix**) Allow `image_generation.size` configuration value for OpenAI to be `null` to allow the model to choose the size automatically and default to that
+
 # (2025-05-11) Version 1.7.1
 
 - (**Bugfix**) Fix lack of documentation for the new [image-editing](./docs/features.md#-image-editing) feature in the `!bai usage` command's output
