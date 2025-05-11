@@ -1,3 +1,7 @@
+# (2025-05-11) Version 1.7.1
+
+- (**Bugfix**) Fix lack of documentation for the new [image-editing](./docs/features.md#-image-editing) feature in the `!bai usage` command's output
+
 # (2025-05-10) Version 1.7.0
 
 - (**Feature**) Add vision support to the OpenAI and Anthropic providers. You can now mix text and images in your conversations - fixes [issue #5](https://github.com/etkecc/baibot/issues/5)
