@@ -53,6 +53,7 @@ CONTAINER_IMAGE_NAME=ghcr.io/etkecc/baibot:v1.0.0
   --env BAIBOT_PERSISTENCE_DATA_DIR_PATH=/data \
   --mount type=bind,src=/path/to/config.yml,dst=/app/config.yml,ro \
   --mount type=bind,src=/path/to/data,dst=/data \
+  --tmpfs=/tmp:rw,noexec,nosuid,size=1024m \
   $CONTAINER_IMAGE_NAME
 ```
 
