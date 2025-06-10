@@ -2417,9 +2417,9 @@ dependencies = [
 
 [[package]]
 name = "mxlink"
-version = "1.8.0"
+version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf1dcb582f203c632d3c43963133f7e4ea5ffb00c6f1f800de97b579346e14dc"
+checksum = "73204926ee61f9f4eb5647e0da539de0e792c3717eea2d217db806c8ba44b206"
 dependencies = [
  "base64 0.22.1",
  "chacha20poly1305",
