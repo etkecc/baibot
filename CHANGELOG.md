@@ -1,3 +1,7 @@
+# (2025-06-10) Version 1.7.5
+
+- (**Internal Improvement**) Dependency and compiler updates (Rust 1.86 -> 1.86).
+
 # (2025-06-10) Version 1.7.4
 
 - (**Internal Improvement**) Dependency updates.
