@@ -7,7 +7,7 @@ license = "AGPL-3.0-or-later"
 readme = "README.md"
 keywords = ["matrix", "chat", "bot", "AI", "LLM"]
 include = ["/etc/assets/baibot-torso-768.png", "/src", "/README.md", "/CHANGELOG.md", "/LICENSE"]
-version = "1.7.5"
+version = "1.7.6"
 edition = "2024"
 
 [lib]
