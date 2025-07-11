@@ -22,9 +22,9 @@ base64 = "0.22.*"
 chrono = { version = "0.4.*", default-features = false, features = ["std", "now"] }
 # We'd rather not depend on this, but we cannot use the ruma-events EventContent macro without it.
 # We add the `native-tls` feature, because of https://github.com/etkecc/rust-mxlink/issues/1
-matrix-sdk = { version = "0.12.0", default-features = false, features = ["native-tls"] }
+matrix-sdk = { version = "0.13.0", default-features = false, features = ["native-tls"] }
 mxidwc = "1.0.*"
-mxlink = ">=1.8.1"
+mxlink = ">=1.9.0"
 etke_openai_api_rust = "0.1.*"
 quick_cache = "0.6.*"
 regex = "1.11.*"
@@ -33,7 +33,7 @@ serde_json = "1.0.*"
 serde_yaml = "0.9.*"
 tempfile = "3.20.*"
 tiktoken-rs = { version = "0.7.*", default-features = false }
-tokio = { version = "1.46.*", features = ["rt", "rt-multi-thread", "macros"] }
+tokio = { version = "1.45.*", features = ["rt", "rt-multi-thread", "macros"] }
 tracing = "0.1.*"
 tracing-subscriber = { version = "0.3.*", features = ["env-filter"] }
 url = "2.5.*"
