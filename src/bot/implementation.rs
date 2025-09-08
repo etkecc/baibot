@@ -6,6 +6,7 @@ use mxlink::matrix_sdk::media::{MediaFormat, MediaRequestParameters};
 use mxlink::matrix_sdk::ruma::{
     MilliSecondsSinceUnixEpoch, OwnedUserId, events::room::MediaSource,
 };
+use mxlink::matrix_sdk::ruma::api::client::profile::{AvatarUrl, DisplayName};
 
 use mxlink::{
     InitConfig, LoginConfig, LoginCredentials, LoginEncryption, MatrixLink, PersistenceConfig,
@@ -285,24 +286,27 @@ impl Bot {
     async fn do_prepare_profile(&self) -> anyhow::Result<()> {
         tracing::debug!("Preparing profile..");
 
+        let desired_display_name = self.inner.config.user.name.clone();
+
         let account = self.inner.matrix_link.client().account();
         let media = self.inner.matrix_link.client().media();
-
-        let desired_display_name = self.inner.config.user.name.clone();
 
         let profile = account
             .fetch_user_profile()
             .await
             .map_err(|e| anyhow::anyhow!("Failed fetching profile: {:?}", e))?;
 
-        let should_update_display_name = match &profile.displayname {
+        let current_display_name = profile.get_static::<DisplayName>()?;
+        let current_avatar_url = profile.get_static::<AvatarUrl>()?;
+
+        let should_update_display_name = match &current_display_name {
             Some(displayname) => displayname != &desired_display_name,
             None => true,
         };
 
         if should_update_display_name {
             tracing::info!(
-                ?profile.displayname,
+                ?current_display_name,
                 ?desired_display_name,
                 "Updating display name.."
             );
@@ -312,7 +316,7 @@ impl Bot {
             }
         }
 
-        let should_update_avatar = match &profile.avatar_url {
+        let should_update_avatar = match &current_avatar_url {
             Some(avatar_url) => {
                 let request = MediaRequestParameters {
                     source: MediaSource::Plain(avatar_url.to_owned()),
