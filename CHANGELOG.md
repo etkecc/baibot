@@ -1,3 +1,11 @@
+# (2025-09-08) Version 1.8.0
+
+- (**Internal Improvement**) Upgrade [mxlink](https://crates.io/crates/mxlink) (1.9.0 -> 1.10.0) and [matrix-sdk](https://crates.io/crates/matrix-sdk) (0.13.0 -> 0.14.0)
+
+- (**Internal Improvement**) Upgrade [Rust](https://www.rust-lang.org/) (1.88.0 -> 1.89.0)
+
+- (**Internal Improvement**) Upgrade Debian base for container images (12/bookworm -> 13/trixie)
+
 # (2025-07-11) Version 1.7.6
 
 - (**Internal Improvement**) Dependency updates. This version is based on [mxlink](https://crates.io/crates/mxlink)@1.9.0 (which is based on the newly released [matrix-sdk](https://crates.io/crates/matrix-sdk)@[0.13.0](https://github.com/matrix-org/matrix-rust-sdk/releases/tag/matrix-sdk-0.13.0), which contains fixes for some security vulnerabilities)
