@@ -4,7 +4,7 @@
 #                                     #
 #######################################
 
-FROM docker.io/rust:1.88.0-slim-bookworm AS build
+FROM docker.io/rust:1.89.0-slim-trixie AS build
 
 RUN apt-get update && apt-get install -y build-essential pkg-config libssl-dev libsqlite3-dev
 
@@ -39,7 +39,7 @@ RUN --mount=type=cache,target=/target,sharing=locked \
 #                                     #
 #######################################
 
-FROM docker.io/debian:bookworm-slim
+FROM docker.io/debian:trixie-slim
 
 RUN apt-get update && apt-get install -y ca-certificates sqlite3 && \
     apt-get clean && \
