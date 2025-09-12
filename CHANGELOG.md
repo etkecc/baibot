@@ -1,3 +1,7 @@
+# (2025-09-12) Version 1.8.1
+
+- (**Internal Improvement**) Dependency updates.
+
 # (2025-09-08) Version 1.8.0
 
 - (**Internal Improvement**) Upgrade [mxlink](https://crates.io/crates/mxlink) (1.9.0 -> 1.10.0) and [matrix-sdk](https://crates.io/crates/matrix-sdk) (0.13.0 -> 0.14.0)
