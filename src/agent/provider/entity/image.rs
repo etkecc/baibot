@@ -58,10 +58,6 @@ impl ImageSource {
 
 impl From<ImageSource> for async_openai::types::ImageInput {
     fn from(value: ImageSource) -> Self {
-        async_openai::types::ImageInput::from_vec_u8(
-            value.filename,
-            value.bytes,
-            value.mime_type.to_string(),
-        )
+        async_openai::types::ImageInput::from_vec_u8(value.filename, value.bytes)
     }
 }

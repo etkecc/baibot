@@ -161,11 +161,11 @@ impl TryInto<OpenAITextToSpeechConfig> for TextToSpeechConfig {
     type Error = String;
 
     fn try_into(self) -> Result<OpenAITextToSpeechConfig, Self::Error> {
-        let model_id = convert_string_to_enum::<async_openai::types::SpeechModel>(&self.model_id)?;
+        let model_id = convert_string_to_enum::<async_openai::types::audio::SpeechModel>(&self.model_id)?;
 
-        let voice = convert_string_to_enum::<async_openai::types::Voice>(&self.voice)?;
+        let voice = convert_string_to_enum::<async_openai::types::audio::Voice>(&self.voice)?;
 
-        let response_format = convert_string_to_enum::<async_openai::types::SpeechResponseFormat>(
+        let response_format = convert_string_to_enum::<async_openai::types::audio::SpeechResponseFormat>(
             &self.response_format,
         )?;
 

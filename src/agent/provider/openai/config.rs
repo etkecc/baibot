@@ -104,16 +104,16 @@ fn default_speech_to_text_model_id() -> String {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TextToSpeechConfig {
     #[serde(default = "default_text_to_speech_model_id")]
-    pub model_id: async_openai::types::SpeechModel,
+    pub model_id: async_openai::types::audio::SpeechModel,
 
     #[serde(default = "default_text_to_speech_voice")]
-    pub voice: async_openai::types::Voice,
+    pub voice: async_openai::types::audio::Voice,
 
     #[serde(default = "default_text_to_speech_speed")]
     pub speed: f32,
 
     #[serde(default = "default_text_to_speech_response_format")]
-    pub response_format: async_openai::types::SpeechResponseFormat,
+    pub response_format: async_openai::types::audio::SpeechResponseFormat,
 }
 
 impl Default for TextToSpeechConfig {
@@ -127,22 +127,22 @@ impl Default for TextToSpeechConfig {
     }
 }
 
-fn default_text_to_speech_model_id() -> async_openai::types::SpeechModel {
-    async_openai::types::SpeechModel::Tts1Hd
+fn default_text_to_speech_model_id() -> async_openai::types::audio::SpeechModel {
+    async_openai::types::audio::SpeechModel::Tts1Hd
 }
 
-fn default_text_to_speech_voice() -> async_openai::types::Voice {
-    async_openai::types::Voice::Onyx
+fn default_text_to_speech_voice() -> async_openai::types::audio::Voice {
+    async_openai::types::audio::Voice::Onyx
 }
 
 fn default_text_to_speech_speed() -> f32 {
     1.0
 }
 
-fn default_text_to_speech_response_format() -> async_openai::types::SpeechResponseFormat {
+fn default_text_to_speech_response_format() -> async_openai::types::audio::SpeechResponseFormat {
     // The API defaults to mp3, but we prefer Opus because it's smaller.
     // Our clients should all have support for it.
-    async_openai::types::SpeechResponseFormat::Opus
+    async_openai::types::audio::SpeechResponseFormat::Opus
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

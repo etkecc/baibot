@@ -5,8 +5,9 @@ use async_openai::{
     config::OpenAIConfig,
     types::{
         ChatCompletionRequestMessage, CreateChatCompletionRequestArgs, CreateImageEditRequestArgs,
-        CreateImageRequestArgs, CreateSpeechRequestArgs, CreateTranscriptionRequestArgs,
+        CreateImageRequestArgs,
         DallE2ImageSize, Image, ImageModel, ImageResponseFormat,
+        audio::{AudioInput, CreateSpeechRequestArgs, CreateTranscriptionRequestArgs},
     },
 };
 
@@ -209,11 +210,7 @@ impl ControllerTrait for Controller {
 
         let request = CreateTranscriptionRequestArgs::default()
             .model(&speech_to_text_config.model_id)
-            .file(async_openai::types::AudioInput::from_vec_u8(
-                filename,
-                media,
-                mime_type.to_string(),
-            ))
+            .file(AudioInput::from_vec_u8(filename, media))
             .language(language.clone())
             .build()?;
 
@@ -223,7 +220,7 @@ impl ControllerTrait for Controller {
             "Sending OpenAI speech-to-text API request"
         );
 
-        let response = self.client.audio().transcribe(request).await?;
+        let response = self.client.audio().transcription().create(request).await?;
 
         tracing::trace!(
             ?response,
@@ -274,6 +271,19 @@ impl ControllerTrait for Controller {
                     }
                     async_openai::types::ImageQuality::HD => {
                         Some(async_openai::types::ImageQuality::Standard)
+                    }
+                    // New quality levels - keep as-is or downgrade to Standard
+                    async_openai::types::ImageQuality::High => {
+                        Some(async_openai::types::ImageQuality::Standard)
+                    }
+                    async_openai::types::ImageQuality::Medium => {
+                        Some(async_openai::types::ImageQuality::Medium)
+                    }
+                    async_openai::types::ImageQuality::Low => {
+                        Some(async_openai::types::ImageQuality::Low)
+                    }
+                    async_openai::types::ImageQuality::Auto => {
+                        Some(async_openai::types::ImageQuality::Auto)
                     }
                 },
                 None => None,
@@ -471,7 +481,7 @@ impl ControllerTrait for Controller {
 
         let voice = if let Some(voice_string) = params.voice_override {
             // This is a hacky way to construct a Voice enum from the string we have.
-            let voice: serde_json::Result<async_openai::types::Voice> =
+            let voice: serde_json::Result<async_openai::types::audio::Voice> =
                 serde_json::from_str(&format!("\"{}\"", voice_string));
             match voice {
                 Ok(voice) => voice,
@@ -511,7 +521,7 @@ impl ControllerTrait for Controller {
             "Sending OpenAI text-to-speech API request"
         );
 
-        let result = self.client.audio().speech(request).await?;
+        let result = self.client.audio().speech().create(request).await?;
 
         Ok(TextToSpeechResult {
             bytes: result.bytes.into(),
@@ -570,15 +580,15 @@ impl ControllerTrait for Controller {
 }
 
 fn response_format_to_mime_type(
-    response_format: &async_openai::types::SpeechResponseFormat,
+    response_format: &async_openai::types::audio::SpeechResponseFormat,
 ) -> Option<mxlink::mime::Mime> {
     let content_type = match response_format {
-        async_openai::types::SpeechResponseFormat::Mp3 => "audio/mp3".to_owned(),
-        async_openai::types::SpeechResponseFormat::Wav => "audio/wav".to_owned(),
-        async_openai::types::SpeechResponseFormat::Opus => "audio/ogg".to_owned(),
-        async_openai::types::SpeechResponseFormat::Aac => "audio/aac".to_owned(),
-        async_openai::types::SpeechResponseFormat::Flac => "audio/flac".to_owned(),
-        async_openai::types::SpeechResponseFormat::Pcm => "audio/L8".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Mp3 => "audio/mp3".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Wav => "audio/wav".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Opus => "audio/ogg".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Aac => "audio/aac".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Flac => "audio/flac".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Pcm => "audio/L8".to_owned(),
     };
 
     match content_type.parse() {
