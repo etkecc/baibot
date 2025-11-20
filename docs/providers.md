@@ -125,10 +125,7 @@ For services which are not fully compatible with the OpenAI API, consider using 
   - create a room-local agent: `!bai agent create-room-local openai my-openai-agent`
   - create a global agent: `!bai agent create-global openai my-openai-agent`
 
-💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which:
-
-- in the general case looks [like this](./sample-provider-configs/openai.yml)
-- for the [o1](https://platform.openai.com/docs/models/o1) models needs to look [like this](./sample-provider-configs/openai-o1.yml)
+💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/openai.yml).
 
 
 ### OpenAI Compatible

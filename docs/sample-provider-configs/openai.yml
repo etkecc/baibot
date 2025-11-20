@@ -4,8 +4,11 @@ text_generation:
   model_id: gpt-5
   prompt: "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time of this conversation's start is: {{ baibot_conversation_start_time_utc }}."
   temperature: 1.0
-  max_response_tokens: 16384
-  max_context_tokens: 128000
+  # Reasoning models need to use `max_completion_tokens` instead of `max_response_tokens`.
+  # If you're dealing with a non-reasoning model, specify `max_response_tokens` and unset `max_completion_tokens`.
+  max_response_tokens: null
+  max_completion_tokens: 128000
+  max_context_tokens: 400000
 speech_to_text:
   model_id: whisper-1
 text_to_speech:
