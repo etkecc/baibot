@@ -1,3 +1,7 @@
+# (2025-11-20) Version 1.8.2
+
+- (**Internal Improvement**) Dependency and compiler updates (Rust 1.89.0 -> 1.91.1).
+
 # (2025-09-12) Version 1.8.1
 
 - (**Internal Improvement**) Dependency updates.
