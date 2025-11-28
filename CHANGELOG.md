@@ -1,3 +1,11 @@
+# (2025-11-28) Version 1.8.3
+
+- (**Improvement**) Add support for the `BAIBOT_PERSISTENCE_SESSION_ENCRYPTION_KEY` environment variable for configuring `persistence.session_encryption_key`
+
+- (**Improvement**) Add support for the `BAIBOT_USER_ENCRYPTION_RECOVERY_RESET_ALLOWED` environment variable for configuring `user.encryption.recovery_reset_allowed`
+
+- (**Internal Improvement**) Dependency updates.
+
 # (2025-11-20) Version 1.8.2
 
 - (**Internal Improvement**) Dependency and compiler updates (Rust 1.89.0 -> 1.91.1).
