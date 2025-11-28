@@ -51,6 +51,9 @@ pub fn load() -> anyhow::Result<Config> {
             cfg_env::BAIBOT_PERSISTENCE_DATA_DIR_PATH => {
                 config.persistence.data_dir_path = Some(value);
             }
+            cfg_env::BAIBOT_PERSISTENCE_SESSION_ENCRYPTION_KEY => {
+                config.persistence.session_encryption_key = Some(value);
+            }
             cfg_env::BAIBOT_PERSISTENCE_CONFIG_ENCRYPTION_KEY => {
                 config.persistence.config_encryption_key = Some(value);
             }
