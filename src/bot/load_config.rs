@@ -33,6 +33,9 @@ pub fn load() -> anyhow::Result<Config> {
             cfg_env::BAIBOT_USER_ENCRYPTION_RECOVERY_PASSPHRASE => {
                 config.user.encryption.recovery_passphrase = Some(value);
             }
+            cfg_env::BAIBOT_USER_ENCRYPTION_RECOVERY_RESET_ALLOWED => {
+                config.user.encryption.recovery_reset_allowed = value.parse::<bool>()?;
+            }
             cfg_env::BAIBOT_USER_NAME => config.user.name = value,
             cfg_env::BAIBOT_COMMAND_PREFIX => config.command_prefix = value,
             cfg_env::BAIBOT_ROOM_POST_JOIN_SELF_INTRODUCTION_ENABLED => {
