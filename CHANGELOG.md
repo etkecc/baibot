@@ -1,3 +1,7 @@
+# (2025-11-30) Version 1.9.0
+
+- (**Internal Improvement**) Upgrade [async-openai](https://crates.io/crates/async-openai) from our own etkecc fork (0.28.1-patched) to the official upstream version 0.31.1. This upgrade required some code adaptations to the new module structure, etc. While tested, regressions are possible.
+
 # (2025-11-28) Version 1.8.3
 
 - (**Improvement**) Add support for the `BAIBOT_PERSISTENCE_SESSION_ENCRYPTION_KEY` environment variable for configuring `persistence.session_encryption_key`
