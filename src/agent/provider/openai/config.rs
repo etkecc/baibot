@@ -104,16 +104,16 @@ fn default_speech_to_text_model_id() -> String {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TextToSpeechConfig {
     #[serde(default = "default_text_to_speech_model_id")]
-    pub model_id: async_openai::types::SpeechModel,
+    pub model_id: async_openai::types::audio::SpeechModel,
 
     #[serde(default = "default_text_to_speech_voice")]
-    pub voice: async_openai::types::Voice,
+    pub voice: async_openai::types::audio::Voice,
 
     #[serde(default = "default_text_to_speech_speed")]
     pub speed: f32,
 
     #[serde(default = "default_text_to_speech_response_format")]
-    pub response_format: async_openai::types::SpeechResponseFormat,
+    pub response_format: async_openai::types::audio::SpeechResponseFormat,
 }
 
 impl Default for TextToSpeechConfig {
@@ -127,22 +127,22 @@ impl Default for TextToSpeechConfig {
     }
 }
 
-fn default_text_to_speech_model_id() -> async_openai::types::SpeechModel {
-    async_openai::types::SpeechModel::Tts1Hd
+fn default_text_to_speech_model_id() -> async_openai::types::audio::SpeechModel {
+    async_openai::types::audio::SpeechModel::Tts1Hd
 }
 
-fn default_text_to_speech_voice() -> async_openai::types::Voice {
-    async_openai::types::Voice::Onyx
+fn default_text_to_speech_voice() -> async_openai::types::audio::Voice {
+    async_openai::types::audio::Voice::Onyx
 }
 
 fn default_text_to_speech_speed() -> f32 {
     1.0
 }
 
-fn default_text_to_speech_response_format() -> async_openai::types::SpeechResponseFormat {
+fn default_text_to_speech_response_format() -> async_openai::types::audio::SpeechResponseFormat {
     // The API defaults to mp3, but we prefer Opus because it's smaller.
     // Our clients should all have support for it.
-    async_openai::types::SpeechResponseFormat::Opus
+    async_openai::types::audio::SpeechResponseFormat::Opus
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -150,13 +150,13 @@ pub struct ImageGenerationConfig {
     pub model_id: String,
 
     #[serde(default = "default_image_style")]
-    pub style: Option<async_openai::types::ImageStyle>,
+    pub style: Option<async_openai::types::images::ImageStyle>,
 
     #[serde(default = "default_image_size")]
-    pub size: Option<async_openai::types::ImageSize>,
+    pub size: Option<async_openai::types::images::ImageSize>,
 
     #[serde(default = "default_image_quality")]
-    pub quality: Option<async_openai::types::ImageQuality>,
+    pub quality: Option<async_openai::types::images::ImageQuality>,
 }
 
 impl Default for ImageGenerationConfig {
@@ -173,23 +173,25 @@ impl Default for ImageGenerationConfig {
 impl ImageGenerationConfig {
     pub fn model_id_as_openai_image_model(
         &self,
-    ) -> Result<async_openai::types::ImageModel, String> {
+    ) -> Result<async_openai::types::images::ImageModel, String> {
         match self.model_id.as_str() {
-            "dall-e-2" => Ok(async_openai::types::ImageModel::DallE2),
-            "dall-e-3" => Ok(async_openai::types::ImageModel::DallE3),
-            other => Ok(async_openai::types::ImageModel::Other(other.to_owned())),
+            "dall-e-2" => Ok(async_openai::types::images::ImageModel::DallE2),
+            "dall-e-3" => Ok(async_openai::types::images::ImageModel::DallE3),
+            "gpt-image-1" => Ok(async_openai::types::images::ImageModel::GptImage1),
+            "gpt-image-1-mini" => Ok(async_openai::types::images::ImageModel::GptImage1Mini),
+            other => Ok(async_openai::types::images::ImageModel::Other(other.to_owned())),
         }
     }
 }
 
-fn default_image_style() -> Option<async_openai::types::ImageStyle> {
+fn default_image_style() -> Option<async_openai::types::images::ImageStyle> {
     None
 }
 
-fn default_image_size() -> Option<async_openai::types::ImageSize> {
+fn default_image_size() -> Option<async_openai::types::images::ImageSize> {
     None
 }
 
-fn default_image_quality() -> Option<async_openai::types::ImageQuality> {
+fn default_image_quality() -> Option<async_openai::types::images::ImageQuality> {
     None
 }

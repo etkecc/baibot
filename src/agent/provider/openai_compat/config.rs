@@ -161,11 +161,11 @@ impl TryInto<OpenAITextToSpeechConfig> for TextToSpeechConfig {
     type Error = String;
 
     fn try_into(self) -> Result<OpenAITextToSpeechConfig, Self::Error> {
-        let model_id = convert_string_to_enum::<async_openai::types::SpeechModel>(&self.model_id)?;
+        let model_id = convert_string_to_enum::<async_openai::types::audio::SpeechModel>(&self.model_id)?;
 
-        let voice = convert_string_to_enum::<async_openai::types::Voice>(&self.voice)?;
+        let voice = convert_string_to_enum::<async_openai::types::audio::Voice>(&self.voice)?;
 
-        let response_format = convert_string_to_enum::<async_openai::types::SpeechResponseFormat>(
+        let response_format = convert_string_to_enum::<async_openai::types::audio::SpeechResponseFormat>(
             &self.response_format,
         )?;
 
@@ -224,7 +224,7 @@ impl TryInto<OpenAIImageGenerationConfig> for ImageGenerationConfig {
 
     fn try_into(self) -> Result<OpenAIImageGenerationConfig, Self::Error> {
         let size = if let Some(size) = &self.size {
-            Some(convert_string_to_enum::<async_openai::types::ImageSize>(
+            Some(convert_string_to_enum::<async_openai::types::images::ImageSize>(
                 size,
             )?)
         } else {
@@ -232,7 +232,7 @@ impl TryInto<OpenAIImageGenerationConfig> for ImageGenerationConfig {
         };
 
         let style = if let Some(style) = &self.style {
-            Some(convert_string_to_enum::<async_openai::types::ImageStyle>(
+            Some(convert_string_to_enum::<async_openai::types::images::ImageStyle>(
                 style,
             )?)
         } else {
@@ -240,7 +240,7 @@ impl TryInto<OpenAIImageGenerationConfig> for ImageGenerationConfig {
         };
 
         let quality = if let Some(quality) = &self.quality {
-            Some(convert_string_to_enum::<async_openai::types::ImageQuality>(
+            Some(convert_string_to_enum::<async_openai::types::images::ImageQuality>(
                 quality,
             )?)
         } else {

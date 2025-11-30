@@ -17,7 +17,7 @@ path = "src/lib.rs"
 [dependencies]
 anthropic = { git = "https://github.com/etkecc/anthropic-rs.git", branch = "fix-content-block-image" }
 anyhow = "1.0.*"
-async-openai = { git = "https://github.com/etkecc/async-openai", branch = "async-openai-v0.28.1-patched" }
+async-openai = { version = "0.31.1", features = ["audio", "chat-completion", "image"] }
 base64 = "0.22.*"
 chrono = { version = "0.4.*", default-features = false, features = ["std", "now"] }
 # We'd rather not depend on this, but we cannot use the ruma-events EventContent macro without it.

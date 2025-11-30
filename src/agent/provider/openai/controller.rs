@@ -4,9 +4,12 @@ use async_openai::{
     Client as OpenAIClient,
     config::OpenAIConfig,
     types::{
-        ChatCompletionRequestMessage, CreateChatCompletionRequestArgs, CreateImageEditRequestArgs,
-        CreateImageRequestArgs, CreateSpeechRequestArgs, CreateTranscriptionRequestArgs,
-        DallE2ImageSize, Image, ImageModel, ImageResponseFormat,
+        audio::{AudioInput, CreateSpeechRequestArgs, CreateTranscriptionRequestArgs},
+        chat::{ChatCompletionRequestMessage, CreateChatCompletionRequestArgs},
+        images::{
+            CreateImageEditRequestArgs, CreateImageRequestArgs,
+            Image, ImageInput, ImageModel, ImageResponseFormat,
+        },
     },
 };
 
@@ -37,8 +40,6 @@ use crate::{
 };
 
 use super::config::Config;
-
-use super::OPENAI_IMAGE_MODEL_GPT_IMAGE_1;
 
 #[derive(Debug, Clone)]
 pub struct Controller {
@@ -209,11 +210,7 @@ impl ControllerTrait for Controller {
 
         let request = CreateTranscriptionRequestArgs::default()
             .model(&speech_to_text_config.model_id)
-            .file(async_openai::types::AudioInput::from_vec_u8(
-                filename,
-                media,
-                mime_type.to_string(),
-            ))
+            .file(AudioInput::from_vec_u8(filename, media))
             .language(language.clone())
             .build()?;
 
@@ -223,7 +220,7 @@ impl ControllerTrait for Controller {
             "Sending OpenAI speech-to-text API request"
         );
 
-        let response = self.client.audio().transcribe(request).await?;
+        let response = self.client.audio().transcription().create(request).await?;
 
         tracing::trace!(
             ?response,
@@ -255,11 +252,12 @@ impl ControllerTrait for Controller {
         let model = if params.cheaper_model_switching_allowed {
             // Switch to a cheaper model
             match original_model {
-                async_openai::types::ImageModel::DallE2 => async_openai::types::ImageModel::DallE2,
-                async_openai::types::ImageModel::DallE3 => async_openai::types::ImageModel::DallE2,
-                async_openai::types::ImageModel::Other(_) => {
-                    async_openai::types::ImageModel::DallE2
+                ImageModel::DallE2 => ImageModel::DallE2,
+                ImageModel::DallE3 => ImageModel::DallE2,
+                ImageModel::Other(_) => {
+                    ImageModel::DallE2
                 }
+                _ => original_model.clone(),
             }
         } else {
             original_model
@@ -269,11 +267,24 @@ impl ControllerTrait for Controller {
             // Switch to a cheaper quality
             match &image_generation_config.quality {
                 Some(quality) => match quality {
-                    async_openai::types::ImageQuality::Standard => {
-                        Some(async_openai::types::ImageQuality::Standard)
+                    async_openai::types::images::ImageQuality::Standard => {
+                        Some(async_openai::types::images::ImageQuality::Standard)
                     }
-                    async_openai::types::ImageQuality::HD => {
-                        Some(async_openai::types::ImageQuality::Standard)
+                    async_openai::types::images::ImageQuality::HD => {
+                        Some(async_openai::types::images::ImageQuality::Standard)
+                    }
+                    // New quality levels - keep as-is or downgrade to Standard
+                    async_openai::types::images::ImageQuality::High => {
+                        Some(async_openai::types::images::ImageQuality::Standard)
+                    }
+                    async_openai::types::images::ImageQuality::Medium => {
+                        Some(async_openai::types::images::ImageQuality::Medium)
+                    }
+                    async_openai::types::images::ImageQuality::Low => {
+                        Some(async_openai::types::images::ImageQuality::Low)
+                    }
+                    async_openai::types::images::ImageQuality::Auto => {
+                        Some(async_openai::types::images::ImageQuality::Auto)
                     }
                 },
                 None => None,
@@ -284,18 +295,17 @@ impl ControllerTrait for Controller {
 
         let size = params
             .size_override
-            .map(|s| convert_string_to_enum::<async_openai::types::ImageSize>(&s).unwrap())
+            .map(|s| convert_string_to_enum::<async_openai::types::images::ImageSize>(&s).unwrap())
             .or(image_generation_config.size);
 
         let response_format = match model.clone() {
             ImageModel::DallE2 => Some(ImageResponseFormat::B64Json),
             ImageModel::DallE3 => Some(ImageResponseFormat::B64Json),
-            ImageModel::Other(model_str) => match model_str.as_str() {
-                // gpt-image-1 only outputs base64 and we don't need to specify the response format.
-                // In fact, specifying the response format results in an error.
-                OPENAI_IMAGE_MODEL_GPT_IMAGE_1 => None,
-                _ => Some(ImageResponseFormat::B64Json),
-            },
+            // gpt-image-1 only outputs base64 and we don't need to specify the response format.
+            // In fact, specifying the response format results in an error.
+            ImageModel::GptImage1 => None,
+            ImageModel::GptImage1Mini => None,
+            ImageModel::Other(_) => Some(ImageResponseFormat::B64Json),
         };
 
         let mut request_builder = CreateImageRequestArgs::default();
@@ -329,15 +339,15 @@ impl ControllerTrait for Controller {
             "Sending OpenAI image generation API request"
         );
 
-        let response = self.client.images().create(request).await?;
+        let response = self.client.images().generate(request).await?;
 
         if let Some(image) = response.data.into_iter().next() {
             match image.deref() {
-                async_openai::types::Image::B64Json {
+                Image::B64Json {
                     b64_json,
                     revised_prompt,
                 } => {
-                    let bytes = base64_decode(b64_json)?;
+                    let bytes = base64_decode(b64_json.as_ref())?;
 
                     return Ok(ImageGenerationResult {
                         bytes,
@@ -374,15 +384,15 @@ impl ControllerTrait for Controller {
             return Err(anyhow::anyhow!("No image sources provided"));
         }
 
-        let mut image_inputs = Vec::new();
+        let mut image_inputs: Vec<ImageInput> = Vec::new();
         for image in images {
             image_inputs.push(image.into());
         }
 
         let dalle2_size = match image_generation_config.size {
-            Some(async_openai::types::ImageSize::S256x256) => Some(DallE2ImageSize::S256x256),
-            Some(async_openai::types::ImageSize::S512x512) => Some(DallE2ImageSize::S512x512),
-            Some(async_openai::types::ImageSize::S1024x1024) => Some(DallE2ImageSize::S1024x1024),
+            Some(async_openai::types::images::ImageSize::S256x256) => Some(async_openai::types::images::ImageSize::S256x256),
+            Some(async_openai::types::images::ImageSize::S512x512) => Some(async_openai::types::images::ImageSize::S512x512),
+            Some(async_openai::types::images::ImageSize::S1024x1024) => Some(async_openai::types::images::ImageSize::S1024x1024),
             _ => None,
         };
 
@@ -391,16 +401,17 @@ impl ControllerTrait for Controller {
             .map_err(|err| anyhow::anyhow!(err))?;
 
         let response_format = match model.clone() {
-            async_openai::types::ImageModel::DallE2 => {
-                Some(async_openai::types::ImageResponseFormat::B64Json)
+            ImageModel::DallE2 => {
+                Some(ImageResponseFormat::B64Json)
             }
-            async_openai::types::ImageModel::DallE3 => {
-                Some(async_openai::types::ImageResponseFormat::B64Json)
+            ImageModel::DallE3 => {
+                Some(ImageResponseFormat::B64Json)
             }
-            async_openai::types::ImageModel::Other(model_str) => match model_str.as_str() {
-                OPENAI_IMAGE_MODEL_GPT_IMAGE_1 => None,
-                _ => Some(async_openai::types::ImageResponseFormat::B64Json),
-            },
+            // gpt-image-1 only outputs base64 and we don't need to specify the response format.
+            // In fact, specifying the response format results in an error.
+            ImageModel::GptImage1 => None,
+            ImageModel::GptImage1Mini => None,
+            ImageModel::Other(_) => Some(ImageResponseFormat::B64Json),
         };
 
         let mut request_builder = CreateImageEditRequestArgs::default();
@@ -429,12 +440,12 @@ impl ControllerTrait for Controller {
             "Sending OpenAI image edit API request"
         );
 
-        let response = self.client.images().create_edit(request).await?;
+        let response = self.client.images().edit(request).await?;
 
         if let Some(image_data) = response.data.into_iter().next() {
             match image_data.deref() {
                 Image::B64Json { b64_json, .. } => {
-                    let bytes = base64_decode(b64_json)?;
+                    let bytes = base64_decode(b64_json.as_ref())?;
                     return Ok(ImageEditResult {
                         bytes,
                         mime_type: mxlink::mime::IMAGE_PNG,
@@ -471,7 +482,7 @@ impl ControllerTrait for Controller {
 
         let voice = if let Some(voice_string) = params.voice_override {
             // This is a hacky way to construct a Voice enum from the string we have.
-            let voice: serde_json::Result<async_openai::types::Voice> =
+            let voice: serde_json::Result<async_openai::types::audio::Voice> =
                 serde_json::from_str(&format!("\"{}\"", voice_string));
             match voice {
                 Ok(voice) => voice,
@@ -511,7 +522,7 @@ impl ControllerTrait for Controller {
             "Sending OpenAI text-to-speech API request"
         );
 
-        let result = self.client.audio().speech(request).await?;
+        let result = self.client.audio().speech().create(request).await?;
 
         Ok(TextToSpeechResult {
             bytes: result.bytes.into(),
@@ -570,15 +581,15 @@ impl ControllerTrait for Controller {
 }
 
 fn response_format_to_mime_type(
-    response_format: &async_openai::types::SpeechResponseFormat,
+    response_format: &async_openai::types::audio::SpeechResponseFormat,
 ) -> Option<mxlink::mime::Mime> {
     let content_type = match response_format {
-        async_openai::types::SpeechResponseFormat::Mp3 => "audio/mp3".to_owned(),
-        async_openai::types::SpeechResponseFormat::Wav => "audio/wav".to_owned(),
-        async_openai::types::SpeechResponseFormat::Opus => "audio/ogg".to_owned(),
-        async_openai::types::SpeechResponseFormat::Aac => "audio/aac".to_owned(),
-        async_openai::types::SpeechResponseFormat::Flac => "audio/flac".to_owned(),
-        async_openai::types::SpeechResponseFormat::Pcm => "audio/L8".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Mp3 => "audio/mp3".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Wav => "audio/wav".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Opus => "audio/ogg".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Aac => "audio/aac".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Flac => "audio/flac".to_owned(),
+        async_openai::types::audio::SpeechResponseFormat::Pcm => "audio/L8".to_owned(),
     };
 
     match content_type.parse() {
