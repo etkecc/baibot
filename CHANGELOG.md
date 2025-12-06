@@ -1,3 +1,7 @@
+# (2025-12-06) Version 1.10.0
+
+- (**Internal Improvement**) Dependency updates. This version is based on [mxlink](https://crates.io/crates/mxlink)@1.11.0 (which is based on the newly released [matrix-sdk](https://crates.io/crates/matrix-sdk)@[0.16.0](https://github.com/matrix-org/matrix-rust-sdk/releases/tag/matrix-sdk-0.16.0).
+
 # (2025-11-30) Version 1.9.0
 
 - (**Internal Improvement**) Upgrade [async-openai](https://crates.io/crates/async-openai) from our own etkecc fork (0.28.1-patched) to the official upstream version 0.31.1. This upgrade required some code adaptations to the new module structure, etc. While tested, regressions are possible.
