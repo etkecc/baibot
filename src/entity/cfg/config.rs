@@ -93,6 +93,9 @@ pub struct ConfigUser {
 
     #[serde(default)]
     pub encryption: ConfigUserEncryption,
+
+    #[serde(default)]
+    pub avatar: Option<String>,
 }
 
 impl ConfigUser {

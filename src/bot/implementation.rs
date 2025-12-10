@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::fs;
 use std::{future::Future, pin::Pin};
 
 use mxlink::matrix_sdk::Room;
@@ -316,6 +317,18 @@ impl Bot {
             }
         }
 
+        let logo_bytes: Option<Vec<u8>> = if self.inner.config.user.avatar.is_none() {
+            Some(LOGO_BYTES.to_vec())
+        } else {
+            let avatar_path = self.inner.config.user.avatar.as_ref().unwrap();
+            match fs::read(avatar_path) {
+                Ok(bytes) => Some(bytes),
+                Err(_e) => {
+                    Some(LOGO_BYTES.to_vec())
+                }
+            }
+        };
+
         let should_update_avatar = match &current_avatar_url {
             Some(avatar_url) => {
                 let request = MediaRequestParameters {
@@ -328,7 +341,7 @@ impl Bot {
                     .await
                     .map_err(|e| anyhow::anyhow!("Failed fetching existing avatar: {:?}", e))?;
 
-                content.as_slice() != LOGO_BYTES
+                Some(content.as_slice()) != logo_bytes.as_deref()
             }
             None => true,
         };
@@ -340,10 +353,12 @@ impl Bot {
                 .parse()
                 .expect("Failed parsing mime type for logo");
 
-            account
-                .upload_avatar(&mime_type, LOGO_BYTES.to_vec())
-                .await
-                .map_err(|e| anyhow::anyhow!("Failed uploading avatar: {:?}", e))?;
+            if let Some(bytes) = logo_bytes {
+                account
+                    .upload_avatar(&mime_type, bytes)
+                    .await
+                    .map_err(|e| anyhow::anyhow!("Failed uploading avatar: {:?}", e))?;
+            }
         }
 
         Ok(())

@@ -11,6 +11,10 @@ user:
   # Leave empty to use the default (baibot).
   name: baibot
 
+  # An optional path to a 768x768 PNG to be used as a custom avatar image.
+  # Leave empty to use the default.
+  avatar:
+
   encryption:
     # An optional passphrase to use for backing up and recovering the bot's encryption keys.
     # You can use any string here.

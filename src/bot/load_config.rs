@@ -37,6 +37,9 @@ pub fn load() -> anyhow::Result<Config> {
                 config.user.encryption.recovery_reset_allowed = value.parse::<bool>()?;
             }
             cfg_env::BAIBOT_USER_NAME => config.user.name = value,
+            cfg_env::BAIBOT_USER_AVATAR => {
+                config.user.avatar = Some(value);
+            }
             cfg_env::BAIBOT_COMMAND_PREFIX => config.command_prefix = value,
             cfg_env::BAIBOT_ROOM_POST_JOIN_SELF_INTRODUCTION_ENABLED => {
                 config.room.post_join_self_introduction_enabled = value.parse::<bool>()?;
