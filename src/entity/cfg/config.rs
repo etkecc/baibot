@@ -84,6 +84,12 @@ impl ConfigHomeserver {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct ConfigAvatar {
+    #[serde(default)]
+    pub source: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigUser {
     pub mxid_localpart: String,
     pub password: String,
@@ -95,7 +101,7 @@ pub struct ConfigUser {
     pub encryption: ConfigUserEncryption,
 
     #[serde(default)]
-    pub avatar: Option<String>,
+    pub avatar: Option<ConfigAvatar>,
 }
 
 impl ConfigUser {

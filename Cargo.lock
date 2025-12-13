@@ -297,6 +297,8 @@ dependencies = [
  "chrono",
  "etke_openai_api_rust",
  "matrix-sdk",
+ "mime",
+ "mime_guess",
  "mxidwc",
  "mxlink",
  "quick_cache",

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::fs;
 use std::{future::Future, pin::Pin};
+use mime::Mime;
 
 use mxlink::matrix_sdk::Room;
 use mxlink::matrix_sdk::media::{MediaFormat, MediaRequestParameters};
@@ -317,14 +318,15 @@ impl Bot {
             }
         }
 
-        let logo_bytes: Option<Vec<u8>> = if self.inner.config.user.avatar.is_none() {
-            Some(LOGO_BYTES.to_vec())
+        let logo_bytes: Vec<u8> = if self.inner.config.user.avatar.is_none() {
+            LOGO_BYTES.to_vec()
         } else {
-            let avatar_path = self.inner.config.user.avatar.as_ref().unwrap();
+            let avatar = self.inner.config.user.avatar.as_ref().unwrap();
+            let avatar_path = &avatar.source;
             match fs::read(avatar_path) {
-                Ok(bytes) => Some(bytes),
+                Ok(bytes) => bytes,
                 Err(_e) => {
-                    Some(LOGO_BYTES.to_vec())
+                    LOGO_BYTES.to_vec()
                 }
             }
         };
@@ -341,24 +343,26 @@ impl Bot {
                     .await
                     .map_err(|e| anyhow::anyhow!("Failed fetching existing avatar: {:?}", e))?;
 
-                Some(content.as_slice()) != logo_bytes.as_deref()
+                content.as_slice() != logo_bytes
             }
             None => true,
         };
 
         if should_update_avatar {
+            let mime_type: Mime = if self.inner.config.user.avatar.is_none() {
+                LOGO_MIME_TYPE.parse::<Mime>().expect("Failed parsing mime type for logo")
+            } else {
+                let avatar = self.inner.config.user.avatar.as_ref().unwrap();
+                let avatar_path = &avatar.source;
+                mime_guess::guess_mime_type(avatar_path)
+            };
+
             tracing::info!("Updating avatar..");
 
-            let mime_type = LOGO_MIME_TYPE
-                .parse()
-                .expect("Failed parsing mime type for logo");
-
-            if let Some(bytes) = logo_bytes {
-                account
-                    .upload_avatar(&mime_type, bytes)
-                    .await
-                    .map_err(|e| anyhow::anyhow!("Failed uploading avatar: {:?}", e))?;
-            }
+            account
+                .upload_avatar(&mime_type, logo_bytes)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed uploading avatar: {:?}", e))?;
         }
 
         Ok(())
