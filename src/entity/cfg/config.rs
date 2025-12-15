@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use mxlink::helpers::encryption::EncryptionKey;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     agent::{AgentDefinition, AgentPurpose, PublicIdentifier},
@@ -83,6 +83,52 @@ impl ConfigHomeserver {
     }
 }
 
+/// Configuration for the bot's avatar.
+///
+/// - `Default`: Use the built-in default avatar (null, empty string, or missing in config)
+/// - `Keep`: Don't touch the avatar, keep whatever is already set ("keep" in config)
+/// - `Custom(String)`: Use a custom avatar from the specified file path
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub enum Avatar {
+    /// Use the built-in default avatar
+    Default,
+    /// Keep the current avatar, don't change it
+    Keep,
+    /// Use a custom avatar from the specified file path
+    Custom(String),
+}
+
+impl Default for Avatar {
+    fn default() -> Self {
+        Avatar::Default
+    }
+}
+
+impl<'de> Deserialize<'de> for Avatar {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value: Option<String> = Option::deserialize(deserializer)?;
+        Ok(match value {
+            None => Avatar::Default,
+            Some(s) => Avatar::from_string(s),
+        })
+    }
+}
+
+impl Avatar {
+    pub fn from_string(value: String) -> Self {
+        if value.is_empty() {
+            Avatar::Default
+        } else if value.eq_ignore_ascii_case("keep") {
+            Avatar::Keep
+        } else {
+            Avatar::Custom(value)
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigUser {
     pub mxid_localpart: String,
@@ -93,6 +139,9 @@ pub struct ConfigUser {
 
     #[serde(default)]
     pub encryption: ConfigUserEncryption,
+
+    #[serde(default)]
+    pub avatar: Avatar,
 }
 
 impl ConfigUser {

@@ -1,3 +1,4 @@
+use std::fs;
 use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 
@@ -18,12 +19,13 @@ use mxlink::helpers::account_data_config::{
     RoomConfigManager as AccountDataRoomConfigManager,
 };
 use mxlink::helpers::encryption::Manager as EncryptionManager;
+use mxlink::mime::Mime;
 
 use crate::agent::Manager as AgentManager;
 use crate::entity::catch_up_marker::{
     CatchUpMarker, CatchUpMarkerManager, DelayedCatchUpMarkerManager,
 };
-use crate::entity::cfg::Config;
+use crate::entity::cfg::{Avatar, Config};
 use crate::entity::globalconfig::{GlobalConfig, GlobalConfigurationManager};
 use crate::entity::roomconfig::{RoomConfig, RoomConfigurationManager};
 
@@ -316,34 +318,72 @@ impl Bot {
             }
         }
 
-        let should_update_avatar = match &current_avatar_url {
-            Some(avatar_url) => {
-                let request = MediaRequestParameters {
-                    source: MediaSource::Plain(avatar_url.to_owned()),
-                    format: MediaFormat::File,
-                };
-
-                let content = media
-                    .get_media_content(&request, true)
-                    .await
-                    .map_err(|e| anyhow::anyhow!("Failed fetching existing avatar: {:?}", e))?;
-
-                content.as_slice() != LOGO_BYTES
+        let desired_avatar: Option<(Vec<u8>, Mime)> = match &self.inner.config.user.avatar {
+            Avatar::Keep => {
+                tracing::info!("Avatar configured to keep current, skipping avatar management");
+                None
             }
-            None => true,
+            Avatar::Default => {
+                tracing::info!("Avatar configured to use default");
+                Some((
+                    LOGO_BYTES.to_vec(),
+                    LOGO_MIME_TYPE
+                        .parse()
+                        .expect("Failed parsing mime type for logo"),
+                ))
+            }
+            Avatar::Custom(avatar_path) => {
+                tracing::info!(?avatar_path, "Avatar configured to use custom path");
+                let bytes = fs::read(avatar_path).map_err(|e| {
+                    anyhow::anyhow!("Failed reading avatar from {:?}: {:?}", avatar_path, e)
+                })?;
+                let mime = mime_guess::from_path(avatar_path).first_or_octet_stream();
+                tracing::debug!(?mime, bytes_len = bytes.len(), "Loaded custom avatar");
+                Some((bytes, mime))
+            }
         };
 
-        if should_update_avatar {
-            tracing::info!("Updating avatar..");
+        if let Some((desired_bytes, mime_type)) = desired_avatar {
+            let should_update_avatar = match &current_avatar_url {
+                Some(avatar_url) => {
+                    tracing::debug!(?avatar_url, "Fetching current avatar to compare");
+                    let request = MediaRequestParameters {
+                        source: MediaSource::Plain(avatar_url.to_owned()),
+                        format: MediaFormat::File,
+                    };
 
-            let mime_type = LOGO_MIME_TYPE
-                .parse()
-                .expect("Failed parsing mime type for logo");
+                    let content = media
+                        .get_media_content(&request, true)
+                        .await
+                        .map_err(|e| anyhow::anyhow!("Failed fetching existing avatar: {:?}", e))?;
 
-            account
-                .upload_avatar(&mime_type, LOGO_BYTES.to_vec())
-                .await
-                .map_err(|e| anyhow::anyhow!("Failed uploading avatar: {:?}", e))?;
+                    let needs_update = content.as_slice() != desired_bytes;
+
+                    tracing::debug!(
+                        current_bytes_len = content.len(),
+                        desired_bytes_len = desired_bytes.len(),
+                        ?needs_update,
+                        "Compared current and desired avatar"
+                    );
+
+                    needs_update
+                }
+                None => {
+                    tracing::debug!("No current avatar set, will upload");
+                    true
+                }
+            };
+
+            if should_update_avatar {
+                tracing::info!("Updating avatar..");
+                account
+                    .upload_avatar(&mime_type, desired_bytes)
+                    .await
+                    .map_err(|e| anyhow::anyhow!("Failed uploading avatar: {:?}", e))?;
+                tracing::info!("Avatar updated successfully");
+            } else {
+                tracing::debug!("Avatar already up to date, skipping upload");
+            }
         }
 
         Ok(())

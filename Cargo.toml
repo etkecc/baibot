@@ -23,6 +23,7 @@ chrono = { version = "0.4.*", default-features = false, features = ["std", "now"
 # We'd rather not depend on this, but we cannot use the ruma-events EventContent macro without it.
 # We add the `native-tls` feature, because of https://github.com/etkecc/rust-mxlink/issues/1
 matrix-sdk = { version = "0.16.0", default-features = false, features = ["native-tls"] }
+mime_guess = "2.0.*"
 mxidwc = "1.0.*"
 mxlink = ">=1.11.0"
 etke_openai_api_rust = "0.1.*"

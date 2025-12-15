@@ -2,4 +2,4 @@ mod config;
 pub mod defaults;
 pub mod env;
 
-pub use config::Config;
+pub use config::{Avatar, Config};
