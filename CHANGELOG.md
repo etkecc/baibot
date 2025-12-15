@@ -1,3 +1,14 @@
+# (2025-12-15) Version 1.11.0
+
+- (**Feature**) Add support for custom avatars via file path and for keeping the already-set avatar (for those who wish to manage it by themselves via other means). See the [sample config](./etc/app/config.yml.dist) for details. ([062fbbb](https://github.com/etkecc/baibot/commit/062fbbb8ef9ad600db483a431c5c782402191023))
+
+- (**Internal Improvement**) Dependency updates ([99bde53](https://github.com/etkecc/baibot/commit/99bde53ef648a5a9086a96778fde4a9dbc1ede58))
+
+- (**Internal Improvement**) Documentation updates ([b3fd8e5](https://github.com/etkecc/baibot/commit/b3fd8e548f83fe46398ced4760d7e2bb7588c24d))
+
+- (**Internal Improvement**) Upgrade Rust compiler (1.91.1 -> 1.92.0) ([22906aa](https://github.com/etkecc/baibot/commit/22906aa2d3cae51815fad2560a545eaa69c247b6))
+
+
 # (2025-12-06) Version 1.10.0
 
 - (**Internal Improvement**) Dependency updates. This version is based on [mxlink](https://crates.io/crates/mxlink)@1.11.0 (which is based on the newly released [matrix-sdk](https://crates.io/crates/matrix-sdk)@[0.16.0](https://github.com/matrix-org/matrix-rust-sdk/releases/tag/matrix-sdk-0.16.0).
