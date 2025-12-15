@@ -43,7 +43,8 @@ Administrators cannot be changed without adjusting the bot's configuration on th
 
 Room-local agent managers are users privileged to **create their own [agents](./agents.md)** (see `!bai agent`) in rooms.
 
-**⚠️ WARNING**: Letting regular users create agents which contact arbitrary network services **may be a security issue**.
+> [!WARNING]
+> Letting regular users create agents which contact arbitrary network services **may be a security issue**.
 
 The following commands are available:
 - **Show** the currently allowed users: `!bai access room-local-agent-managers`

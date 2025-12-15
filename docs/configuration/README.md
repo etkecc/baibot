@@ -12,12 +12,15 @@ This file is created from the template found in [etc/app/config.yml.dist](../../
 
 Certain keys can be left unset, in which case [📝 hardcoded defaults](../../src/entity/cfg/defaults.rs) would be used.
 
-Each configuration key found in the YAML configuration can be overridden by setting an environment variable (dots should be replaced with `_`). Example:
+Some configuration keys found in the YAML configuration can be overridden by setting an environment variable (dots should be replaced with `_`). Example:
 
 - to override `command_prefix`, set an environment variable `BAIBOT_COMMAND_PREFIX`
 - to override `homeserver.server_name`, set an environment variable `BAIBOT_HOMESERVER_SERVER_NAME`
 
-The static configuration contains an `initial_global_config` key, which is used to populate the bot's global configuration (stored as [dynamic configuration](#dynamic-configuration)) the first time the bot starts. Modifying this subsequently will not have any effect. After initial global configuration creation, it's expected to be managed dynamically via chat commands.
+You can see the list of supported environment variables in the [🦀 src/entity/cfg/env.rs](../../src/entity/cfg/env.rs) file.
+
+> [!WARNING]
+> The static configuration contains an `initial_global_config` key, which is used to populate the bot's global configuration (stored as [dynamic configuration](#dynamic-configuration)) the first time the bot starts. Modifying this subsequently will not have any effect. After initial global configuration creation, it's expected to be managed dynamically via chat commands.
 
 
 ### Dynamic configuration
