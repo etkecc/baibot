@@ -17,7 +17,7 @@ text_to_speech:
   speed: 1.0
   response_format: opus
 image_generation:
-  model_id: gpt-image-1
+  model_id: gpt-image-1.5
   style: null
   size: null
   quality: null

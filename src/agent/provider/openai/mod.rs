@@ -16,7 +16,7 @@ use super::super::AgentInstantiationResult;
 use super::ConfigTrait;
 use super::controller::ControllerType;
 
-pub const OPENAI_IMAGE_MODEL_GPT_IMAGE_1: &str = "gpt-image-1";
+pub const OPENAI_IMAGE_MODEL_GPT_IMAGE_1_DOT_5: &str = "gpt-image-1.5";
 
 pub fn create_controller_from_yaml_value_config(
     agent_id: &str,

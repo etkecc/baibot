@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::OPENAI_IMAGE_MODEL_GPT_IMAGE_1;
+use super::OPENAI_IMAGE_MODEL_GPT_IMAGE_1_DOT_5;
 use crate::agent::{default_prompt, provider::ConfigTrait};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -162,7 +162,7 @@ pub struct ImageGenerationConfig {
 impl Default for ImageGenerationConfig {
     fn default() -> Self {
         Self {
-            model_id: OPENAI_IMAGE_MODEL_GPT_IMAGE_1.to_owned(),
+            model_id: OPENAI_IMAGE_MODEL_GPT_IMAGE_1_DOT_5.to_owned(),
             style: default_image_style(),
             size: default_image_size(),
             quality: default_image_quality(),
@@ -180,7 +180,9 @@ impl ImageGenerationConfig {
             "gpt-image-1" => Ok(async_openai::types::images::ImageModel::GptImage1),
             "gpt-image-1.5" => Ok(async_openai::types::images::ImageModel::GptImage1dot5),
             "gpt-image-1-mini" => Ok(async_openai::types::images::ImageModel::GptImage1Mini),
-            other => Ok(async_openai::types::images::ImageModel::Other(other.to_owned())),
+            other => Ok(async_openai::types::images::ImageModel::Other(
+                other.to_owned(),
+            )),
         }
     }
 }
