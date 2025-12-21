@@ -1,3 +1,10 @@
+# (2025-12-21) Version 1.12.0
+
+- (**Improvement**) Upgrade [async-openai](https://crates.io/crates/async-openai) (0.31.1 -> 0.32.2) and add support for OpenAI's `gpt-image-1.5` model ([08c689a](https://github.com/etkecc/baibot/commit/08c689a), [f7bf3d7](https://github.com/etkecc/baibot/commit/f7bf3d7))
+
+- (**Internal Improvement**) Dependency updates
+
+
 # (2025-12-15) Version 1.11.0
 
 - (**Feature**) Add support for custom avatars via file path and for keeping the already-set avatar (for those who wish to manage it by themselves via other means). See the [sample config](./etc/app/config.yml.dist) for details. ([062fbbb](https://github.com/etkecc/baibot/commit/062fbbb8ef9ad600db483a431c5c782402191023))
