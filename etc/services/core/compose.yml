@@ -27,7 +27,7 @@ services:
     - ./synapse/media-store:/media-store
 
   element-web:
-    image: ghcr.io/element-hq/element-web:v1.12.6
+    image: ghcr.io/element-hq/element-web:v1.12.7
     user: "${UID}:${GID}"
     restart: unless-stopped
     environment:
