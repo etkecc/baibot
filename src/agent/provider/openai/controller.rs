@@ -305,6 +305,7 @@ impl ControllerTrait for Controller {
             // In fact, specifying the response format results in an error.
             ImageModel::GptImage1 => None,
             ImageModel::GptImage1Mini => None,
+            ImageModel::GptImage1dot5 => None,
             ImageModel::Other(_) => Some(ImageResponseFormat::B64Json),
         };
 
@@ -411,6 +412,7 @@ impl ControllerTrait for Controller {
             // In fact, specifying the response format results in an error.
             ImageModel::GptImage1 => None,
             ImageModel::GptImage1Mini => None,
+            ImageModel::GptImage1dot5 => None,
             ImageModel::Other(_) => Some(ImageResponseFormat::B64Json),
         };
 

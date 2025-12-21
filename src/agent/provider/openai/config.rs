@@ -178,6 +178,7 @@ impl ImageGenerationConfig {
             "dall-e-2" => Ok(async_openai::types::images::ImageModel::DallE2),
             "dall-e-3" => Ok(async_openai::types::images::ImageModel::DallE3),
             "gpt-image-1" => Ok(async_openai::types::images::ImageModel::GptImage1),
+            "gpt-image-1.5" => Ok(async_openai::types::images::ImageModel::GptImage1dot5),
             "gpt-image-1-mini" => Ok(async_openai::types::images::ImageModel::GptImage1Mini),
             other => Ok(async_openai::types::images::ImageModel::Other(other.to_owned())),
         }
