@@ -254,10 +254,12 @@ impl ControllerTrait for Controller {
             match original_model {
                 ImageModel::DallE2 => ImageModel::DallE2,
                 ImageModel::DallE3 => ImageModel::DallE2,
+                ImageModel::GptImage1 => ImageModel::GptImage1Mini,
+                ImageModel::GptImage1dot5 => ImageModel::GptImage1Mini,
+                ImageModel::GptImage1Mini => ImageModel::GptImage1Mini,
                 ImageModel::Other(_) => {
                     ImageModel::DallE2
                 }
-                _ => original_model.clone(),
             }
         } else {
             original_model
