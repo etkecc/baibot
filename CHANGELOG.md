@@ -1,3 +1,12 @@
+# (2026-01-23) Version 1.13.0
+
+- (**Improvement**) Extend auto-switching to support cheaper models (`gpt-image-1-mini`) for `gpt-image-1` and `gpt-image-1.5` when generating stickers ([e0b4a40](https://github.com/etkecc/baibot/commit/e0b4a40))
+
+- (**Internal Improvement**) Upgrade Rust compiler (1.92.0 -> 1.93.0) ([691aeeb](https://github.com/etkecc/baibot/commit/691aeeb))
+
+- (**Internal Improvement**) Dependency updates
+
+
 # (2025-12-21) Version 1.12.0
 
 - (**Improvement**) Upgrade [async-openai](https://crates.io/crates/async-openai) (0.31.1 -> 0.32.2) and add support for OpenAI's `gpt-image-1.5` model ([08c689a](https://github.com/etkecc/baibot/commit/08c689a), [f7bf3d7](https://github.com/etkecc/baibot/commit/f7bf3d7))
