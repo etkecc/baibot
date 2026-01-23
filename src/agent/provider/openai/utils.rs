@@ -1,11 +1,7 @@
 use async_openai::types::{
-    chat::{
-        ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
-        ChatCompletionRequestMessageContentPartImage,
-        ChatCompletionRequestSystemMessageArgs,
-        ChatCompletionRequestUserMessageArgs, ChatCompletionRequestUserMessageContent,
-        ChatCompletionRequestUserMessageContentPart,
-        ImageUrlArgs,
+    responses::{
+        EasyInputContent, EasyInputMessage, ImageDetail, InputContent, InputImageContent,
+        InputItem, InputParam, MessageType, Role,
     },
 };
 
@@ -14,79 +10,43 @@ use crate::conversation::llm::{
 };
 use crate::utils::base64::base64_encode;
 
-pub fn convert_llm_messages_to_openai_messages(
+pub fn convert_llm_messages_to_openai_response_input(
     conversation_messages: Vec<LLMMessage>,
-) -> Vec<ChatCompletionRequestMessage> {
-    let mut openai_conversation_messages: Vec<ChatCompletionRequestMessage> =
-        Vec::with_capacity(conversation_messages.len());
+) -> InputParam {
+    let mut items = Vec::with_capacity(conversation_messages.len());
 
     for message in conversation_messages {
-        let openai_message = convert_llm_message_to_openai_message(message);
-        if let Some(openai_message) = openai_message {
-            openai_conversation_messages.push(openai_message);
-        }
-    }
+        let role = match message.author {
+            LLMAuthor::Prompt => Role::System,
+            LLMAuthor::Assistant => Role::Assistant,
+            LLMAuthor::User => Role::User,
+        };
 
-    openai_conversation_messages
-}
+        let content = match message.content {
+            LLMMessageContent::Text(text) => EasyInputContent::Text(text),
+            LLMMessageContent::Image(image_details) => {
+                let image_url = format!(
+                    "data:{};base64,{}",
+                    image_details.mime,
+                    base64_encode(&image_details.data)
+                );
 
-fn convert_llm_message_to_openai_message(
-    llm_message: LLMMessage,
-) -> Option<ChatCompletionRequestMessage> {
-    match &llm_message.content {
-        LLMMessageContent::Text(text) => Some(match llm_message.author {
-            LLMAuthor::Prompt => ChatCompletionRequestSystemMessageArgs::default()
-                .content(text.clone())
-                .build()
-                .expect("Failed building OpenAI system message")
-                .into(),
-            LLMAuthor::Assistant => ChatCompletionRequestAssistantMessageArgs::default()
-                .content(text.clone())
-                .build()
-                .expect("Failed building OpenAI assistant message")
-                .into(),
-            LLMAuthor::User => ChatCompletionRequestUserMessageArgs::default()
-                .content(text.clone())
-                .build()
-                .expect("Failed building OpenAI user message")
-                .into(),
-        }),
-        LLMMessageContent::Image(image_details) => {
-            let image_url = format!(
-                "data:{};base64,{}",
-                image_details.mime,
-                base64_encode(&image_details.data)
-            );
-
-            let part = ChatCompletionRequestUserMessageContentPart::ImageUrl(
-                ChatCompletionRequestMessageContentPartImage {
-                    image_url: ImageUrlArgs::default()
-                        .url(image_url)
-                        .build()
-                        .expect("Failed building OpenAI image url"),
-                },
-            );
-
-            let message_content = ChatCompletionRequestUserMessageContent::Array(vec![part]);
-
-            match llm_message.author {
-                LLMAuthor::User => Some(
-                    ChatCompletionRequestUserMessageArgs::default()
-                        .content(message_content)
-                        .build()
-                        .expect("Failed building OpenAI user message")
-                        .into(),
-                ),
-                _ => {
-                    tracing::warn!(
-                        "OpenAI API does not support image content for messages authored by {:?}. This message part will be skipped.",
-                        llm_message.author
-                    );
-                    None
-                }
+                EasyInputContent::ContentList(vec![InputContent::InputImage(InputImageContent {
+                    image_url: Some(image_url),
+                    detail: ImageDetail::Auto,
+                    file_id: None,
+                })])
             }
-        }
+        };
+
+        items.push(InputItem::EasyMessage(EasyInputMessage {
+            r#type: MessageType::Message,
+            role,
+            content,
+        }));
     }
+
+    InputParam::Items(items)
 }
 
 pub(super) fn convert_string_to_enum<T>(value: &str) -> Result<T, String>
