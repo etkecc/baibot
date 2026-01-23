@@ -5,7 +5,10 @@ use async_openai::{
     config::OpenAIConfig,
     types::{
         audio::{AudioInput, CreateSpeechRequestArgs, CreateTranscriptionRequestArgs},
-        chat::{ChatCompletionRequestMessage, CreateChatCompletionRequestArgs},
+        responses::{
+            CodeInterpreterContainerAuto, CodeInterpreterTool, CodeInterpreterToolContainer,
+            CreateResponseArgs, OutputItem, OutputMessageContent, Tool, WebSearchTool,
+        },
         images::{
             CreateImageEditRequestArgs, CreateImageRequestArgs,
             Image, ImageInput, ImageModel, ImageResponseFormat,
@@ -129,28 +132,44 @@ impl ControllerTrait for Controller {
             conversation_messages.insert(0, prompt_message);
         }
 
-        let openai_conversation_messages: Vec<ChatCompletionRequestMessage> =
-            super::utils::convert_llm_messages_to_openai_messages(conversation_messages);
+        let input = super::utils::convert_llm_messages_to_openai_response_input(conversation_messages);
 
-        let messages_count = openai_conversation_messages.len();
+        let messages_count = match &input {
+            async_openai::types::responses::InputParam::Items(items) => items.len(),
+            _ => 1,
+        };
 
         let temperature = params
             .temperature_override
             .unwrap_or(text_generation_config.temperature);
 
-        let mut request_builder = CreateChatCompletionRequestArgs::default();
+        let mut request_builder = CreateResponseArgs::default();
 
         request_builder
             .model(&text_generation_config.model_id)
             .temperature(temperature)
-            .messages(openai_conversation_messages);
+            .input(input);
 
-        if let Some(max_response_tokens) = text_generation_config.max_response_tokens {
-            request_builder.max_tokens(max_response_tokens);
+        let mut tools = Vec::new();
+        if text_generation_config.tools.web_search {
+            tools.push(Tool::WebSearch(WebSearchTool::default()));
+        }
+        if text_generation_config.tools.code_interpreter {
+            tools.push(Tool::CodeInterpreter(CodeInterpreterTool {
+                container: CodeInterpreterToolContainer::Auto(
+                    CodeInterpreterContainerAuto::default(),
+                ),
+            }));
         }
 
-        if let Some(max_completion_tokens) = text_generation_config.max_completion_tokens {
-            request_builder.max_completion_tokens(max_completion_tokens);
+        if !tools.is_empty() {
+            request_builder.tools(tools);
+        }
+
+        if let Some(max_response_tokens) = text_generation_config.max_response_tokens {
+            request_builder.max_output_tokens(max_response_tokens);
+        } else if let Some(max_completion_tokens) = text_generation_config.max_completion_tokens {
+            request_builder.max_output_tokens(max_completion_tokens);
         }
 
         let request = request_builder.build()?;
@@ -160,33 +179,31 @@ impl ControllerTrait for Controller {
                 model = format!("{:?}", request.model),
                 ?messages_count,
                 request = request_as_json,
-                "Sending OpenAI chat completion API request"
+                "Sending OpenAI response API request"
             );
         }
 
-        let response = self.client.chat().create(request).await?;
+        let response = self.client.responses().create(request).await?;
 
         tracing::trace!(
             ?response,
-            "Got response from the OpenAI chat completion API"
+            "Got response from the OpenAI response API"
         );
 
-        // We only request 1 result, so there should only be 1 choice.
-        if let Some(choice) = response.choices.into_iter().next() {
-            match choice.message.content {
-                Some(text) => {
-                    return Ok(TextGenerationResult { text });
-                }
-                None => {
-                    return Err(anyhow::anyhow!(
-                        "No content was found in the response choice from the OpenAI chat completion API"
-                    ));
+        for item in response.output {
+            if let OutputItem::Message(message) = item {
+                for content in message.content {
+                    if let OutputMessageContent::OutputText(text_content) = content {
+                        return Ok(TextGenerationResult {
+                            text: text_content.text,
+                        });
+                    }
                 }
             }
         }
 
         Err(anyhow::anyhow!(
-            "No response messages choices were returned from the OpenAI chat completion API"
+            "No response messages choices were returned from the OpenAI response API"
         ))
     }
 

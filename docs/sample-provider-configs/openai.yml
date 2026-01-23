@@ -9,6 +9,10 @@ text_generation:
   max_response_tokens: null
   max_completion_tokens: 128000
   max_context_tokens: 400000
+  # Built-in tools
+  tools:
+    web_search: false
+    code_interpreter: false
 speech_to_text:
   model_id: whisper-1
 text_to_speech:

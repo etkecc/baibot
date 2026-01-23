@@ -64,6 +64,9 @@ pub struct TextGenerationConfig {
 
     #[serde(default)]
     pub max_context_tokens: u32,
+
+    #[serde(default)]
+    pub tools: ToolsConfig,
 }
 
 impl Default for TextGenerationConfig {
@@ -75,12 +78,22 @@ impl Default for TextGenerationConfig {
             max_response_tokens: None,
             max_completion_tokens: Some(128_000),
             max_context_tokens: 400_000,
+            tools: ToolsConfig::default(),
         }
     }
 }
 
 fn default_text_model_id() -> String {
     "gpt-5.2".to_owned()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ToolsConfig {
+    #[serde(default)]
+    pub web_search: bool,
+
+    #[serde(default)]
+    pub code_interpreter: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
