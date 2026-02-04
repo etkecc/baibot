@@ -1,3 +1,12 @@
+# (2026-02-04) Version 1.14.0
+
+- (**Feature**) The `openai` provider now uses OpenAI's [Responses API](https://platform.openai.com/docs/api-reference/responses) (instead of the older Chat Completions API), adding support for [🛠️ built-in tools](./docs/features.md#️-built-in-tools-openai-only) (`web_search` and `code_interpreter`). These tools are **disabled by default** and can be enabled via the `text_generation.tools` configuration (see the [sample configuration](https://github.com/etkecc/baibot/blob/c70387b0c38d8d0f30bba2179a2a21a3710dbeaf/docs/sample-provider-configs/openai.yml#L12-L15)). To enable tools on an existing agent, you need to [update the agent](./docs/agents.md#updating-agents) to re-create it with the `text_generation.tools` section added and enable the tools you need. Thanks to [Layla Manley](https://github.com/yeslayla) for the contribution in [#62](https://github.com/etkecc/baibot/pull/62)!
+
+- (**Bugfix**) Fix sticker generation for newer GPT image models (`gpt-image-1`, `gpt-image-1-mini`, `gpt-image-1.5`) which don't support the previously hardcoded `256x256` size (minimum is `1024x1024`)
+
+- (**Internal Improvement**) Dependency updates
+
+
 # (2026-01-23) Version 1.13.0
 
 - (**Improvement**) Extend auto-switching to support cheaper models (`gpt-image-1-mini`) for `gpt-image-1` and `gpt-image-1.5` when generating stickers ([e0b4a40](https://github.com/etkecc/baibot/commit/e0b4a40))
