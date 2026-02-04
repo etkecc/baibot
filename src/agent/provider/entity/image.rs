@@ -2,7 +2,7 @@ use mxlink::mime;
 
 #[derive(Default)]
 pub struct ImageGenerationParams {
-    pub size_override: Option<String>,
+    pub smallest_size_possible: bool,
 
     pub cheaper_model_switching_allowed: bool,
 
@@ -10,8 +10,8 @@ pub struct ImageGenerationParams {
 }
 
 impl ImageGenerationParams {
-    pub fn with_size_override(mut self, value: Option<String>) -> Self {
-        self.size_override = value;
+    pub fn with_smallest_size_possible(mut self, value: bool) -> Self {
+        self.smallest_size_possible = value;
         self
     }
 

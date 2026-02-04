@@ -1,8 +1,6 @@
-use async_openai::types::{
-    responses::{
-        EasyInputContent, EasyInputMessage, ImageDetail, InputContent, InputImageContent,
-        InputItem, InputParam, MessageType, Role,
-    },
+use async_openai::types::responses::{
+    EasyInputContent, EasyInputMessage, ImageDetail, InputContent, InputImageContent, InputItem,
+    InputParam, MessageType, Role,
 };
 
 use crate::conversation::llm::{
@@ -47,20 +45,4 @@ pub fn convert_llm_messages_to_openai_response_input(
     }
 
     InputParam::Items(items)
-}
-
-pub(super) fn convert_string_to_enum<T>(value: &str) -> Result<T, String>
-where
-    T: serde::de::DeserializeOwned,
-{
-    // This is a hacky way to construct an enum from the string we have.
-    let enum_result: serde_json::Result<T> = serde_json::from_str(&format!("\"{}\"", value));
-    match enum_result {
-        Ok(enum_result) => Ok(enum_result),
-        Err(err) => {
-            tracing::debug!(?err, "Failed to parse into enum");
-
-            Err(format!("The value ({}) is not supported.", value))
-        }
-    }
 }

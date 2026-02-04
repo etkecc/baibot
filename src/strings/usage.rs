@@ -64,7 +64,7 @@ To create a sticker, send a command like `%command_prefix% sticker A huge bowl o
 
 The difference from **creating images** is that the bot will:
 
-- create a smaller-resolution image (`256x256`) - smaller/quicker, but still good enough for a sticker
+- create a smaller-resolution image (as small as the model allows) - smaller/quicker, but still good enough for a sticker
 - potentially switch to a different (cheaper or otherwise more suitable) model, if available
 - post the image directly to the room (as a reply to your message), without starting a threaded conversation
 "#;

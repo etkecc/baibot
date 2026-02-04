@@ -12,9 +12,6 @@ use crate::strings;
 use crate::utils::mime::get_file_extension;
 use crate::{Bot, entity::MessageContext};
 
-// We may make this configurable (per room, etc.) in the future, but for now it's hardcoded.
-const STICKER_SIZE: &str = "256x256";
-
 pub async fn handle_image(
     bot: &Bot,
     matrix_link: MatrixLink,
@@ -177,7 +174,7 @@ pub async fn handle_sticker(
     );
 
     let params = ImageGenerationParams::default()
-        .with_size_override(Some(STICKER_SIZE.to_owned()))
+        .with_smallest_size_possible(true)
         .with_cheaper_model_switching_allowed(true)
         .with_cheaper_quality_switching_allowed(true);
 

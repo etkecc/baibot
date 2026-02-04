@@ -3,6 +3,8 @@ use etke_openai_api_rust::chat::{ChatApi, ChatBody};
 use etke_openai_api_rust::images::{ImagesApi, ImagesBody};
 use etke_openai_api_rust::{Auth, Message, OpenAI};
 
+const SMALLEST_IMAGE_SIZE: &str = "256x256";
+
 use super::super::ControllerTrait;
 use crate::utils::base64::base64_decode;
 use crate::{
@@ -303,9 +305,11 @@ impl ControllerTrait for Controller {
         // when they span multiple lines.
         let prompt = prompt.replace("\n", " ");
 
-        let size: Option<String> = params
-            .size_override
-            .or_else(|| image_generation_config.size.clone());
+        let size: Option<String> = if params.smallest_size_possible {
+            Some(SMALLEST_IMAGE_SIZE.to_owned())
+        } else {
+            image_generation_config.size.clone()
+        };
 
         let request = ImagesBody {
             model: Some(image_generation_config.model_id.to_owned()),

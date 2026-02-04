@@ -31,12 +31,9 @@ use crate::{
 use crate::{
     agent::{
         AgentPurpose,
-        provider::{
-            entity::{
-                ImageEditResult, ImageGenerationResult, ImageSource, PingResult,
-                TextToSpeechParams, TextToSpeechResult,
-            },
-            openai::utils::convert_string_to_enum,
+        provider::entity::{
+            ImageEditResult, ImageGenerationResult, ImageSource, PingResult,
+            TextToSpeechParams, TextToSpeechResult,
         },
     },
     strings,
@@ -312,10 +309,11 @@ impl ControllerTrait for Controller {
             image_generation_config.quality.clone()
         };
 
-        let size = params
-            .size_override
-            .map(|s| convert_string_to_enum::<async_openai::types::images::ImageSize>(&s).unwrap())
-            .or(image_generation_config.size);
+        let size = if params.smallest_size_possible {
+            Some(get_sticker_size(&model))
+        } else {
+            image_generation_config.size
+        };
 
         let response_format = match model.clone() {
             ImageModel::DallE2 => Some(ImageResponseFormat::B64Json),
@@ -637,4 +635,18 @@ fn audio_mime_type_to_file_name(mime_type: &mxlink::mime::Mime) -> Option<String
     };
 
     Some(format!("audio.{}", file_extension))
+}
+
+/// Returns the smallest supported size for stickers based on what the image model supports.
+fn get_sticker_size(model: &ImageModel) -> async_openai::types::images::ImageSize {
+    use async_openai::types::images::ImageSize;
+
+    match model {
+        ImageModel::DallE2 => ImageSize::S256x256,
+        ImageModel::DallE3 => ImageSize::S1024x1024,
+        ImageModel::GptImage1 => ImageSize::S1024x1024,
+        ImageModel::GptImage1Mini => ImageSize::S1024x1024,
+        ImageModel::GptImage1dot5 => ImageSize::S1024x1024,
+        ImageModel::Other(_) => ImageSize::S1024x1024,
+    }
 }
