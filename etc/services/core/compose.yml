@@ -14,7 +14,7 @@ services:
     - /etc/passwd:/etc/passwd:ro
 
   synapse:
-    image: ghcr.io/element-hq/synapse:v1.144.0
+    image: ghcr.io/element-hq/synapse:v1.146.0
     user: "${UID}:${GID}"
     restart: unless-stopped
     entrypoint: python
@@ -27,7 +27,7 @@ services:
     - ./synapse/media-store:/media-store
 
   element-web:
-    image: ghcr.io/element-hq/element-web:v1.12.7
+    image: ghcr.io/element-hq/element-web:v1.12.9
     user: "${UID}:${GID}"
     restart: unless-stopped
     environment:
