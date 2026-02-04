@@ -69,6 +69,7 @@ impl AgentProvider {
                 models_list_url: Some("https://docs.anthropic.com/en/docs/about-claude/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: true,
+                text_generation_supports_tools: false,
             },
             Self::Groq => AgentProviderInfo {
                 id: Self::Groq.to_static_str(),
@@ -80,11 +81,12 @@ impl AgentProvider {
                 models_list_url: Some("https://console.groq.com/docs/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration, AgentPurpose::SpeechToText],
                 text_generation_supports_vision: false,
+                text_generation_supports_tools: false,
             },
             Self::LocalAI => AgentProviderInfo {
                 id: Self::LocalAI.to_static_str(),
                 name: "LocalAI",
-                description: "LocalAI is the free, Open Source OpenAI alternative. LocalAI act as a drop-in replacement REST API that’s compatible with OpenAI API specifications for local inferencing. It allows you to run LLMs, generate images, audio (and not only) locally or on-prem with consumer grade hardware, supporting multiple model families and architectures.",
+                description: "LocalAI is the free, Open Source OpenAI alternative. LocalAI act as a drop-in replacement REST API that's compatible with OpenAI API specifications for local inferencing. It allows you to run LLMs, generate images, audio (and not only) locally or on-prem with consumer grade hardware, supporting multiple model families and architectures.",
                 homepage_url: Some("https://localai.io/"),
                 wiki_url: None,
                 sign_up_url: None,
@@ -95,6 +97,7 @@ impl AgentProvider {
                     AgentPurpose::SpeechToText,
                 ],
                 text_generation_supports_vision: false,
+                text_generation_supports_tools: false,
             },
             Self::Mistral => AgentProviderInfo {
                 id: Self::Mistral.to_static_str(),
@@ -106,6 +109,7 @@ impl AgentProvider {
                 models_list_url: Some("https://docs.mistral.ai/getting-started/models/"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: false,
+                text_generation_supports_tools: false,
             },
             Self::Ollama => AgentProviderInfo {
                 id: Self::Ollama.to_static_str(),
@@ -117,6 +121,7 @@ impl AgentProvider {
                 models_list_url: Some("https://ollama.com/library"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: false,
+                text_generation_supports_tools: false,
             },
             Self::OpenAI => AgentProviderInfo {
                 id: Self::OpenAI.to_static_str(),
@@ -133,6 +138,7 @@ impl AgentProvider {
                     AgentPurpose::SpeechToText,
                 ],
                 text_generation_supports_vision: true,
+                text_generation_supports_tools: true,
             },
             Self::OpenAICompat => AgentProviderInfo {
                 id: Self::OpenAICompat.to_static_str(),
@@ -149,6 +155,7 @@ impl AgentProvider {
                     AgentPurpose::SpeechToText,
                 ],
                 text_generation_supports_vision: false,
+                text_generation_supports_tools: false,
             },
             Self::OpenRouter => AgentProviderInfo {
                 id: Self::OpenRouter.to_static_str(),
@@ -160,6 +167,7 @@ impl AgentProvider {
                 models_list_url: Some("https://openrouter.ai/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: false,
+                text_generation_supports_tools: false,
             },
             Self::TogetherAI => AgentProviderInfo {
                 id: Self::TogetherAI.to_static_str(),
@@ -171,6 +179,7 @@ impl AgentProvider {
                 models_list_url: Some("https://api.together.xyz/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: false,
+                text_generation_supports_tools: false,
             },
         }
     }
@@ -192,4 +201,5 @@ pub struct AgentProviderInfo {
     pub models_list_url: Option<&'static str>,
     pub supported_purposes: Vec<AgentPurpose>,
     pub text_generation_supports_vision: bool,
+    pub text_generation_supports_tools: bool,
 }

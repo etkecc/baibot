@@ -109,11 +109,21 @@ pub fn help_provider_details(id: &str, info: &AgentProviderInfo) -> String {
         let mut purpose_line = format!("{} {}", purpose.emoji(), purpose.as_str());
 
         if let AgentPurpose::TextGeneration = purpose {
+            let mut extras = vec![];
+
             if info.text_generation_supports_vision {
-                purpose_line = format!("{} ({})", purpose_line, "incl. vision");
+                extras.push("incl. vision");
             } else {
-                purpose_line = format!("{} ({})", purpose_line, "no vision");
+                extras.push("no vision");
             }
+
+            if info.text_generation_supports_tools {
+                extras.push("incl. tools");
+            } else {
+                extras.push("no tools");
+            }
+
+            purpose_line = format!("{} ({})", purpose_line, extras.join(", "));
         }
 
         capabilities.push(purpose_line);
