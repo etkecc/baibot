@@ -17,7 +17,7 @@ path = "src/lib.rs"
 [dependencies]
 anthropic = { git = "https://github.com/etkecc/anthropic-rs.git", branch = "fix-content-block-image" }
 anyhow = "1.0.*"
-async-openai = { version = "0.32.3", features = ["audio", "chat-completion", "image", "responses"] }
+async-openai = { version = "0.32.4", features = ["audio", "chat-completion", "image", "responses"] }
 base64 = "0.22.*"
 chrono = { version = "0.4.*", default-features = false, features = ["std", "now"] }
 # We'd rather not depend on this, but we cannot use the ruma-events EventContent macro without it.
@@ -25,14 +25,14 @@ chrono = { version = "0.4.*", default-features = false, features = ["std", "now"
 matrix-sdk = { version = "0.16.0", default-features = false, features = ["native-tls"] }
 mime_guess = "2.0.*"
 mxidwc = "1.0.*"
-mxlink = ">=1.11.0"
+mxlink = ">=1.12.0"
 etke_openai_api_rust = "0.1.*"
 quick_cache = "0.6.*"
 regex = "1.12.*"
 serde = { version = "1.0.*", features = ["derive"], default-features = false }
 serde_json = "1.0.*"
 serde_yaml = "0.9.*"
-tempfile = "3.24.*"
+tempfile = "3.25.*"
 tiktoken-rs = { version = "0.9.*", default-features = false }
 tokio = { version = "1.49.*", features = ["rt", "rt-multi-thread", "macros"] }
 tracing = "0.1.*"
