@@ -1,3 +1,14 @@
+# (2026-02-10) Version 1.14.1
+
+- (**Security**) Dependency updates to fix security vulnerabilities ([time](https://crates.io/crates/time) stack exhaustion DoS, [bytes](https://crates.io/crates/bytes) integer overflow), via [mxlink](https://crates.io/crates/mxlink) 1.12.0
+
+- (**Internal Improvement**) Switch from deprecated [serde_yaml](https://crates.io/crates/serde_yaml) to its maintained fork [serde_yaml_ng](https://crates.io/crates/serde_yaml_ng)
+
+- (**Internal Improvement**) Add [prek](https://github.com/nicholasgasior/prek) pre-commit hooks via [mise](https://mise.jdx.dev/) for automated code quality checks (formatting, clippy, tests)
+
+- (**Internal Improvement**) Fix clippy warnings and formatting issues
+
+
 # (2026-02-04) Version 1.14.0
 
 - (**Feature**) The `openai` provider now uses OpenAI's [Responses API](https://platform.openai.com/docs/api-reference/responses) (instead of the older Chat Completions API), adding support for [🛠️ built-in tools](./docs/features.md#️-built-in-tools-openai-only) (`web_search` and `code_interpreter`). These tools are **disabled by default** and can be enabled via the `text_generation.tools` configuration (see the [sample configuration](https://github.com/etkecc/baibot/blob/c70387b0c38d8d0f30bba2179a2a21a3710dbeaf/docs/sample-provider-configs/openai.yml#L12-L15)). To enable tools on an existing agent, you need to [update the agent](./docs/agents.md#updating-agents) to re-create it with the `text_generation.tools` section added and enable the tools you need. Thanks to [Layla Manley](https://github.com/yeslayla) for the contribution in [#62](https://github.com/etkecc/baibot/pull/62)!
