@@ -4,10 +4,10 @@ use std::{future::Future, pin::Pin};
 
 use mxlink::matrix_sdk::Room;
 use mxlink::matrix_sdk::media::{MediaFormat, MediaRequestParameters};
+use mxlink::matrix_sdk::ruma::api::client::profile::{AvatarUrl, DisplayName};
 use mxlink::matrix_sdk::ruma::{
     MilliSecondsSinceUnixEpoch, OwnedUserId, events::room::MediaSource,
 };
-use mxlink::matrix_sdk::ruma::api::client::profile::{AvatarUrl, DisplayName};
 
 use mxlink::{
     InitConfig, LoginConfig, LoginCredentials, LoginEncryption, MatrixLink, PersistenceConfig,

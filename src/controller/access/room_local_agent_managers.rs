@@ -28,18 +28,18 @@ pub async fn handle_set(
     message_context: &MessageContext,
     patterns: &Option<Vec<String>>,
 ) -> anyhow::Result<()> {
-    if let Some(patterns) = patterns {
-        if let Err(err) = mxidwc::parse_patterns_vector(patterns) {
-            bot.messaging()
-                .send_error_markdown_no_fail(
-                    message_context.room(),
-                    &strings::access::failed_to_parse_patterns(&err.to_string()),
-                    MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
-                )
-                .await;
+    if let Some(patterns) = patterns
+        && let Err(err) = mxidwc::parse_patterns_vector(patterns)
+    {
+        bot.messaging()
+            .send_error_markdown_no_fail(
+                message_context.room(),
+                &strings::access::failed_to_parse_patterns(&err.to_string()),
+                MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
+            )
+            .await;
 
-            return Ok(());
-        }
+        return Ok(());
     }
 
     let mut global_config_manager_guard = bot.global_config_manager().lock().await;

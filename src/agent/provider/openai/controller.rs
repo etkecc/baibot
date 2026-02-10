@@ -5,13 +5,13 @@ use async_openai::{
     config::OpenAIConfig,
     types::{
         audio::{AudioInput, CreateSpeechRequestArgs, CreateTranscriptionRequestArgs},
+        images::{
+            CreateImageEditRequestArgs, CreateImageRequestArgs, Image, ImageInput, ImageModel,
+            ImageResponseFormat,
+        },
         responses::{
             CodeInterpreterContainerAuto, CodeInterpreterTool, CodeInterpreterToolContainer,
             CreateResponseArgs, OutputItem, OutputMessageContent, Tool, WebSearchTool,
-        },
-        images::{
-            CreateImageEditRequestArgs, CreateImageRequestArgs,
-            Image, ImageInput, ImageModel, ImageResponseFormat,
         },
     },
 };
@@ -32,8 +32,8 @@ use crate::{
     agent::{
         AgentPurpose,
         provider::entity::{
-            ImageEditResult, ImageGenerationResult, ImageSource, PingResult,
-            TextToSpeechParams, TextToSpeechResult,
+            ImageEditResult, ImageGenerationResult, ImageSource, PingResult, TextToSpeechParams,
+            TextToSpeechResult,
         },
     },
     strings,
@@ -129,7 +129,8 @@ impl ControllerTrait for Controller {
             conversation_messages.insert(0, prompt_message);
         }
 
-        let input = super::utils::convert_llm_messages_to_openai_response_input(conversation_messages);
+        let input =
+            super::utils::convert_llm_messages_to_openai_response_input(conversation_messages);
 
         let messages_count = match &input {
             async_openai::types::responses::InputParam::Items(items) => items.len(),
@@ -182,10 +183,7 @@ impl ControllerTrait for Controller {
 
         let response = self.client.responses().create(request).await?;
 
-        tracing::trace!(
-            ?response,
-            "Got response from the OpenAI response API"
-        );
+        tracing::trace!(?response, "Got response from the OpenAI response API");
 
         for item in response.output {
             if let OutputItem::Message(message) = item {
@@ -271,9 +269,7 @@ impl ControllerTrait for Controller {
                 ImageModel::GptImage1 => ImageModel::GptImage1Mini,
                 ImageModel::GptImage1dot5 => ImageModel::GptImage1Mini,
                 ImageModel::GptImage1Mini => ImageModel::GptImage1Mini,
-                ImageModel::Other(_) => {
-                    ImageModel::DallE2
-                }
+                ImageModel::Other(_) => ImageModel::DallE2,
             }
         } else {
             original_model
@@ -408,9 +404,15 @@ impl ControllerTrait for Controller {
         }
 
         let dalle2_size = match image_generation_config.size {
-            Some(async_openai::types::images::ImageSize::S256x256) => Some(async_openai::types::images::ImageSize::S256x256),
-            Some(async_openai::types::images::ImageSize::S512x512) => Some(async_openai::types::images::ImageSize::S512x512),
-            Some(async_openai::types::images::ImageSize::S1024x1024) => Some(async_openai::types::images::ImageSize::S1024x1024),
+            Some(async_openai::types::images::ImageSize::S256x256) => {
+                Some(async_openai::types::images::ImageSize::S256x256)
+            }
+            Some(async_openai::types::images::ImageSize::S512x512) => {
+                Some(async_openai::types::images::ImageSize::S512x512)
+            }
+            Some(async_openai::types::images::ImageSize::S1024x1024) => {
+                Some(async_openai::types::images::ImageSize::S1024x1024)
+            }
             _ => None,
         };
 
@@ -419,12 +421,8 @@ impl ControllerTrait for Controller {
             .map_err(|err| anyhow::anyhow!(err))?;
 
         let response_format = match model.clone() {
-            ImageModel::DallE2 => {
-                Some(ImageResponseFormat::B64Json)
-            }
-            ImageModel::DallE3 => {
-                Some(ImageResponseFormat::B64Json)
-            }
+            ImageModel::DallE2 => Some(ImageResponseFormat::B64Json),
+            ImageModel::DallE3 => Some(ImageResponseFormat::B64Json),
             // gpt-image-1 only outputs base64 and we don't need to specify the response format.
             // In fact, specifying the response format results in an error.
             ImageModel::GptImage1 => None,

@@ -39,18 +39,18 @@ async fn dispatch_config_related_handler(
     message_context: &MessageContext,
     bot: &Bot,
 ) -> anyhow::Result<()> {
-    if let SettingsStorageSource::Global = config_type {
-        if !message_context.sender_can_manage_global_config() {
-            bot.messaging()
-                .send_error_markdown_no_fail(
-                    message_context.room(),
-                    strings::global_config::no_permissions_to_administrate(),
-                    MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
-                )
-                .await;
-            return Ok(());
-        }
-    };
+    if let SettingsStorageSource::Global = config_type
+        && !message_context.sender_can_manage_global_config()
+    {
+        bot.messaging()
+            .send_error_markdown_no_fail(
+                message_context.room(),
+                strings::global_config::no_permissions_to_administrate(),
+                MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
+            )
+            .await;
+        return Ok(());
+    }
 
     let room_settings = match config_type {
         SettingsStorageSource::Room => &message_context.room_config().settings,

@@ -1,0 +1,6 @@
+[tools]
+prek = "0.3.2"
+
+[settings]
+# Disable automatic trust prompts - we trust this config
+yes = true

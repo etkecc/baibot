@@ -146,10 +146,10 @@ impl ControllerTrait for Controller {
             .temperature_override
             .unwrap_or(text_generation_config.temperature);
 
-        if let Some(prompt_message) = prompt_message {
-            if let LLMMessageContent::Text(text) = &prompt_message.content {
-                request.system = text.clone();
-            }
+        if let Some(prompt_message) = prompt_message
+            && let LLMMessageContent::Text(text) = &prompt_message.content
+        {
+            request.system = text.clone();
         }
 
         request.model = text_generation_config.model_id.clone();

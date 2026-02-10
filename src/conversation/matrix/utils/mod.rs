@@ -154,35 +154,35 @@ pub async fn process_matrix_messages(
 
         let mut message = message.clone();
 
-        if i == 0 && !params.first_message_prefixes_to_strip.is_empty() {
-            if let MatrixMessageContent::Text(message_text) = &message.content {
-                let mut message_text = message_text.clone();
+        if i == 0
+            && !params.first_message_prefixes_to_strip.is_empty()
+            && let MatrixMessageContent::Text(message_text) = &message.content
+        {
+            let mut message_text = message_text.clone();
 
-                for prefix in &params.first_message_prefixes_to_strip {
-                    if let Some(message_text_stripped) = message_text.strip_prefix(prefix) {
-                        message_text = message_text_stripped.to_owned();
-                    }
+            for prefix in &params.first_message_prefixes_to_strip {
+                if let Some(message_text_stripped) = message_text.strip_prefix(prefix) {
+                    message_text = message_text_stripped.to_owned();
                 }
-
-                message.content = MatrixMessageContent::Text(message_text.trim().to_owned());
             }
+
+            message.content = MatrixMessageContent::Text(message_text.trim().to_owned());
         }
 
         // We only strip `bot_user_prefixes_to_strip`-defined prefixes from messages that mention the bot user.
         if !params.bot_user_prefixes_to_strip.is_empty()
             && message.mentioned_users.contains(&params.bot_user_id)
+            && let MatrixMessageContent::Text(message_text) = &message.content
         {
-            if let MatrixMessageContent::Text(message_text) = &message.content {
-                let mut message_text = message_text.clone();
+            let mut message_text = message_text.clone();
 
-                for prefix in &params.bot_user_prefixes_to_strip {
-                    if let Some(message_text_stripped) = message_text.strip_prefix(prefix) {
-                        message_text = message_text_stripped.to_owned();
-                    }
+            for prefix in &params.bot_user_prefixes_to_strip {
+                if let Some(message_text_stripped) = message_text.strip_prefix(prefix) {
+                    message_text = message_text_stripped.to_owned();
                 }
-
-                message.content = MatrixMessageContent::Text(message_text.trim().to_owned());
             }
+
+            message.content = MatrixMessageContent::Text(message_text.trim().to_owned());
         }
 
         messages_filtered.push(message);

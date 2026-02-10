@@ -88,20 +88,15 @@ impl ConfigHomeserver {
 /// - `Default`: Use the built-in default avatar (null, empty string, or missing in config)
 /// - `Keep`: Don't touch the avatar, keep whatever is already set ("keep" in config)
 /// - `Custom(String)`: Use a custom avatar from the specified file path
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub enum Avatar {
     /// Use the built-in default avatar
+    #[default]
     Default,
     /// Keep the current avatar, don't change it
     Keep,
     /// Use a custom avatar from the specified file path
     Custom(String),
-}
-
-impl Default for Avatar {
-    fn default() -> Self {
-        Avatar::Default
-    }
 }
 
 impl<'de> Deserialize<'de> for Avatar {
@@ -181,13 +176,13 @@ pub struct ConfigUserEncryption {
 
 impl ConfigUserEncryption {
     pub fn validate(&self) -> anyhow::Result<()> {
-        if let Some(passphrase) = &self.recovery_passphrase {
-            if passphrase.is_empty() {
-                return Err(anyhow::anyhow!(
-                    "The user.encryption.recovery_passphrase ({}) configuration must either be null or set to a non-empty passphrase",
-                    super::env::BAIBOT_USER_ENCRYPTION_RECOVERY_PASSPHRASE
-                ));
-            }
+        if let Some(passphrase) = &self.recovery_passphrase
+            && passphrase.is_empty()
+        {
+            return Err(anyhow::anyhow!(
+                "The user.encryption.recovery_passphrase ({}) configuration must either be null or set to a non-empty passphrase",
+                super::env::BAIBOT_USER_ENCRYPTION_RECOVERY_PASSPHRASE
+            ));
         }
 
         Ok(())

@@ -1,0 +1,36 @@
+repos:
+  # Fast built-in hooks (Rust-native, no dependencies)
+  - repo: builtin
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1024']
+
+  # Local hooks that run project-specific tools
+  - repo: local
+    hooks:
+      - id: cargo-fmt-check
+        name: Cargo Format Check
+        entry: cargo fmt --all -- --check
+        language: system
+        files: '\.rs$'
+        pass_filenames: false
+
+      - id: cargo-clippy
+        name: Cargo Clippy
+        entry: cargo clippy -- -D warnings
+        language: system
+        files: '\.rs$'
+        pass_filenames: false
+        priority: 100
+
+      - id: test-unit
+        name: Unit Tests
+        entry: just test
+        language: system
+        files: '\.rs$'
+        pass_filenames: false
+        priority: 100

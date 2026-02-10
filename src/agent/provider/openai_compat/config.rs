@@ -162,13 +162,14 @@ impl TryInto<OpenAITextToSpeechConfig> for TextToSpeechConfig {
     type Error = String;
 
     fn try_into(self) -> Result<OpenAITextToSpeechConfig, Self::Error> {
-        let model_id = convert_string_to_enum::<async_openai::types::audio::SpeechModel>(&self.model_id)?;
+        let model_id =
+            convert_string_to_enum::<async_openai::types::audio::SpeechModel>(&self.model_id)?;
 
         let voice = convert_string_to_enum::<async_openai::types::audio::Voice>(&self.voice)?;
 
-        let response_format = convert_string_to_enum::<async_openai::types::audio::SpeechResponseFormat>(
-            &self.response_format,
-        )?;
+        let response_format = convert_string_to_enum::<
+            async_openai::types::audio::SpeechResponseFormat,
+        >(&self.response_format)?;
 
         Ok(OpenAITextToSpeechConfig {
             model_id,
@@ -225,25 +226,25 @@ impl TryInto<OpenAIImageGenerationConfig> for ImageGenerationConfig {
 
     fn try_into(self) -> Result<OpenAIImageGenerationConfig, Self::Error> {
         let size = if let Some(size) = &self.size {
-            Some(convert_string_to_enum::<async_openai::types::images::ImageSize>(
-                size,
-            )?)
+            Some(convert_string_to_enum::<
+                async_openai::types::images::ImageSize,
+            >(size)?)
         } else {
             None
         };
 
         let style = if let Some(style) = &self.style {
-            Some(convert_string_to_enum::<async_openai::types::images::ImageStyle>(
-                style,
-            )?)
+            Some(convert_string_to_enum::<
+                async_openai::types::images::ImageStyle,
+            >(style)?)
         } else {
             None
         };
 
         let quality = if let Some(quality) = &self.quality {
-            Some(convert_string_to_enum::<async_openai::types::images::ImageQuality>(
-                quality,
-            )?)
+            Some(convert_string_to_enum::<
+                async_openai::types::images::ImageQuality,
+            >(quality)?)
         } else {
             None
         };
