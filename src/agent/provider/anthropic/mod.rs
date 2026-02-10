@@ -12,12 +12,12 @@ use super::controller::ControllerType;
 
 pub fn create_controller_from_yaml_value_config(
     agent_id: &str,
-    config: serde_yaml::Value,
+    config: serde_yaml_ng::Value,
 ) -> AgentInstantiationResult<ControllerType> {
     let config = match &config {
-        serde_yaml::Value::Mapping(_) => {
+        serde_yaml_ng::Value::Mapping(_) => {
             let config: Config =
-                serde_yaml::from_value(config).map_err(AgentInstantiationError::Yaml)?;
+                serde_yaml_ng::from_value(config).map_err(AgentInstantiationError::Yaml)?;
 
             config
                 .validate()

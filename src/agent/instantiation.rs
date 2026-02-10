@@ -15,7 +15,7 @@ pub enum Error {
     // Contains the error from the constructor function
     ConstructionFailed(anyhow::Error),
     // Contains the error from the YAML deserialization function
-    Yaml(serde_yaml::Error),
+    Yaml(serde_yaml_ng::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -69,7 +69,7 @@ pub(super) fn create(
 pub fn create_from_provider_and_yaml_value_config(
     provider: &AgentProvider,
     identifier: &PublicIdentifier,
-    config: serde_yaml::Value,
+    config: serde_yaml_ng::Value,
 ) -> Result<AgentInstance> {
     let definition = AgentDefinition::new(identifier.prefixless(), provider.to_owned(), config);
 
@@ -79,7 +79,7 @@ pub fn create_from_provider_and_yaml_value_config(
 fn create_controller_from_provider_and_json_value_config(
     agent_id: &str,
     provider: &AgentProvider,
-    config: serde_yaml::Value,
+    config: serde_yaml_ng::Value,
 ) -> Result<ControllerType> {
     match provider {
         AgentProvider::Anthropic => {
@@ -112,43 +112,43 @@ fn create_controller_from_provider_and_json_value_config(
     }
 }
 
-pub fn default_config_for_provider(provider: &AgentProvider) -> serde_yaml::Value {
+pub fn default_config_for_provider(provider: &AgentProvider) -> serde_yaml_ng::Value {
     match provider {
         AgentProvider::Anthropic => {
             let config = super::provider::anthropic::default_config();
-            serde_yaml::to_value(config).expect("Failed to serialize config")
+            serde_yaml_ng::to_value(config).expect("Failed to serialize config")
         }
         AgentProvider::Groq => {
             let config = super::provider::groq::default_config();
-            serde_yaml::to_value(config).expect("Failed to serialize config")
+            serde_yaml_ng::to_value(config).expect("Failed to serialize config")
         }
         AgentProvider::LocalAI => {
             let config = super::provider::localai::default_config();
-            serde_yaml::to_value(config).expect("Failed to serialize config")
+            serde_yaml_ng::to_value(config).expect("Failed to serialize config")
         }
         AgentProvider::Mistral => {
             let config = super::provider::mistral::default_config();
-            serde_yaml::to_value(config).expect("Failed to serialize config")
+            serde_yaml_ng::to_value(config).expect("Failed to serialize config")
         }
         AgentProvider::Ollama => {
             let config = super::provider::ollama::default_config();
-            serde_yaml::to_value(config).expect("Failed to serialize config")
+            serde_yaml_ng::to_value(config).expect("Failed to serialize config")
         }
         AgentProvider::OpenAI => {
             let config = super::provider::openai::default_config();
-            serde_yaml::to_value(config).expect("Failed to serialize config")
+            serde_yaml_ng::to_value(config).expect("Failed to serialize config")
         }
         AgentProvider::OpenAICompat => {
             let config = super::provider::openai_compat::default_config();
-            serde_yaml::to_value(config).expect("Failed to serialize config")
+            serde_yaml_ng::to_value(config).expect("Failed to serialize config")
         }
         AgentProvider::OpenRouter => {
             let config = super::provider::openrouter::default_config();
-            serde_yaml::to_value(config).expect("Failed to serialize config")
+            serde_yaml_ng::to_value(config).expect("Failed to serialize config")
         }
         AgentProvider::TogetherAI => {
             let config = super::provider::togetherai::default_config();
-            serde_yaml::to_value(config).expect("Failed to serialize config")
+            serde_yaml_ng::to_value(config).expect("Failed to serialize config")
         }
     }
 }

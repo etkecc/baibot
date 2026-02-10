@@ -21,7 +21,7 @@ pub fn load() -> anyhow::Result<Config> {
     }
 
     let config_str = std::fs::read_to_string(config_file_path)?;
-    let mut config: Config = serde_yaml::from_str(&config_str)?;
+    let mut config: Config = serde_yaml_ng::from_str(&config_str)?;
 
     // Allow environment variables to override some configuration keys
     for (key, value) in env::vars() {

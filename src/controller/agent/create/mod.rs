@@ -15,7 +15,7 @@ use crate::{Bot, entity::MessageContext};
 
 struct ParsedAgentConfig {
     agent: AgentInstance,
-    config: serde_yaml::Value,
+    config: serde_yaml_ng::Value,
 }
 
 pub async fn handle_room_local(
@@ -250,7 +250,7 @@ async fn send_guide(
     provider: &AgentProvider,
 ) -> anyhow::Result<()> {
     let sample_config = crate::agent::default_config_for_provider(provider);
-    let sample_config_pretty_yaml = serde_yaml::to_string(&sample_config)?;
+    let sample_config_pretty_yaml = serde_yaml_ng::to_string(&sample_config)?;
 
     bot.messaging()
         .send_text_markdown_no_fail(
@@ -263,7 +263,7 @@ async fn send_guide(
     Ok(())
 }
 
-fn parse_from_message_to_yaml_value(text: &str) -> Result<serde_yaml::Value, String> {
+fn parse_from_message_to_yaml_value(text: &str) -> Result<serde_yaml_ng::Value, String> {
     let mut text = text.trim();
 
     if text.starts_with("```") {
@@ -274,10 +274,10 @@ fn parse_from_message_to_yaml_value(text: &str) -> Result<serde_yaml::Value, Str
         text = text.trim_end_matches("```");
     }
 
-    let config: serde_yaml::Value = serde_yaml::from_str(text).map_err(|e| e.to_string())?;
+    let config: serde_yaml_ng::Value = serde_yaml_ng::from_str(text).map_err(|e| e.to_string())?;
 
     match config {
-        serde_yaml::Value::Mapping(_) => {}
+        serde_yaml_ng::Value::Mapping(_) => {}
         _ => {
             return Err("Not a valid YAML hashmap".to_owned());
         }

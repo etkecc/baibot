@@ -33,11 +33,11 @@ pub struct AgentDefinition {
     )]
     pub provider: AgentProvider,
 
-    pub config: serde_yaml::Value,
+    pub config: serde_yaml_ng::Value,
 }
 
 impl AgentDefinition {
-    pub fn new(id: String, provider: AgentProvider, config: serde_yaml::Value) -> Self {
+    pub fn new(id: String, provider: AgentProvider, config: serde_yaml_ng::Value) -> Self {
         Self {
             id,
             provider,

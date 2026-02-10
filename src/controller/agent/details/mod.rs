@@ -64,7 +64,7 @@ pub async fn handle(
         PublicIdentifier::Static(_) => {}
     };
 
-    let config_yaml_pretty = serde_yaml::to_string(&agent.definition().config)?;
+    let config_yaml_pretty = serde_yaml_ng::to_string(&agent.definition().config)?;
 
     bot.messaging()
         .send_text_markdown_no_fail(
