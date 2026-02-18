@@ -1,3 +1,10 @@
+# (2026-02-18) Version 1.14.2
+
+- (**Internal Improvement**) Dependency updates
+
+- (**Internal Improvement**) Reorganize the development environment to support [Continuwuity](https://continuwuity.org/) as a homeserver choice (in addition to [Synapse](https://github.com/element-hq/synapse)). Continuwuity is now the default for its lighter footprint (no external database required). See [development docs](./docs/development.md) for details.
+
+
 # (2026-02-10) Version 1.14.1
 
 - (**Security**) Dependency updates to fix security vulnerabilities ([time](https://crates.io/crates/time) stack exhaustion DoS, [bytes](https://crates.io/crates/bytes) integer overflow), via [mxlink](https://crates.io/crates/mxlink) 1.12.0
