@@ -288,7 +288,7 @@ dependencies = [
 
 [[package]]
 name = "baibot"
-version = "1.14.2"
+version = "1.14.3"
 dependencies = [
  "anthropic",
  "anyhow",

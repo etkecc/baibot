@@ -1,3 +1,10 @@
+# (2026-02-18) Version 1.14.3
+
+- (**Internal Improvement**) Add [Renovate](https://docs.renovatebot.com/) configuration for automated dependency updates
+
+- (**Internal Improvement**) Dependency updates
+
+
 # (2026-02-18) Version 1.14.2
 
 - (**Internal Improvement**) Dependency updates
