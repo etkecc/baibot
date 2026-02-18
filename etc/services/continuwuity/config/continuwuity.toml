@@ -1,0 +1,19 @@
+[global]
+server_name = "continuwuity.127.0.0.1.nip.io"
+
+address = "0.0.0.0"
+port = 6167
+
+database_path = "/var/lib/continuwuity"
+
+allow_registration = true
+yes_i_am_very_very_sure_i_want_an_open_registration_server_prone_to_abuse = true
+
+new_user_displayname_suffix = ""
+
+max_request_size = 20_000_000
+
+allow_federation = false
+trusted_servers = ["matrix.org"]
+
+log = "info,state_res=warn,rocket=off,_=off,sled=off"

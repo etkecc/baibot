@@ -1,0 +1,23 @@
+services:
+  continuwuity:
+    image: forgejo.ellis.link/continuwuation/continuwuity:v0.5.5
+    user: "${UID}:${GID}"
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    read_only: true
+    environment:
+      CONDUWUIT_CONFIG: /etc/continuwuity/continuwuity.toml
+      CONDUWUIT_DATABASE_PATH: /var/lib/continuwuity
+    ports:
+      - "${SERVICE_CONTINUWUITY_BIND_PORT_CLIENT_API}:6167"
+    volumes:
+      - ../../etc/services/continuwuity/config:/etc/continuwuity:ro
+      - ./continuwuity/data:/var/lib/continuwuity
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=500m
+
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true

@@ -2,6 +2,11 @@ project_name := "baibot"
 container_image_name := "localhost/baibot"
 project_container_network := "baibot"
 
+admin_username := "admin"
+admin_password := "admin"
+bot_username := "baibot"
+bot_password := "baibot"
+
 mise_data_dir := env("MISE_DATA_DIR", justfile_directory() / "var/mise")
 mise_trusted_config_paths := justfile_directory() / "mise.toml"
 
@@ -80,6 +85,10 @@ docker-compose-localai *extra_args:
 docker-compose-ollama *extra_args:
 	just docker-compose ollama {{ extra_args }}
 
+# Runs a docker-compose command against the continuwuity services
+docker-compose-continuwuity *extra_args:
+	just docker-compose continuwuity {{ extra_args }}
+
 # Runs all core dependency components (in the background)
 services-start: services-prepare (docker-compose-core "up" "-d")
 
@@ -116,6 +125,27 @@ ollama-tail-logs: (docker-compose-ollama "logs" "-f")
 # Prepares Ollama for running
 ollama-prepare: _prepare-var-services-env _prepare-var-services-ollama _prepare-container-network
 
+# Runs Continuwuity (in the background)
+continuwuity-start: continuwuity-prepare (docker-compose-continuwuity "up" "-d")
+
+# Stops Continuwuity
+continuwuity-stop: (docker-compose-continuwuity "down")
+
+# Tails the logs for Continuwuity
+continuwuity-tail-logs: (docker-compose-continuwuity "logs" "-f")
+
+# Prepares Continuwuity for running
+continuwuity-prepare: _prepare-var-services-env _prepare-var-services-continuwuity _prepare-container-network
+
+# Registers a user on Continuwuity via the Matrix Client-Server API
+continuwuity-register-user username password:
+	{{ justfile_directory() }}/etc/services/continuwuity/register-user.sh {{ justfile_directory() }}/var/services/env {{ username }} {{ password }}
+
+# Prepares the Continuwuity user accounts
+continuwuity-users-prepare:
+	just -f {{ justfile_directory() }}/justfile continuwuity-register-user "{{ admin_username }}" "{{ admin_password }}"
+	just -f {{ justfile_directory() }}/justfile continuwuity-register-user "{{ bot_username }}" "{{ bot_password }}"
+
 # Pulls an Ollama model
 ollama-pull-model model_id:
 	just -f {{ justfile_directory() }}/justfile docker-compose-ollama \
@@ -130,8 +160,8 @@ app-container-prepare: _prepare-var-app-container-config_yml _prepare-var-app-co
 
 # Prepares the user accounts
 users-prepare: services-prepare
-	just -f {{ justfile_directory() }}/justfile synapse-register-admin-user "admin" "admin"
-	just -f {{ justfile_directory() }}/justfile synapse-register-regular-user "baibot" "baibot"
+	just -f {{ justfile_directory() }}/justfile synapse-register-admin-user "{{ admin_username }}" "{{ admin_password }}"
+	just -f {{ justfile_directory() }}/justfile synapse-register-regular-user "{{ bot_username }}" "{{ bot_password }}"
 
 # Starts a Postgres CLI (psql)
 postgres-cli: services-prepare (docker-compose-core "exec" "postgres" "/bin/sh" "-c" "'PGUSER=synapse PGPASSWORD=synapse-password PGDATABASE=homeserver psql -h postgres'")
@@ -235,6 +265,14 @@ _prepare-var-services-ollama:
 
 	if [ ! -f var/services/ollama ]; then
 		mkdir -p var/services/ollama
+	fi
+
+_prepare-var-services-continuwuity:
+	#!/bin/sh
+	cd {{ justfile_directory() }};
+
+	if [ ! -f var/services/continuwuity ]; then
+		mkdir -p var/services/continuwuity/data
 	fi
 
 _prepare-var-services-localai:
