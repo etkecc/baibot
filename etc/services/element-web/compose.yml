@@ -1,6 +1,6 @@
 services:
   element-web:
-    image: ghcr.io/element-hq/element-web:v1.12.9
+    image: ghcr.io/element-hq/element-web:v1.12.10
     user: "${UID}:${GID}"
     restart: unless-stopped
     environment:
