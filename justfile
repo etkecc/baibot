@@ -7,12 +7,27 @@ admin_password := "admin"
 bot_username := "baibot"
 bot_password := "baibot"
 
+homeserver := `cat var/homeserver 2>/dev/null || echo continuwuity`
+
 mise_data_dir := env("MISE_DATA_DIR", justfile_directory() / "var/mise")
 mise_trusted_config_paths := justfile_directory() / "mise.toml"
 
 # Show help by default
 default:
 	@just --list --justfile {{ justfile() }}
+
+# Selects which homeserver implementation to use (continuwuity or synapse)
+homeserver-init value:
+	#!/bin/sh
+	mkdir -p {{ justfile_directory() }}/var
+	echo {{ value }} > {{ justfile_directory() }}/var/homeserver
+	echo ""
+	echo "⚠️  If you had already prepared your app configuration (var/app/local/config.yml or var/app/container/config.yml),"
+	echo "    you will need to update it manually or delete it and re-run the prepare step."
+	echo "    You should also delete var/app/local/data and/or var/app/container/data,"
+	echo "    as old application state is not compatible across homeserver implementations."
+	echo ""
+	echo "⚠️  If Element Web was already prepared, delete var/services/element-web/ to regenerate its config."
 
 # Builds and runs a development binary
 run-locally *extra_args: app-local-prepare
@@ -73,9 +88,13 @@ docker-compose services_type *extra_args:
 	-p {{ project_name }}-{{ services_type }} \
 	{{ extra_args }}
 
-# Runs a docker-compose command against the core services
-docker-compose-core *extra_args:
-	just docker-compose core {{ extra_args }}
+# Runs a docker-compose command against the synapse services
+docker-compose-synapse *extra_args:
+	just docker-compose synapse {{ extra_args }}
+
+# Runs a docker-compose command against the element-web services
+docker-compose-element-web *extra_args:
+	just docker-compose element-web {{ extra_args }}
 
 # Runs a docker-compose command against the localai services
 docker-compose-localai *extra_args:
@@ -89,17 +108,48 @@ docker-compose-ollama *extra_args:
 docker-compose-continuwuity *extra_args:
 	just docker-compose continuwuity {{ extra_args }}
 
-# Runs all core dependency components (in the background)
-services-start: services-prepare (docker-compose-core "up" "-d")
+# Runs the homeserver and Element Web (in the background)
+services-start: services-prepare
+	just -f {{ justfile_directory() }}/justfile {{ homeserver }}-start
+	just -f {{ justfile_directory() }}/justfile element-web-start
 
-# Stops all core dependency components
-services-stop: (docker-compose-core "down")
+# Stops Element Web and the homeserver
+services-stop:
+	just -f {{ justfile_directory() }}/justfile element-web-stop
+	just -f {{ justfile_directory() }}/justfile {{ homeserver }}-stop
 
-# Tails the logs for all running core services
-services-tail-logs: (docker-compose-core "logs" "-f")
+# Tails the logs for the homeserver and Element Web
+services-tail-logs:
+	just -f {{ justfile_directory() }}/justfile {{ homeserver }}-tail-logs
 
-# Prepares the core services for running
-services-prepare: _prepare-var-services-env _prepare-var-services-postgres _prepare-var-services-synapse _prepare-container-network
+# Prepares the homeserver and Element Web for running
+services-prepare:
+	just -f {{ justfile_directory() }}/justfile {{ homeserver }}-prepare
+	just -f {{ justfile_directory() }}/justfile element-web-prepare
+
+# Runs Synapse (in the background)
+synapse-start: synapse-prepare (docker-compose-synapse "up" "-d")
+
+# Stops Synapse
+synapse-stop: (docker-compose-synapse "down")
+
+# Tails the logs for Synapse
+synapse-tail-logs: (docker-compose-synapse "logs" "-f")
+
+# Prepares Synapse for running
+synapse-prepare: _prepare-var-services-env _prepare-var-services-postgres _prepare-var-services-synapse _prepare-container-network
+
+# Runs Element Web (in the background)
+element-web-start: element-web-prepare (docker-compose-element-web "up" "-d")
+
+# Stops Element Web
+element-web-stop: (docker-compose-element-web "down")
+
+# Tails the logs for Element Web
+element-web-tail-logs: (docker-compose-element-web "logs" "-f")
+
+# Prepares Element Web for running
+element-web-prepare: _prepare-var-services-env _prepare-var-services-element-web _prepare-container-network
 
 # Runs LocalAI (in the background)
 localai-start: localai-prepare (docker-compose-localai "up" "-d")
@@ -142,7 +192,7 @@ continuwuity-register-user username password:
 	{{ justfile_directory() }}/etc/services/continuwuity/register-user.sh {{ justfile_directory() }}/var/services/env {{ username }} {{ password }}
 
 # Prepares the Continuwuity user accounts
-continuwuity-users-prepare:
+continuwuity-users-prepare: continuwuity-prepare
 	just -f {{ justfile_directory() }}/justfile continuwuity-register-user "{{ admin_username }}" "{{ admin_password }}"
 	just -f {{ justfile_directory() }}/justfile continuwuity-register-user "{{ bot_username }}" "{{ bot_password }}"
 
@@ -159,16 +209,20 @@ app-local-prepare: _prepare-var-app-local-config_yml _prepare-var-app-local-data
 app-container-prepare: _prepare-var-app-container-config_yml _prepare-var-app-container-data
 
 # Prepares the user accounts
-users-prepare: services-prepare
+users-prepare:
+	just -f {{ justfile_directory() }}/justfile {{ homeserver }}-users-prepare
+
+# Prepares the Synapse user accounts
+synapse-users-prepare: synapse-prepare
 	just -f {{ justfile_directory() }}/justfile synapse-register-admin-user "{{ admin_username }}" "{{ admin_password }}"
 	just -f {{ justfile_directory() }}/justfile synapse-register-regular-user "{{ bot_username }}" "{{ bot_password }}"
 
 # Starts a Postgres CLI (psql)
-postgres-cli: services-prepare (docker-compose-core "exec" "postgres" "/bin/sh" "-c" "'PGUSER=synapse PGPASSWORD=synapse-password PGDATABASE=homeserver psql -h postgres'")
+postgres-cli: synapse-prepare (docker-compose-synapse "exec" "postgres" "/bin/sh" "-c" "'PGUSER=synapse PGPASSWORD=synapse-password PGDATABASE=homeserver psql -h postgres'")
 
-# Creates an administrator user
-synapse-register-admin-user username password: services-prepare
-	just -f {{ justfile_directory() }}/justfile docker-compose-core \
+# Creates an administrator user on Synapse
+synapse-register-admin-user username password: synapse-prepare
+	just -f {{ justfile_directory() }}/justfile docker-compose-synapse \
 		exec synapse \
 		register_new_matrix_user \
 		--admin \
@@ -177,9 +231,9 @@ synapse-register-admin-user username password: services-prepare
 		-c /config/homeserver.yaml \
 		http://localhost:8008
 
-# Create a regular user
-synapse-register-regular-user username password: services-prepare
-	just -f {{ justfile_directory() }}/justfile docker-compose-core \
+# Creates a regular user on Synapse
+synapse-register-regular-user username password: synapse-prepare
+	just -f {{ justfile_directory() }}/justfile docker-compose-synapse \
 		exec synapse \
 		register_new_matrix_user \
 		--no-admin \
@@ -259,6 +313,22 @@ _prepare-var-services-synapse:
 		mkdir -p var/services/synapse/media-store
 	fi
 
+_prepare-var-services-element-web:
+	#!/bin/sh
+	cd {{ justfile_directory() }};
+
+	if [ ! -f var/services/element-web/config.json ]; then
+		mkdir -p var/services/element-web
+		cp {{ justfile_directory() }}/etc/services/element-web/config.json.dist var/services/element-web/config.json
+
+		homeserver="{{ homeserver }}"
+		if [ "$homeserver" = "continuwuity" ]; then
+			sed --in-place 's|__HOMESERVER_CLIENT_URL__|http://continuwuity.127.0.0.1.nip.io:42030|g' var/services/element-web/config.json
+		elif [ "$homeserver" = "synapse" ]; then
+			sed --in-place 's|__HOMESERVER_CLIENT_URL__|http://synapse.127.0.0.1.nip.io:42020|g' var/services/element-web/config.json
+		fi
+	fi
+
 _prepare-var-services-ollama:
 	#!/bin/sh
 	cd {{ justfile_directory() }};
@@ -298,6 +368,15 @@ _prepare-var-app-local-config_yml:
 	if [ ! -f var/app/local/config.yml ]; then
 		mkdir -p var/app/local
 		cp {{ justfile_directory() }}/etc/app/config.yml.dist var/app/local/config.yml
+
+		homeserver="{{ homeserver }}"
+		if [ "$homeserver" = "continuwuity" ]; then
+			sed --in-place 's/__HOMESERVER_SERVER_NAME__/continuwuity.127.0.0.1.nip.io/g' var/app/local/config.yml
+			sed --in-place 's|__HOMESERVER_URL__|http://continuwuity.127.0.0.1.nip.io:42030|g' var/app/local/config.yml
+		elif [ "$homeserver" = "synapse" ]; then
+			sed --in-place 's/__HOMESERVER_SERVER_NAME__/synapse.127.0.0.1.nip.io/g' var/app/local/config.yml
+			sed --in-place 's|__HOMESERVER_URL__|http://synapse.127.0.0.1.nip.io:42020|g' var/app/local/config.yml
+		fi
 	fi
 
 _prepare-var-app-local-data:
@@ -315,7 +394,18 @@ _prepare-var-app-container-config_yml:
 	if [ ! -f var/app/container/config.yml ]; then
 		mkdir -p var/app/container
 		cp {{ justfile_directory() }}/etc/app/config.yml.dist var/app/container/config.yml
-		sed --in-place 's/synapse.127.0.0.1.nip.io:42020/synapse:8008/g' var/app/container/config.yml
+
+		homeserver="{{ homeserver }}"
+		if [ "$homeserver" = "continuwuity" ]; then
+			sed --in-place 's/__HOMESERVER_SERVER_NAME__/continuwuity.127.0.0.1.nip.io/g' var/app/container/config.yml
+			sed --in-place 's|__HOMESERVER_URL__|http://continuwuity.127.0.0.1.nip.io:42030|g' var/app/container/config.yml
+			sed --in-place 's/continuwuity.127.0.0.1.nip.io:42030/continuwuity:6167/g' var/app/container/config.yml
+		elif [ "$homeserver" = "synapse" ]; then
+			sed --in-place 's/__HOMESERVER_SERVER_NAME__/synapse.127.0.0.1.nip.io/g' var/app/container/config.yml
+			sed --in-place 's|__HOMESERVER_URL__|http://synapse.127.0.0.1.nip.io:42020|g' var/app/container/config.yml
+			sed --in-place 's/synapse.127.0.0.1.nip.io:42020/synapse:8008/g' var/app/container/config.yml
+		fi
+
 		sed --in-place 's/127.0.0.1:42026/ollama:11434/g' var/app/container/config.yml
 		sed --in-place 's/127.0.0.1:42027/localai:8080/g' var/app/container/config.yml
 	fi

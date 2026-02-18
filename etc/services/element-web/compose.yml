@@ -1,0 +1,21 @@
+services:
+  element-web:
+    image: ghcr.io/element-hq/element-web:v1.12.9
+    user: "${UID}:${GID}"
+    restart: unless-stopped
+    environment:
+      ELEMENT_WEB_PORT: 8080
+    ports:
+      - "${SERVICE_ELEMENT_WEB_BIND_PORT_HTTP}:8080"
+    volumes:
+    - ./element-web/config.json:/app/config.json:ro
+    tmpfs:
+      - /var/cache/nginx:rw,mode=777
+      - /var/run:rw,mode=777
+      - /tmp/element-web-config:rw,mode=777
+      - /etc/nginx/conf.d:rw,mode=777
+
+networks:
+  default:
+    name: ${NETWORK_NAME}
+    external: true

@@ -1,7 +1,7 @@
 homeserver:
   # The canonical homeserver domain name
-  server_name: synapse.127.0.0.1.nip.io
-  url: http://synapse.127.0.0.1.nip.io:42020
+  server_name: __HOMESERVER_SERVER_NAME__
+  url: __HOMESERVER_URL__
 
 user:
   mxid_localpart: baibot
@@ -45,7 +45,7 @@ room:
 access:
   # Space-separated list of MXID patterns which specify who is an admin.
   admin_patterns:
-    - "@admin:synapse.127.0.0.1.nip.io"
+    - "@admin:__HOMESERVER_SERVER_NAME__"
 
 persistence:
   # This is unset here, because we expect the configuration to come from an environment variable (BAIBOT_PERSISTENCE_DATA_DIR_PATH).
@@ -157,7 +157,7 @@ initial_global_config:
   # Space-separated list of MXID patterns which specify who can use the bot.
   # By default, we let anyone on the homeserver use the bot.
   user_patterns:
-    - "@*:synapse.127.0.0.1.nip.io"
+    - "@*:__HOMESERVER_SERVER_NAME__"
 
 # Controls logging.
 #

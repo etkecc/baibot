@@ -18,6 +18,27 @@ For local development, we run all dependency services in [🐋 Docker](https://w
 - (Optional) an API key for some Large Language Model [☁️ provider](./providers.md) (e.g. [OpenAI](./providers.md#openai)), though we recommend using [LocalAI](#localai) or [Ollama](#ollama) for local development
 
 
+### Choosing a homeserver
+
+The development environment supports two homeserver implementations:
+
+- **[Continuwuity](https://continuwuity.org/)** (default) — lightweight, no external database required. Good for most development needs.
+- **[Synapse](https://github.com/element-hq/synapse)** — the reference implementation, bundled with Postgres. Use this if you need Synapse-specific behavior.
+
+To choose a homeserver (optional — defaults to Continuwuity if skipped):
+
+```sh
+just homeserver-init continuwuity  # or: just homeserver-init synapse
+```
+
+The choice is stored in `var/homeserver` and affects all subsequent commands.
+
+> **Note:** If you switch homeservers after initial setup, you will need to:
+> - Delete `var/app/local/` and/or `var/app/container/` (app config and data)
+> - Delete `var/services/element-web/` (to regenerate its config)
+> - Re-run the prepare and user registration steps
+
+
 ### Getting started guide
 
 Developing [locally](#running-locally) is possible, but requires a [Rust](https://www.rust-lang.org/) toolchain.
@@ -28,11 +49,12 @@ In any case, you will need [🐋 Docker](https://www.docker.com/) as [dependency
 
 #### Running locally
 
-1. Start the core dependency services (Postgres, Synapse, Element Web): `just services-start`
-2. (Only the first time around) Prepare initial app configuration in `var/app/local/config.yml`: `just app-local-prepare`
-3. (Only the first time around) [Prepare your configuration file](#prepare-your-configuration-file)
-4. (Only the first time around) Prepare initial default Matrix user accounts (`admin` and `baibot`): `just users-prepare`
-5. (Optional) Start additional services depending on which [agent provider you've chosen](#choosing-an-agent-provider):
+1. (Optional) Choose a homeserver: `just homeserver-init continuwuity` (or `synapse`). Default is `continuwuity`.
+2. Start the homeserver and Element Web: `just services-start`
+3. (Only the first time around) Prepare initial app configuration in `var/app/local/config.yml`: `just app-local-prepare`
+4. (Only the first time around) [Prepare your configuration file](#prepare-your-configuration-file)
+5. (Only the first time around) Prepare initial default Matrix user accounts (`admin` and `baibot`): `just users-prepare`
+6. (Optional) Start additional services depending on which [agent provider you've chosen](#choosing-an-agent-provider):
   - for [LocalAI](#localai):
     - Start services: `just localai-start`
 	- Wait a while for LocalAI to start up. It has a lot of models to download. Monitor progress using `just localai-tail-logs`
@@ -40,12 +62,12 @@ In any case, you will need [🐋 Docker](https://www.docker.com/) as [dependency
   - for [Ollama](#ollama):
     - Start services: `just ollama-start`
     - (Only the first time around) Pull the model configured in `agents.static_definitions` in the configuration file: `just ollama-pull-model gemma2:2b`
-6. Start the bot: `just run-locally`
-7. Go to http://element.127.0.0.1.nip.io:42025/ and login with `admin` / `admin`
-8. Create a new room and invite `@baibot:synapse.127.0.0.1.nip.io`
-9. When done, stop the bot (`Ctrl` + `C`)
-10. Stop the core dependency services: `just services-stop`
-11. (Optional) Stop additional services:
+7. Start the bot: `just run-locally`
+8. Go to http://element.127.0.0.1.nip.io:42025/ and login with `admin` / `admin`
+9. Create a new room and invite `@baibot:continuwuity.127.0.0.1.nip.io` (or `@baibot:synapse.127.0.0.1.nip.io` if using Synapse)
+10. When done, stop the bot (`Ctrl` + `C`)
+11. Stop the services: `just services-stop`
+12. (Optional) Stop additional services:
   - for [LocalAI](#localai): `just localai-stop`
   - for [Ollama](#ollama): `just ollama-stop`
 
@@ -54,11 +76,12 @@ In any case, you will need [🐋 Docker](https://www.docker.com/) as [dependency
 
 You can avoid having a [Rust](https://www.rust-lang.org/) toolchain installed locally and build/run this in a container.
 
-1. Start the core dependency services (Postgres, Synapse, Element Web): `just services-start`
-2. (Only the first time around) Prepare initial app configuration in `var/app/container/config.yml`: `just app-container-prepare`
-3. (Only the first time around) [Prepare your configuration file](#prepare-your-configuration-file)
-4. (Only the first time around) Prepare initial default Matrix user accounts (`admin` and `baibot`): `just users-prepare`
-5. (Optional) Start additional services depending on which [agent provider you've chosen](#choosing-an-agent-provider):
+1. (Optional) Choose a homeserver: `just homeserver-init continuwuity` (or `synapse`). Default is `continuwuity`.
+2. Start the homeserver and Element Web: `just services-start`
+3. (Only the first time around) Prepare initial app configuration in `var/app/container/config.yml`: `just app-container-prepare`
+4. (Only the first time around) [Prepare your configuration file](#prepare-your-configuration-file)
+5. (Only the first time around) Prepare initial default Matrix user accounts (`admin` and `baibot`): `just users-prepare`
+6. (Optional) Start additional services depending on which [agent provider you've chosen](#choosing-an-agent-provider):
   - for [LocalAI](#localai):
     - Start services: `just localai-start`
 	- Wait a while for LocalAI to start up. It has a lot of models to download. Monitor progress using `just localai-tail-logs`
@@ -66,12 +89,12 @@ You can avoid having a [Rust](https://www.rust-lang.org/) toolchain installed lo
   - for [Ollama](#ollama):
     - Start services: `just ollama-start`
     - (Only the first time around) Pull the model configured in `agents.static_definitions` in the configuration file: `just ollama-pull-model gemma2:2b`
-6. Start the bot: `just run-in-container`
-7. Go to http://element.127.0.0.1.nip.io:42025/ and login with `admin` / `admin`
-8. Create a new room and invite `@baibot:synapse.127.0.0.1.nip.io`
-9. When done, stop the bot (`Ctrl` + `C`)
-10. Stop the dependency services: `just services-stop`
-11. (Optional) Stop additional services:
+7. Start the bot: `just run-in-container`
+8. Go to http://element.127.0.0.1.nip.io:42025/ and login with `admin` / `admin`
+9. Create a new room and invite `@baibot:continuwuity.127.0.0.1.nip.io` (or `@baibot:synapse.127.0.0.1.nip.io` if using Synapse)
+10. When done, stop the bot (`Ctrl` + `C`)
+11. Stop the services: `just services-stop`
+12. (Optional) Stop additional services:
   - for [LocalAI](#localai): `just localai-stop`
   - for [Ollama](#ollama): `just ollama-stop`
 

@@ -1,5 +1,5 @@
 {
-    "default_hs_url": "http://synapse.127.0.0.1.nip.io:42020",
+    "default_hs_url": "__HOMESERVER_CLIENT_URL__",
     "default_is_url": "https://vector.im",
     "integrations_ui_url": "https://scalar.vector.im/",
     "integrations_rest_url": "https://scalar.vector.im/api",
