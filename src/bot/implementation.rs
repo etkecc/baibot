@@ -6,7 +6,7 @@ use mxlink::matrix_sdk::Room;
 use mxlink::matrix_sdk::media::{MediaFormat, MediaRequestParameters};
 use mxlink::matrix_sdk::ruma::api::client::profile::{AvatarUrl, DisplayName};
 use mxlink::matrix_sdk::ruma::{
-    MilliSecondsSinceUnixEpoch, OwnedUserId, events::room::MediaSource,
+    MilliSecondsSinceUnixEpoch, OwnedDeviceId, OwnedUserId, events::room::MediaSource,
 };
 
 use mxlink::{
@@ -395,10 +395,25 @@ async fn create_matrix_link(config: &Config) -> anyhow::Result<MatrixLink> {
     let session_encryption_key = config.persistence.session_encryption_key()?;
     let db_dir_path: std::path::PathBuf = config.persistence.db_dir_path()?;
 
-    let login_creds = LoginCredentials::UserPassword(
-        config.user.mxid_localpart.to_owned(),
-        config.user.password.to_owned(),
-    );
+    let login_creds = if let Some(access_token) = &config.user.access_token {
+        let server_name = &config.homeserver.server_name;
+        let localpart = &config.user.mxid_localpart;
+        let user_id = OwnedUserId::try_from(format!("@{localpart}:{server_name}"))
+            .map_err(|e| anyhow::anyhow!("Invalid user ID: {e}"))?;
+        let device_id = OwnedDeviceId::from(
+            config.user.device_id.as_deref().expect("device_id must be set for access token auth"),
+        );
+        LoginCredentials::AccessToken {
+            user_id,
+            device_id,
+            access_token: access_token.to_owned(),
+        }
+    } else {
+        LoginCredentials::UserPassword(
+            config.user.mxid_localpart.to_owned(),
+            config.user.password.as_deref().expect("password must be set if access_token is not").to_owned(),
+        )
+    };
 
     let login_encryption = LoginEncryption::new(
         config.user.encryption.recovery_passphrase.clone(),

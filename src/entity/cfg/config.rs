@@ -127,7 +127,15 @@ impl Avatar {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigUser {
     pub mxid_localpart: String,
-    pub password: String,
+
+    #[serde(default)]
+    pub password: Option<String>,
+
+    #[serde(default)]
+    pub access_token: Option<String>,
+
+    #[serde(default)]
+    pub device_id: Option<String>,
 
     #[serde(default = "super::defaults::name")]
     pub name: String,
@@ -148,12 +156,7 @@ impl ConfigUser {
             ));
         }
 
-        if self.password.is_empty() {
-            return Err(anyhow::anyhow!(
-                "The user.password ({}) configuration must be set",
-                super::env::BAIBOT_USER_PASSWORD
-            ));
-        }
+        self.validate_auth()?;
 
         if self.name.is_empty() {
             return Err(anyhow::anyhow!(
@@ -163,6 +166,29 @@ impl ConfigUser {
         }
 
         self.encryption.validate()?;
+
+        Ok(())
+    }
+
+    fn validate_auth(&self) -> anyhow::Result<()> {
+        let has_password = self.password.as_deref().is_some_and(|p| !p.is_empty());
+        let has_access_token = self.access_token.as_deref().is_some_and(|t| !t.is_empty());
+        let has_device_id = self.device_id.as_deref().is_some_and(|d| !d.is_empty());
+
+        if !has_password && !has_access_token {
+            return Err(anyhow::anyhow!(
+                "Either user.password ({}) or user.access_token ({}) must be set",
+                super::env::BAIBOT_USER_PASSWORD,
+                super::env::BAIBOT_USER_ACCESS_TOKEN
+            ));
+        }
+
+        if has_access_token && !has_device_id {
+            return Err(anyhow::anyhow!(
+                "user.device_id ({}) must be set when using access token authentication",
+                super::env::BAIBOT_USER_DEVICE_ID
+            ));
+        }
 
         Ok(())
     }
