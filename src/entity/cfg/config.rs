@@ -536,3 +536,7 @@ impl TryInto<GlobalConfig> for ConfigInitialGlobalConfig {
         Ok(entity)
     }
 }
+
+#[cfg(test)]
+#[path = "config_tests.rs"]
+mod config_tests;
