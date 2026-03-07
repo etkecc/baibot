@@ -22,6 +22,8 @@ You can see the list of supported environment variables in the [🦀 src/entity/
 > [!WARNING]
 > The static configuration contains an `initial_global_config` key, which is used to populate the bot's global configuration (stored as [dynamic configuration](#dynamic-configuration)) the first time the bot starts. Modifying this subsequently will not have any effect. After initial global configuration creation, it's expected to be managed dynamically via chat commands.
 
+For Matrix-account authentication setup, see [🔐 Authentication](./authentication.md).
+
 
 ### Dynamic configuration
 

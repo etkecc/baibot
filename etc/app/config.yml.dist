@@ -11,7 +11,7 @@ user:
   # Password-based login (traditional homeservers):
   password: baibot
 
-  # Access token login (for MAS/OIDC-enabled homeservers):
+  # Access token login (for Matrix Authentication Service/OIDC-enabled homeservers):
   # Generate a token via: mas-cli manage issue-compatibility-token <username> [device_id]
   # access_token: null
   # device_id: null
