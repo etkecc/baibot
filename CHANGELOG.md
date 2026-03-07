@@ -1,3 +1,14 @@
+# (2026-03-07) Version 1.15.0
+
+- (**Feature**) Add support for authentication via access tokens (for [Matrix Authentication Service](https://github.com/element-hq/matrix-authentication-service)/OIDC-enabled homeservers) as an alternative to password authentication. See [🔐 Authentication](./docs/configuration/authentication.md) for setup details. Thanks to [Taylor Southwick](https://github.com/twsouthwick) for the contribution in [#83](https://github.com/etkecc/baibot/pull/83)!
+
+- (**Internal Improvement**) Pin the Rust toolchain to `1.93.0` in both CI and local development to avoid `matrix-sdk` build failures on newer stable toolchains.
+
+- (**Internal Improvement**) Documentation updates.
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-02-18) Version 1.14.3
 
 - (**Internal Improvement**) Add [Renovate](https://docs.renovatebot.com/) configuration for automated dependency updates
