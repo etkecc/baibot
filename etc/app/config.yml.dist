@@ -5,7 +5,16 @@ homeserver:
 
 user:
   mxid_localpart: baibot
+
+  # Authentication: set EITHER password OR access_token + device_id.
+  #
+  # Password-based login (traditional homeservers):
   password: baibot
+
+  # Access token login (for MAS/OIDC-enabled homeservers):
+  # Generate a token via: mas-cli manage issue-compatibility-token <username> [device_id]
+  # access_token: null
+  # device_id: null
 
   # The name the bot uses as a display name and when it refers to itself.
   # Leave empty to use the default (baibot).

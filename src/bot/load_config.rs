@@ -29,7 +29,15 @@ pub fn load() -> anyhow::Result<Config> {
             cfg_env::BAIBOT_HOMESERVER_SERVER_NAME => config.homeserver.server_name = value,
             cfg_env::BAIBOT_HOMESERVER_URL => config.homeserver.url = value,
             cfg_env::BAIBOT_USER_MXID_LOCALPART => config.user.mxid_localpart = value,
-            cfg_env::BAIBOT_USER_PASSWORD => config.user.password = value,
+            cfg_env::BAIBOT_USER_PASSWORD => {
+                config.user.password = optional_non_empty(value);
+            }
+            cfg_env::BAIBOT_USER_ACCESS_TOKEN => {
+                config.user.access_token = optional_non_empty(value);
+            }
+            cfg_env::BAIBOT_USER_DEVICE_ID => {
+                config.user.device_id = optional_non_empty(value);
+            }
             cfg_env::BAIBOT_USER_ENCRYPTION_RECOVERY_PASSPHRASE => {
                 config.user.encryption.recovery_passphrase = Some(value);
             }
@@ -119,4 +127,8 @@ pub fn load() -> anyhow::Result<Config> {
     config.validate().map_err(|s| anyhow!(s))?;
 
     Ok(config)
+}
+
+fn optional_non_empty(value: String) -> Option<String> {
+    if value.is_empty() { None } else { Some(value) }
 }

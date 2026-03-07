@@ -25,7 +25,7 @@ use crate::agent::Manager as AgentManager;
 use crate::entity::catch_up_marker::{
     CatchUpMarker, CatchUpMarkerManager, DelayedCatchUpMarkerManager,
 };
-use crate::entity::cfg::{Avatar, Config};
+use crate::entity::cfg::{Avatar, Config, ConfigUserAuth};
 use crate::entity::globalconfig::{GlobalConfig, GlobalConfigurationManager};
 use crate::entity::roomconfig::{RoomConfig, RoomConfigurationManager};
 
@@ -395,10 +395,22 @@ async fn create_matrix_link(config: &Config) -> anyhow::Result<MatrixLink> {
     let session_encryption_key = config.persistence.session_encryption_key()?;
     let db_dir_path: std::path::PathBuf = config.persistence.db_dir_path()?;
 
-    let login_creds = LoginCredentials::UserPassword(
-        config.user.mxid_localpart.to_owned(),
-        config.user.password.to_owned(),
-    );
+    let user_auth = config.user.auth_config(&config.homeserver.server_name)?;
+
+    let login_creds = match user_auth {
+        ConfigUserAuth::UserPassword { username, password } => {
+            LoginCredentials::UserPassword(username, password)
+        }
+        ConfigUserAuth::AccessToken {
+            user_id,
+            device_id,
+            access_token,
+        } => LoginCredentials::AccessToken {
+            user_id,
+            device_id,
+            access_token,
+        },
+    };
 
     let login_encryption = LoginEncryption::new(
         config.user.encryption.recovery_passphrase.clone(),
