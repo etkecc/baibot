@@ -395,13 +395,25 @@ async fn create_matrix_link(config: &Config) -> anyhow::Result<MatrixLink> {
     let session_encryption_key = config.persistence.session_encryption_key()?;
     let db_dir_path: std::path::PathBuf = config.persistence.db_dir_path()?;
 
-    let login_creds = if let Some(access_token) = &config.user.access_token {
+    let login_creds = if let Some(access_token) = config
+        .user
+        .access_token
+        .as_deref()
+        .filter(|token| !token.is_empty())
+    {
         let server_name = &config.homeserver.server_name;
         let localpart = &config.user.mxid_localpart;
         let user_id = OwnedUserId::try_from(format!("@{localpart}:{server_name}"))
             .map_err(|e| anyhow::anyhow!("Invalid user ID: {e}"))?;
         let device_id = OwnedDeviceId::from(
-            config.user.device_id.as_deref().expect("device_id must be set for access token auth"),
+            config
+                .user
+                .device_id
+                .as_deref()
+                .filter(|device_id| !device_id.is_empty())
+                .ok_or_else(|| {
+                    anyhow::anyhow!("user.device_id must be set for access token authentication")
+                })?,
         );
         LoginCredentials::AccessToken {
             user_id,
@@ -411,7 +423,15 @@ async fn create_matrix_link(config: &Config) -> anyhow::Result<MatrixLink> {
     } else {
         LoginCredentials::UserPassword(
             config.user.mxid_localpart.to_owned(),
-            config.user.password.as_deref().expect("password must be set if access_token is not").to_owned(),
+            config
+                .user
+                .password
+                .as_deref()
+                .filter(|password| !password.is_empty())
+                .ok_or_else(|| {
+                    anyhow::anyhow!("user.password must be set for password authentication")
+                })?
+                .to_owned(),
         )
     };
 
