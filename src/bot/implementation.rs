@@ -6,7 +6,7 @@ use mxlink::matrix_sdk::Room;
 use mxlink::matrix_sdk::media::{MediaFormat, MediaRequestParameters};
 use mxlink::matrix_sdk::ruma::api::client::profile::{AvatarUrl, DisplayName};
 use mxlink::matrix_sdk::ruma::{
-    MilliSecondsSinceUnixEpoch, OwnedDeviceId, OwnedUserId, events::room::MediaSource,
+    MilliSecondsSinceUnixEpoch, OwnedUserId, events::room::MediaSource,
 };
 
 use mxlink::{
@@ -25,7 +25,7 @@ use crate::agent::Manager as AgentManager;
 use crate::entity::catch_up_marker::{
     CatchUpMarker, CatchUpMarkerManager, DelayedCatchUpMarkerManager,
 };
-use crate::entity::cfg::{Avatar, Config};
+use crate::entity::cfg::{Avatar, Config, ConfigUserAuth};
 use crate::entity::globalconfig::{GlobalConfig, GlobalConfigurationManager};
 use crate::entity::roomconfig::{RoomConfig, RoomConfigurationManager};
 
@@ -395,44 +395,21 @@ async fn create_matrix_link(config: &Config) -> anyhow::Result<MatrixLink> {
     let session_encryption_key = config.persistence.session_encryption_key()?;
     let db_dir_path: std::path::PathBuf = config.persistence.db_dir_path()?;
 
-    let login_creds = if let Some(access_token) = config
-        .user
-        .access_token
-        .as_deref()
-        .filter(|token| !token.is_empty())
-    {
-        let server_name = &config.homeserver.server_name;
-        let localpart = &config.user.mxid_localpart;
-        let user_id = OwnedUserId::try_from(format!("@{localpart}:{server_name}"))
-            .map_err(|e| anyhow::anyhow!("Invalid user ID: {e}"))?;
-        let device_id = OwnedDeviceId::from(
-            config
-                .user
-                .device_id
-                .as_deref()
-                .filter(|device_id| !device_id.is_empty())
-                .ok_or_else(|| {
-                    anyhow::anyhow!("user.device_id must be set for access token authentication")
-                })?,
-        );
-        LoginCredentials::AccessToken {
+    let user_auth = config.user.auth_config(&config.homeserver.server_name)?;
+
+    let login_creds = match user_auth {
+        ConfigUserAuth::UserPassword { username, password } => {
+            LoginCredentials::UserPassword(username, password)
+        }
+        ConfigUserAuth::AccessToken {
             user_id,
             device_id,
-            access_token: access_token.to_owned(),
-        }
-    } else {
-        LoginCredentials::UserPassword(
-            config.user.mxid_localpart.to_owned(),
-            config
-                .user
-                .password
-                .as_deref()
-                .filter(|password| !password.is_empty())
-                .ok_or_else(|| {
-                    anyhow::anyhow!("user.password must be set for password authentication")
-                })?
-                .to_owned(),
-        )
+            access_token,
+        } => LoginCredentials::AccessToken {
+            user_id,
+            device_id,
+            access_token,
+        },
     };
 
     let login_encryption = LoginEncryption::new(

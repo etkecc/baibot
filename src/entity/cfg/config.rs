@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use mxlink::helpers::encryption::EncryptionKey;
+use mxlink::matrix_sdk::ruma::{OwnedDeviceId, OwnedUserId};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
@@ -38,7 +39,7 @@ pub struct Config {
 impl Config {
     pub fn validate(&self) -> anyhow::Result<()> {
         self.homeserver.validate()?;
-        self.user.validate()?;
+        self.user.validate(&self.homeserver.server_name)?;
         self.persistence.validate()?;
         self.room.validate()?;
         self.access.validate()?;
@@ -55,6 +56,19 @@ impl Config {
 
         Ok(())
     }
+}
+
+#[derive(Debug)]
+pub enum ConfigUserAuth {
+    UserPassword {
+        username: String,
+        password: String,
+    },
+    AccessToken {
+        user_id: OwnedUserId,
+        device_id: OwnedDeviceId,
+        access_token: String,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -148,7 +162,7 @@ pub struct ConfigUser {
 }
 
 impl ConfigUser {
-    pub fn validate(&self) -> anyhow::Result<()> {
+    pub fn validate(&self, homeserver_server_name: &str) -> anyhow::Result<()> {
         if self.mxid_localpart.is_empty() {
             return Err(anyhow::anyhow!(
                 "The user.mxid_localpart ({}) configuration must be set",
@@ -156,7 +170,7 @@ impl ConfigUser {
             ));
         }
 
-        self.validate_auth()?;
+        self.auth_config(homeserver_server_name)?;
 
         if self.name.is_empty() {
             return Err(anyhow::anyhow!(
@@ -170,27 +184,55 @@ impl ConfigUser {
         Ok(())
     }
 
-    fn validate_auth(&self) -> anyhow::Result<()> {
-        let has_password = self.password.as_deref().is_some_and(|p| !p.is_empty());
-        let has_access_token = self.access_token.as_deref().is_some_and(|t| !t.is_empty());
-        let has_device_id = self.device_id.as_deref().is_some_and(|d| !d.is_empty());
+    pub fn auth_config(&self, homeserver_server_name: &str) -> anyhow::Result<ConfigUserAuth> {
+        let password = self.password.as_deref().filter(|value| !value.is_empty());
+        let access_token = self
+            .access_token
+            .as_deref()
+            .filter(|value| !value.is_empty());
 
-        if !has_password && !has_access_token {
-            return Err(anyhow::anyhow!(
-                "Either user.password ({}) or user.access_token ({}) must be set",
+        match (password, access_token) {
+            (Some(_), Some(_)) => Err(anyhow::anyhow!(
+                "Set exactly one authentication method: either user.password ({}) OR user.access_token ({}) + user.device_id ({})",
                 super::env::BAIBOT_USER_PASSWORD,
-                super::env::BAIBOT_USER_ACCESS_TOKEN
-            ));
-        }
-
-        if has_access_token && !has_device_id {
-            return Err(anyhow::anyhow!(
-                "user.device_id ({}) must be set when using access token authentication",
+                super::env::BAIBOT_USER_ACCESS_TOKEN,
                 super::env::BAIBOT_USER_DEVICE_ID
-            ));
-        }
+            )),
+            (None, None) => Err(anyhow::anyhow!(
+                "Set one authentication method: either user.password ({}) OR user.access_token ({}) + user.device_id ({})",
+                super::env::BAIBOT_USER_PASSWORD,
+                super::env::BAIBOT_USER_ACCESS_TOKEN,
+                super::env::BAIBOT_USER_DEVICE_ID
+            )),
+            (Some(password), None) => Ok(ConfigUserAuth::UserPassword {
+                username: self.mxid_localpart.to_owned(),
+                password: password.to_owned(),
+            }),
+            (None, Some(access_token)) => {
+                let device_id = self
+                    .device_id
+                    .as_deref()
+                    .filter(|value| !value.is_empty())
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "user.device_id ({}) must be set when using access token authentication",
+                            super::env::BAIBOT_USER_DEVICE_ID
+                        )
+                    })?;
 
-        Ok(())
+                let user_id = OwnedUserId::try_from(format!(
+                    "@{}:{}",
+                    self.mxid_localpart, homeserver_server_name
+                ))
+                .map_err(|e| anyhow::anyhow!("Invalid user ID: {e}"))?;
+
+                Ok(ConfigUserAuth::AccessToken {
+                    user_id,
+                    device_id: OwnedDeviceId::from(device_id),
+                    access_token: access_token.to_owned(),
+                })
+            }
+        }
     }
 }
 
