@@ -312,6 +312,24 @@ pub async fn convert_matrix_native_event_to_matrix_message(
 
         tracing::debug!("Determined mime type {} for file {}", mime_type, file_name);
 
+        if mime_type == mxlink::mime::APPLICATION_OCTET_STREAM {
+            tracing::debug!(
+                "Skipping file {} with unsupported MIME type {}. It will be represented as a text message.",
+                file_name,
+                mime_type,
+            );
+
+            return Ok(Some(MatrixMessage {
+                sender_id: matrix_native_event.sender().to_owned(),
+                content: MatrixMessageContent::Text(format!(
+                    "[A file ({}) was attached but skipped because its content type ({}) is not supported. Let the user know.]",
+                    file_name, mime_type,
+                )),
+                mentioned_users,
+                timestamp,
+            }));
+        }
+
         let span = tracing::debug_span!("get_media_content", file_name = %file_name, mime_type = %mime_type);
 
         let media_bytes = matrix_link
