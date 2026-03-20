@@ -41,6 +41,8 @@ pub enum ChatCompletionControllerType {
 
     Image,
 
+    File,
+
     ThreadMention,
     ReplyMention,
 }
@@ -419,7 +421,8 @@ async fn handle_stage_text_generation(
         | ChatCompletionControllerType::TextMention
         | ChatCompletionControllerType::TextDirect
         | ChatCompletionControllerType::Audio
-        | ChatCompletionControllerType::Image => {
+        | ChatCompletionControllerType::Image
+        | ChatCompletionControllerType::File => {
             Some(message_context.combined_admin_and_user_regexes())
         }
 

@@ -29,6 +29,18 @@ pub fn get_mime_type_from_file_name(file_name: &str) -> mime::Mime {
         "bmp" => "image/bmp".parse().unwrap(),
         "heic" | "heif" => "image/heic".parse().unwrap(),
         "avif" => "image/avif".parse().unwrap(),
+        "pdf" => "application/pdf".parse().unwrap(),
+        "txt" | "log" => mime::TEXT_PLAIN,
+        "csv" => mime::TEXT_CSV,
+        "json" => mime::APPLICATION_JSON,
+        "xml" => "application/xml".parse().unwrap(),
+        "html" | "htm" => mime::TEXT_HTML,
+        "md" | "markdown" => "text/markdown".parse().unwrap(),
+        "yaml" | "yml" => "application/yaml".parse().unwrap(),
+        "toml" => "application/toml".parse().unwrap(),
+        "rs" | "py" | "js" | "ts" | "go" | "c" | "cpp" | "h" | "java" | "rb" | "sh" | "css" => {
+            mime::TEXT_PLAIN
+        }
         _ => mime::APPLICATION_OCTET_STREAM,
     }
 }

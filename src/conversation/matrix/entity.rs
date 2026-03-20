@@ -2,7 +2,9 @@ use chrono::{DateTime, Utc};
 use regex::Regex;
 
 use mxlink::matrix_sdk::ruma::OwnedUserId;
-use mxlink::matrix_sdk::ruma::events::room::message::ImageMessageEventContent;
+use mxlink::matrix_sdk::ruma::events::room::message::{
+    FileMessageEventContent, ImageMessageEventContent,
+};
 use mxlink::mime::Mime;
 
 #[derive(Clone)]
@@ -18,6 +20,7 @@ pub enum MatrixMessageContent {
     Text(String),
     Notice(String),
     Image(ImageMessageEventContent, Mime, Vec<u8>),
+    File(FileMessageEventContent, Mime, Vec<u8>),
 }
 
 #[derive(Clone)]

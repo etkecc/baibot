@@ -234,6 +234,7 @@ pub async fn convert_matrix_native_event_to_matrix_message(
         MessageType::Text(text_content) => (text_content.body.clone(), false),
         MessageType::Notice(notice_content) => (notice_content.body.clone(), true),
         MessageType::Image(image_content) => (image_content.body.clone(), false),
+        MessageType::File(file_content) => (file_content.body.clone(), false),
         _ => return Ok(None),
     };
 
@@ -286,6 +287,49 @@ pub async fn convert_matrix_native_event_to_matrix_message(
         return Ok(Some(MatrixMessage {
             sender_id: matrix_native_event.sender().to_owned(),
             content: MatrixMessageContent::Image(image_content.clone(), mime_type, media_bytes),
+            mentioned_users,
+            timestamp,
+        }));
+    }
+
+    if let MessageType::File(file_content) = &room_message.msgtype {
+        let media_request = mxlink::matrix_sdk::media::MediaRequestParameters {
+            source: file_content.source.to_owned(),
+            format: mxlink::matrix_sdk::media::MediaFormat::File,
+        };
+
+        let file_name = file_content
+            .filename
+            .clone()
+            .unwrap_or(file_content.body.clone());
+
+        let mime_type = file_content
+            .info
+            .as_ref()
+            .and_then(|info| info.mimetype.clone())
+            .and_then(|mimetype| mimetype.parse::<mxlink::mime::Mime>().ok())
+            .unwrap_or_else(|| get_mime_type_from_file_name(&file_name));
+
+        tracing::debug!("Determined mime type {} for file {}", mime_type, file_name);
+
+        let span = tracing::debug_span!("get_media_content", file_name = %file_name, mime_type = %mime_type);
+
+        let media_bytes = matrix_link
+            .client()
+            .media()
+            .get_media_content(&media_request, true)
+            .instrument(span)
+            .await?;
+
+        tracing::debug!(
+            "Downloaded {} bytes for file {}",
+            media_bytes.len(),
+            file_name
+        );
+
+        return Ok(Some(MatrixMessage {
+            sender_id: matrix_native_event.sender().to_owned(),
+            content: MatrixMessageContent::File(file_content.clone(), mime_type, media_bytes),
             mentioned_users,
             timestamp,
         }));

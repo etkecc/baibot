@@ -58,6 +58,18 @@ pub fn determine_controller(
                 )
             }
         }
+        MessagePayload::File(_file_message_content) => {
+            let prefix_requirement_type = message_context
+                .room_config_context()
+                .text_generation_prefix_requirement_type();
+
+            match prefix_requirement_type {
+                TextGenerationPrefixRequirementType::CommandPrefix => ControllerType::Ignore,
+                TextGenerationPrefixRequirementType::No => {
+                    ControllerType::ChatCompletion(ChatCompletionControllerType::File)
+                }
+            }
+        }
         MessagePayload::Audio(_) => {
             ControllerType::ChatCompletion(ChatCompletionControllerType::Audio)
         }

@@ -11,7 +11,7 @@ This is related to the [💬 Text Generation](./features.md#-text-generation) fe
 
 If there's a text-generation handler agent configured, the bot **may** respond to messages sent in the room.
 
-Some models also support vision, so you may be able to mix text and images in the same conversation.
+Some models also support vision and document understanding, so you may be able to mix text, images, and files (PDFs, text documents, etc.) in the same conversation.
 
 See screenshots of:
 

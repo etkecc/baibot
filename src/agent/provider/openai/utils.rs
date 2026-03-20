@@ -1,6 +1,6 @@
 use async_openai::types::responses::{
-    EasyInputContent, EasyInputMessage, ImageDetail, InputContent, InputImageContent, InputItem,
-    InputParam, MessageType, Role,
+    EasyInputContent, EasyInputMessage, ImageDetail, InputContent, InputFileArgs,
+    InputImageContent, InputItem, InputParam, MessageType, Role,
 };
 
 use crate::conversation::llm::{
@@ -34,6 +34,21 @@ pub fn convert_llm_messages_to_openai_response_input(
                     detail: ImageDetail::Auto,
                     file_id: None,
                 })])
+            }
+            LLMMessageContent::File(file_details) => {
+                let file_data = format!(
+                    "data:{};base64,{}",
+                    file_details.mime,
+                    base64_encode(&file_details.data)
+                );
+
+                let file_content = InputFileArgs::default()
+                    .file_data(file_data)
+                    .filename(file_details.filename())
+                    .build()
+                    .expect("Failed to build InputFileContent");
+
+                EasyInputContent::ContentList(vec![InputContent::InputFile(file_content)])
             }
         };
 

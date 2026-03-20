@@ -28,6 +28,13 @@ pub(super) fn create_anthropic_message_request(llm_messages: Vec<LLMMessage>) ->
                     },
                 }]
             }
+            LLMMessageContent::File(file_details) => {
+                tracing::warn!(
+                    "The Anthropic provider's library does not support file/document content. This file message ({}) will be skipped.",
+                    file_details.filename(),
+                );
+                continue;
+            }
         };
 
         let message = Message { role, content };

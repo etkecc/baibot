@@ -40,6 +40,12 @@ fn convert_llm_message_to_openai_message(llm_message: LLMMessage) -> Option<Mess
             );
             None
         }
+        LLMMessageContent::File(_file_details) => {
+            tracing::warn!(
+                "The OpenAI-compat provider's library does not support file content. This file message will be skipped."
+            );
+            None
+        }
     }
 }
 

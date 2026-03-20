@@ -1,5 +1,7 @@
 use chrono::{DateTime, Utc};
-use mxlink::matrix_sdk::ruma::events::room::message::ImageMessageEventContent;
+use mxlink::matrix_sdk::ruma::events::room::message::{
+    FileMessageEventContent, ImageMessageEventContent,
+};
 use mxlink::mime::Mime;
 
 use crate::agent::provider::ImageSource;
@@ -49,9 +51,34 @@ impl From<ImageDetails> for ImageSource {
 }
 
 #[derive(Debug, Clone)]
+pub struct FileDetails {
+    pub event_content: FileMessageEventContent,
+    pub mime: Mime,
+    pub data: Vec<u8>,
+}
+
+impl FileDetails {
+    pub fn new(event_content: FileMessageEventContent, mime: Mime, data: Vec<u8>) -> Self {
+        Self {
+            event_content,
+            mime,
+            data,
+        }
+    }
+
+    pub fn filename(&self) -> String {
+        self.event_content
+            .filename
+            .clone()
+            .unwrap_or(self.event_content.body.clone())
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum MessageContent {
     Text(String),
     Image(ImageDetails),
+    File(FileDetails),
 }
 
 impl PartialEq for MessageContent {
@@ -62,6 +89,7 @@ impl PartialEq for MessageContent {
                 // We can probably do better than this by inspecting `.event_conten1t.source`, but for now this is good enough.
                 a.filename() == b.filename()
             }
+            (MessageContent::File(a), MessageContent::File(b)) => a.filename() == b.filename(),
             _ => false,
         }
     }

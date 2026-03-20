@@ -74,6 +74,7 @@ fn calculate_token_size_for_message(bpe: &CoreBPE, model: &str, message: &Messag
     let text_length = match &message.content {
         MessageContent::Text(text) => bpe.encode_with_special_tokens(text).len() as i32,
         MessageContent::Image(..) => 0,
+        MessageContent::File(..) => 0,
     };
 
     (text_length + role_length + tokens_per_message + tokens_per_name) as u32

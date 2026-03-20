@@ -1,6 +1,6 @@
 use mxlink::matrix_sdk::ruma::OwnedUserId;
 
-use super::entity::{Author, ImageDetails, Message, MessageContent};
+use super::entity::{Author, FileDetails, ImageDetails, Message, MessageContent};
 use crate::conversation::matrix::{MatrixMessage, MatrixMessageContent};
 use crate::utils::text_to_speech as text_to_speech_utils;
 
@@ -27,6 +27,15 @@ fn convert_bot_message(matrix_message: &MatrixMessage) -> Option<Message> {
             author: Author::Assistant,
             content: MessageContent::Image(ImageDetails::new(
                 image_content.clone(),
+                mime_type.clone(),
+                media_bytes.clone(),
+            )),
+            timestamp: matrix_message.timestamp.to_owned(),
+        }),
+        MatrixMessageContent::File(file_content, mime_type, media_bytes) => Some(Message {
+            author: Author::Assistant,
+            content: MessageContent::File(FileDetails::new(
+                file_content.clone(),
                 mime_type.clone(),
                 media_bytes.clone(),
             )),
@@ -85,6 +94,15 @@ fn convert_user_message(matrix_message: &MatrixMessage) -> Option<Message> {
             author: Author::User,
             content: MessageContent::Image(ImageDetails::new(
                 image_content.clone(),
+                mime_type.clone(),
+                media_bytes.clone(),
+            )),
+            timestamp: matrix_message.timestamp.to_owned(),
+        }),
+        MatrixMessageContent::File(file_content, mime_type, media_bytes) => Some(Message {
+            author: Author::User,
+            content: MessageContent::File(FileDetails::new(
+                file_content.clone(),
                 mime_type.clone(),
                 media_bytes.clone(),
             )),

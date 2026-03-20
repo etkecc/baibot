@@ -1,5 +1,6 @@
 use mxlink::matrix_sdk::ruma::events::room::message::{
-    AudioMessageEventContent, ImageMessageEventContent, MessageType, TextMessageEventContent,
+    AudioMessageEventContent, FileMessageEventContent, ImageMessageEventContent, MessageType,
+    TextMessageEventContent,
 };
 use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId};
 
@@ -30,6 +31,7 @@ pub enum MessagePayload {
     Text(TextMessageEventContent),
     Audio(AudioMessageEventContent),
     Image(ImageMessageEventContent),
+    File(FileMessageEventContent),
 
     Reaction {
         key: String,
@@ -57,6 +59,7 @@ impl TryInto<MessagePayload> for MessageType {
                 MessagePayload::Audio(audio_content)
             }
             MessageType::Image(image_content) => MessagePayload::Image(image_content),
+            MessageType::File(file_content) => MessagePayload::File(file_content),
             other => {
                 return Err(format!("Unsupported message type: {:?}", other));
             }
