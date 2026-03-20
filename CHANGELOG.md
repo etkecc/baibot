@@ -1,3 +1,11 @@
+# (2026-03-20) Version 1.16.0
+
+- (**Feature**) Add support for file attachments (`m.file` Matrix messages) in conversations. Files like PDFs, text documents, spreadsheets, code files, etc. are now downloaded and forwarded to the LLM alongside the conversation context, similar to how images (`m.image`) are already handled. See the [💬 Text Generation](./docs/features.md#-text-generation) documentation for details and known limitations.
+
+- (**Improvement**) Use the [mime_guess](https://crates.io/crates/mime_guess) crate for MIME type detection from file extensions, replacing a hand-maintained mapping. This covers hundreds of file extensions out of the box.
+
+
+
 # (2026-03-07) Version 1.15.0
 
 - (**Feature**) Add support for authentication via access tokens (for [Matrix Authentication Service](https://github.com/element-hq/matrix-authentication-service)/OIDC-enabled homeservers) as an alternative to password authentication. See [🔐 Authentication](./docs/configuration/authentication.md) for setup details. Thanks to [Taylor Southwick](https://github.com/twsouthwick) for the contribution in [#83](https://github.com/etkecc/baibot/pull/83)!
