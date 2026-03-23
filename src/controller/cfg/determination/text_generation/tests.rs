@@ -91,6 +91,75 @@ fn determine_controller_context_management() {
 }
 
 #[test]
+fn determine_controller_sender_context() {
+    use super::ConfigTextGenerationSettingRelatedControllerType;
+    use super::ControllerType;
+
+    struct TestCase {
+        name: &'static str,
+        input: &'static str,
+        expected: Result<ConfigTextGenerationSettingRelatedControllerType, ControllerType>,
+    }
+
+    let test_cases = vec![
+        TestCase {
+            name: "sender-context-enabled getter ok",
+            input: "sender-context-enabled",
+            expected: Ok(
+                ConfigTextGenerationSettingRelatedControllerType::GetSenderContextEnabled,
+            ),
+        },
+        TestCase {
+            name: "sender-context-enabled getter extra args",
+            input: "sender-context-enabled some values here",
+            expected: Err(ControllerType::Error(
+                crate::strings::cfg::configuration_getter_used_with_extra_text(
+                    "sender-context-enabled",
+                    "some values here",
+                ),
+            )),
+        },
+        TestCase {
+            name: "sender-context-enabled setter true",
+            input: "set-sender-context-enabled true",
+            expected: Ok(
+                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(
+                    Some(true),
+                ),
+            ),
+        },
+        TestCase {
+            name: "sender-context-enabled setter uppercase",
+            input: "set-sender-context-enabled TRUE",
+            expected: Ok(
+                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(
+                    Some(true),
+                ),
+            ),
+        },
+        TestCase {
+            name: "sender-context-enabled setter non-bool",
+            input: "set-sender-context-enabled non-Bool-Value",
+            expected: Err(ControllerType::Error(
+                crate::strings::cfg::configuration_value_unrecognized("non-Bool-Value"),
+            )),
+        },
+        TestCase {
+            name: "sender-context-enabled unsetter",
+            input: "set-sender-context-enabled",
+            expected: Ok(
+                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(None),
+            ),
+        },
+    ];
+
+    for test_case in test_cases {
+        let result = super::determine(test_case.input);
+        assert_eq!(result, test_case.expected, "Test case: {}", test_case.name);
+    }
+}
+
+#[test]
 fn determine_controller_prefix_requirement_type() {
     use super::ConfigTextGenerationSettingRelatedControllerType;
     use super::ControllerType;

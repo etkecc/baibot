@@ -164,6 +164,26 @@ fn determine_controller() {
             )),
         },
         TestCase {
+            name: "per-room text-generation/sender-context-enabled getter",
+            input: "room text-generation sender-context-enabled",
+            expected: super::ControllerType::Config(controller_type::ConfigControllerType::SettingsRelated(
+                controller_type::SettingsStorageSource::Room,
+                controller_type::ConfigSettingRelatedControllerType::TextGeneration(
+                    controller_type::ConfigTextGenerationSettingRelatedControllerType::GetSenderContextEnabled,
+                ),
+            )),
+        },
+        TestCase {
+            name: "global text-generation/sender-context-enabled getter",
+            input: "global text-generation sender-context-enabled",
+            expected: super::ControllerType::Config(controller_type::ConfigControllerType::SettingsRelated(
+                controller_type::SettingsStorageSource::Global,
+                controller_type::ConfigSettingRelatedControllerType::TextGeneration(
+                    controller_type::ConfigTextGenerationSettingRelatedControllerType::GetSenderContextEnabled,
+                ),
+            )),
+        },
+        TestCase {
             name: "per-room text-to-speech/speed-override getter",
             input: "room text-to-speech speed-override",
             expected: super::ControllerType::Config(controller_type::ConfigControllerType::SettingsRelated(
