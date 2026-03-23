@@ -249,6 +249,10 @@ pub fn status_text_generation_entry_context_management(value: bool, set_where: &
     format!("- ♻️ Context management: `{}` ({})\n", value, set_where)
 }
 
+pub fn status_text_generation_entry_sender_context(value: bool, set_where: &str) -> String {
+    format!("- 👤 Sender context: `{}` ({})\n", value, set_where)
+}
+
 pub fn status_text_generation_entry_prompt(value: &str, set_where: &str) -> String {
     let value = value.trim();
 

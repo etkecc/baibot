@@ -359,6 +359,36 @@ async fn generate_text_generation_section(
         ),
     );
 
+    // Sender Context
+
+    let effective_sender_context =
+        room_config_context.text_generation_sender_context_enabled();
+    let room_config_sender_context = room_config_context
+        .room_config
+        .settings
+        .text_generation
+        .sender_context_enabled;
+    let global_config_sender_context = room_config_context
+        .global_config
+        .fallback_room_settings
+        .text_generation
+        .sender_context_enabled;
+
+    let sender_context_set_where = if room_config_sender_context.is_some() {
+        strings::cfg::status_badge_set_in_room_config()
+    } else if global_config_sender_context.is_some() {
+        strings::cfg::status_badge_set_in_global_config()
+    } else {
+        strings::cfg::status_badge_using_hardcoded_default()
+    };
+
+    message.push_str(
+        &strings::cfg::status_text_generation_entry_sender_context(
+            effective_sender_context,
+            sender_context_set_where,
+        ),
+    );
+
     // Prompt override
 
     let text_agent_prompt = if let Some(text_generation_agent) = &text_generation_agent {

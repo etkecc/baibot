@@ -233,6 +233,44 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     ));
     message.push_str("\n\n");
 
+    // Sender Context
+
+    message.push_str(&format!(
+        "#### {}",
+        strings::help::cfg::text_generation_sender_context_heading()
+    ));
+    message.push_str("\n\n");
+    message.push_str(&strings::help::cfg::text_generation_sender_context_intro());
+    message.push('\n');
+    message.push_str(
+        &strings::help::cfg::the_following_configuration_values_are_recognized(vec![true, false]),
+    );
+    message.push_str("\n\n");
+    message.push_str(&format!(
+        "- {}",
+        &strings::help::cfg::current_setting_show(
+            command_prefix,
+            "text-generation sender-context-enabled"
+        )
+    ));
+    message.push('\n');
+    message.push_str(&format!(
+        "- {}",
+        &strings::help::cfg::current_setting_set(
+            command_prefix,
+            "text-generation set-sender-context-enabled VALUE"
+        )
+    ));
+    message.push('\n');
+    message.push_str(&format!(
+        "- {}",
+        &strings::help::cfg::current_setting_unset(
+            command_prefix,
+            "text-generation set-sender-context-enabled"
+        )
+    ));
+    message.push_str("\n\n");
+
     // Prompt override
 
     message.push_str(&format!(

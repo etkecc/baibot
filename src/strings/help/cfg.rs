@@ -132,6 +132,14 @@ pub fn text_generation_context_management_intro() -> String {
     )
 }
 
+pub fn text_generation_sender_context_heading() -> &'static str {
+    "👤 Sender Context"
+}
+
+pub fn text_generation_sender_context_intro() -> String {
+    "Controls whether each message in the conversation is prefixed with the sender's Matrix ID and timestamp, allowing the model to distinguish between different users.".to_owned()
+}
+
 pub fn text_generation_prompt_override_heading() -> &'static str {
     "⌨️ Prompt Override"
 }
