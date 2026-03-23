@@ -19,6 +19,9 @@ pub struct RoomSettingsTextGeneration {
 
     /// Allows customizing the temperature that the agent would use
     pub temperature_override: Option<f32>,
+
+    /// Controls whether each message in the conversation context is prefixed with the sender's Matrix ID and timestamp.
+    pub sender_context_enabled: Option<bool>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]

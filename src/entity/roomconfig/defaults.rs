@@ -18,6 +18,8 @@ pub const SPEECH_TO_TEXT_FLOW_TYPE: SpeechToTextFlowType =
 
 // While notice messages may be less desirable with other bots in the room,
 // it's probably a better default for most people who enable "transcribe-only" mode.
+pub const TEXT_GENERATION_SENDER_CONTEXT_ENABLED: bool = false;
+
 pub const SPEECH_TO_TEXT_ONLY_TRANSCRIBE_NON_THREADED_MESSAGE_TYPE:
     SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages =
     SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages::Text;

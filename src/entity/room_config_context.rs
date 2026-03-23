@@ -135,6 +135,20 @@ impl RoomConfigContext {
             .unwrap_or(false)
     }
 
+    pub fn text_generation_sender_context_enabled(&self) -> bool {
+        self.room_config
+            .settings
+            .text_generation
+            .sender_context_enabled
+            .or({
+                self.global_config
+                    .fallback_room_settings
+                    .text_generation
+                    .sender_context_enabled
+            })
+            .unwrap_or(roomconfig_defaults::TEXT_GENERATION_SENDER_CONTEXT_ENABLED)
+    }
+
     pub fn text_generation_prefix_requirement_type(&self) -> TextGenerationPrefixRequirementType {
         self.room_config
             .settings
