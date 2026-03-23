@@ -105,9 +105,7 @@ fn determine_controller_sender_context() {
         TestCase {
             name: "sender-context-enabled getter ok",
             input: "sender-context-enabled",
-            expected: Ok(
-                ConfigTextGenerationSettingRelatedControllerType::GetSenderContextEnabled,
-            ),
+            expected: Ok(ConfigTextGenerationSettingRelatedControllerType::GetSenderContextEnabled),
         },
         TestCase {
             name: "sender-context-enabled getter extra args",
@@ -123,18 +121,18 @@ fn determine_controller_sender_context() {
             name: "sender-context-enabled setter true",
             input: "set-sender-context-enabled true",
             expected: Ok(
-                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(
-                    Some(true),
-                ),
+                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(Some(
+                    true,
+                )),
             ),
         },
         TestCase {
             name: "sender-context-enabled setter uppercase",
             input: "set-sender-context-enabled TRUE",
             expected: Ok(
-                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(
-                    Some(true),
-                ),
+                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(Some(
+                    true,
+                )),
             ),
         },
         TestCase {

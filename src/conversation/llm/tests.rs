@@ -82,8 +82,7 @@ fn test_user_messages_preserve_sender_id() {
     let bot_user_id =
         OwnedUserId::try_from("@bot:example.com").expect("Failed to parse bot user ID");
 
-    let user_id =
-        OwnedUserId::try_from("@alice:example.com").expect("Failed to parse user ID");
+    let user_id = OwnedUserId::try_from("@alice:example.com").expect("Failed to parse user ID");
 
     let matrix_message = super::super::matrix::MatrixMessage {
         sender_id: user_id.clone(),
@@ -92,8 +91,7 @@ fn test_user_messages_preserve_sender_id() {
         timestamp: chrono::Utc::now(),
     };
 
-    let llm_message =
-        convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
+    let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
 
     assert_eq!(llm_message.author, Author::User);
     assert_eq!(llm_message.sender_id, Some(user_id));

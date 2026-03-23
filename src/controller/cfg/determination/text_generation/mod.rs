@@ -231,9 +231,7 @@ pub(super) fn determine(
         };
 
         return Ok(
-            ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(
-                value_opt,
-            ),
+            ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(value_opt),
         );
     }
 

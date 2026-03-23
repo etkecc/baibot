@@ -361,8 +361,7 @@ async fn generate_text_generation_section(
 
     // Sender Context
 
-    let effective_sender_context =
-        room_config_context.text_generation_sender_context_enabled();
+    let effective_sender_context = room_config_context.text_generation_sender_context_enabled();
     let room_config_sender_context = room_config_context
         .room_config
         .settings
@@ -382,12 +381,10 @@ async fn generate_text_generation_section(
         strings::cfg::status_badge_using_hardcoded_default()
     };
 
-    message.push_str(
-        &strings::cfg::status_text_generation_entry_sender_context(
-            effective_sender_context,
-            sender_context_set_where,
-        ),
-    );
+    message.push_str(&strings::cfg::status_text_generation_entry_sender_context(
+        effective_sender_context,
+        sender_context_set_where,
+    ));
 
     // Prompt override
 

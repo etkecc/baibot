@@ -17,9 +17,11 @@ pub fn convert_matrix_message_to_llm_message(
 
 fn convert_bot_message(matrix_message: &MatrixMessage) -> Option<Message> {
     match &matrix_message.content {
-        MatrixMessageContent::Text(text) => {
-            convert_bot_text_message(text, &matrix_message.timestamp, matrix_message.sender_id.clone())
-        }
+        MatrixMessageContent::Text(text) => convert_bot_text_message(
+            text,
+            &matrix_message.timestamp,
+            matrix_message.sender_id.clone(),
+        ),
         MatrixMessageContent::Notice(text) => {
             convert_bot_notice_message(text, &matrix_message.timestamp)
         }

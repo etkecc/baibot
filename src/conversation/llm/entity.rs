@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
+use mxlink::matrix_sdk::ruma::OwnedUserId;
 use mxlink::matrix_sdk::ruma::events::room::message::{
     FileMessageEventContent, ImageMessageEventContent,
 };
-use mxlink::matrix_sdk::ruma::OwnedUserId;
 use mxlink::mime::Mime;
 
 use crate::agent::provider::ImageSource;
