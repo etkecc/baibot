@@ -48,6 +48,9 @@ pub enum ConfigTextGenerationSettingRelatedControllerType {
 
     GetTemperatureOverride,
     SetTemperatureOverride(Option<f32>),
+
+    GetSenderContextEnabled,
+    SetSenderContextEnabled(Option<bool>),
 }
 
 #[derive(Debug, PartialEq)]

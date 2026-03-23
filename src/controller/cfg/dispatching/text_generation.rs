@@ -151,5 +151,26 @@ pub(super) async fn dispatch(
                 }
             }
         }
+
+        ConfigTextGenerationSettingRelatedControllerType::GetSenderContextEnabled => {
+            let value = &room_settings.text_generation.sender_context_enabled;
+            setting_get::<bool>(bot, message_context, value).await
+        }
+        ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(value) => {
+            let value = value.to_owned();
+
+            let setter_callback = Box::new(move |room_settings: &mut RoomSettings| {
+                room_settings.text_generation.sender_context_enabled = value;
+            });
+
+            match config_type {
+                SettingsStorageSource::Room => {
+                    room_setting_set::<bool>(bot, message_context, &value, setter_callback).await
+                }
+                SettingsStorageSource::Global => {
+                    global_setting_set::<bool>(bot, message_context, &value, setter_callback).await
+                }
+            }
+        }
     }
 }

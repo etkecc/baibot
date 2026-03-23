@@ -197,5 +197,45 @@ pub(super) fn determine(
         );
     }
 
+    if let Some(remaining_text) = text.strip_prefix("sender-context-enabled") {
+        let remaining_text = remaining_text.trim();
+
+        if !remaining_text.is_empty() {
+            return Err(ControllerType::Error(
+                strings::cfg::configuration_getter_used_with_extra_text(
+                    "sender-context-enabled",
+                    remaining_text,
+                )
+                .to_owned(),
+            ));
+        }
+
+        return Ok(ConfigTextGenerationSettingRelatedControllerType::GetSenderContextEnabled);
+    }
+
+    if let Some(value_string) = text.strip_prefix("set-sender-context-enabled") {
+        let value_string = value_string.trim().to_owned();
+        let value_opt = if value_string.is_empty() {
+            None
+        } else {
+            let value_string_lowercase = value_string.to_lowercase();
+            Some(match value_string_lowercase.as_str() {
+                "true" => true,
+                "false" => false,
+                _ => {
+                    return Err(ControllerType::Error(
+                        strings::cfg::configuration_value_unrecognized(&value_string).to_owned(),
+                    ));
+                }
+            })
+        };
+
+        return Ok(
+            ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(
+                value_opt,
+            ),
+        );
+    }
+
     Err(ControllerType::Unknown)
 }
