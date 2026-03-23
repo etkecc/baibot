@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use mxlink::matrix_sdk::ruma::events::room::message::{
     FileMessageEventContent, ImageMessageEventContent,
 };
+use mxlink::matrix_sdk::ruma::OwnedUserId;
 use mxlink::mime::Mime;
 
 use crate::agent::provider::ImageSource;
@@ -16,6 +17,7 @@ pub enum Author {
 #[derive(Debug, Clone)]
 pub struct Message {
     pub author: Author,
+    pub sender_id: Option<OwnedUserId>,
     pub timestamp: DateTime<Utc>,
     pub content: MessageContent,
 }
@@ -173,21 +175,25 @@ mod tests {
                 // User's turn
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("Hello".to_string()),
                     timestamp: timestamp_1,
                 },
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("How are you?".to_string()),
                     timestamp: timestamp_2,
                 },
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("I'm OK, btw.".to_string()),
                     timestamp: timestamp_3,
                 },
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Image(ImageDetails::new(
                         image_event_content.clone(),
                         mime::IMAGE_PNG,
@@ -197,28 +203,33 @@ mod tests {
                 },
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("Above is an image.".to_string()),
                     timestamp: timestamp_4,
                 },
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("Would you take a look at it?".to_string()),
                     timestamp: timestamp_4,
                 },
                 // Assistant's turn
                 Message {
                     author: Author::Assistant,
+                    sender_id: None,
                     content: MessageContent::Text("Hi there!".to_string()),
                     timestamp: timestamp_2,
                 },
                 Message {
                     author: Author::Assistant,
+                    sender_id: None,
                     content: MessageContent::Text("I'm doing well, thank you.".to_string()),
                     timestamp: timestamp_3,
                 },
                 // User's turn
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("That's great!".to_string()),
                     timestamp: timestamp_3,
                 },
