@@ -56,6 +56,7 @@ pub fn convert_llm_messages_to_openai_response_input(
             r#type: MessageType::Message,
             role,
             content,
+            phase: None,
         }));
     }
 
