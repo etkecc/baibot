@@ -1,3 +1,10 @@
+# (2026-03-24) Version 1.16.1
+
+- (**Bugfix**) Fix compatibility with [async-openai](https://crates.io/crates/async-openai) 0.34.0 by populating the new `phase` field required for OpenAI Responses API message inputs. baibot does not currently distinguish between assistant `commentary` and `final_answer` turns, so using `None` preserves the previous behavior while remaining compatible with the updated crate.
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-03-20) Version 1.16.0
 
 - (**Feature**) Add support for file attachments (`m.file` Matrix messages) in conversations. Files like PDFs, text documents, spreadsheets, code files, etc. are now downloaded and forwarded to the LLM alongside the conversation context, similar to how images (`m.image`) are already handled. See the [💬 Text Generation](./docs/features.md#-text-generation) documentation for details and known limitations.
