@@ -871,6 +871,34 @@ mod sender_context_tests {
     }
 
     #[test]
+    fn test_inject_sender_context_prefixes_assistant_messages() {
+        let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
+        let user_id = OwnedUserId::try_from("@baibot:example.com").unwrap();
+
+        let conversation = Conversation {
+            messages: vec![Message {
+                author: Author::Assistant,
+                sender_id: Some(user_id),
+                timestamp,
+                content: MessageContent::Text("Hello human".to_string()),
+            }],
+        };
+
+        let result = inject_sender_context(
+            conversation,
+            TextGenerationSenderContextMode::MatrixUserIdAndTimestamp,
+        );
+
+        assert_eq!(result.messages.len(), 1);
+        assert_eq!(
+            result.messages[0].content,
+            MessageContent::Text(
+                "[sender=@baibot:example.com sent_at=2026-03-23T14:30:00Z] Hello human".to_string()
+            )
+        );
+    }
+
+    #[test]
     fn test_inject_sender_context_skips_prompt_messages() {
         let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
 
