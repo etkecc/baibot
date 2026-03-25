@@ -795,11 +795,11 @@ fn inject_sender_context(
                 *text = match sender_context_mode {
                     TextGenerationSenderContextMode::None => text.to_string(),
                     TextGenerationSenderContextMode::MatrixUserId => {
-                        format!("[{}] {}", sender_id, text)
+                        format!("[sender={}] {}", sender_id, text)
                     }
                     TextGenerationSenderContextMode::MatrixUserIdAndTimestamp => {
                         let timestamp = message.timestamp.format("%Y-%m-%dT%H:%M:%SZ");
-                        format!("[{}, {}] {}", sender_id, timestamp, text)
+                        format!("[sender={} sent_at={}] {}", sender_id, timestamp, text)
                     }
                 };
             }
@@ -842,8 +842,32 @@ mod sender_context_tests {
         assert_eq!(
             result.messages[0].content,
             MessageContent::Text(
-                "[@alice:example.com, 2026-03-23T14:30:00Z] Hello bot".to_string()
+                "[sender=@alice:example.com sent_at=2026-03-23T14:30:00Z] Hello bot".to_string()
             )
+        );
+    }
+
+    #[test]
+    fn test_inject_sender_context_can_prefix_without_timestamp() {
+        let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
+        let user_id = OwnedUserId::try_from("@alice:example.com").unwrap();
+
+        let conversation = Conversation {
+            messages: vec![Message {
+                author: Author::User,
+                sender_id: Some(user_id),
+                timestamp,
+                content: MessageContent::Text("Hello bot".to_string()),
+            }],
+        };
+
+        let result =
+            inject_sender_context(conversation, TextGenerationSenderContextMode::MatrixUserId);
+
+        assert_eq!(result.messages.len(), 1);
+        assert_eq!(
+            result.messages[0].content,
+            MessageContent::Text("[sender=@alice:example.com] Hello bot".to_string())
         );
     }
 
