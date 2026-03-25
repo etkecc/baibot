@@ -32,6 +32,8 @@ In multi-user (group) rooms, to avoid disturbing the normal conversation between
 
 Normally, the bot only responds to allowed [👥 Users](./access.md#-users). In certain cases, it's useful for an allowed user to provoke the bot to respond even in foreign threads or reply chains. You can learn more about this feature in the [On-demand involvement](./features.md#on-demand-involvement) section below.
 
+If needed, the bot can also attach sender metadata to conversation messages before sending them to the model, which can help the model distinguish between participants in multi-user rooms. See [🛠️ Configuration / 💬 Text Generation / 👤 Sender Context Mode](./configuration/text-generation.md#-sender-context-mode).
+
 A few other features (like [🗣️ Text-to-Speech](#️-text-to-speech) and [🦻 Speech-to-Text](#-speech-to-text)) combine well with Text Generation, so you **don't necessarily need to communicate with the bot via text** (with [Seamless voice interaction](#seamless-voice-interaction), you can communicate only with voice).
 
 You may also wish to see:

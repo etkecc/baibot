@@ -57,6 +57,25 @@ This feature relies on [tokenization](https://en.wikipedia.org/wiki/Large_langua
 This setting is **disabled by default**, but can be enabled via `!bai config room text-generation set-context-management-enabled true` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings)).
 
 
+### 👤 Sender Context Mode
+
+In multi-user rooms, it may be useful for the model to know which participant sent each message in the conversation context.
+
+To support this, the bot has a `text-generation sender-context-mode` setting, which can be set to:
+
+- (default) `none`: do not attach sender metadata to messages before sending them to the model
+
+- `matrix_user_id`: prefix text messages with the sender's Matrix user ID, for example: `[sender=@alice:example.com] Hello bot`
+
+- `matrix_user_id_and_timestamp`: prefix text messages with the sender's Matrix user ID and the message timestamp, for example: `[sender=@alice:example.com sent_at=2026-03-23T14:30:00Z] Hello bot`
+
+This sender metadata is attached to conversation messages before they are sent to the model provider. It applies to user and assistant text messages, but not to system prompts or non-text content.
+
+⚠️ Enabling this sends Matrix user IDs, and optionally timestamps, to the model provider.
+
+Example: `!bai config room text-generation set-sender-context-mode matrix_user_id` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings))
+
+
 ### ⌨️ Prompt Override
 
 You can override the [system prompt](https://huggingface.co/docs/transformers/en/tasks/prompting) configured at the [🤖 agent](../agents.md) level.
