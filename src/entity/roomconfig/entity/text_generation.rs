@@ -118,7 +118,7 @@ impl std::fmt::Display for TextGenerationAutoUsage {
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub enum TextGenerationSenderContextMode {
     #[serde(rename = "none")]
-    No,
+    None,
 
     #[serde(rename = "matrix_user_id")]
     MatrixUserId,
@@ -129,12 +129,16 @@ pub enum TextGenerationSenderContextMode {
 
 impl TextGenerationSenderContextMode {
     pub fn choices() -> Vec<Self> {
-        vec![Self::No, Self::MatrixUserId, Self::MatrixUserIdAndTimestamp]
+        vec![
+            Self::None,
+            Self::MatrixUserId,
+            Self::MatrixUserIdAndTimestamp,
+        ]
     }
 
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
-            "none" => Some(Self::No),
+            "none" => Some(Self::None),
             "matrix_user_id" => Some(Self::MatrixUserId),
             "matrix_user_id_and_timestamp" => Some(Self::MatrixUserIdAndTimestamp),
             _ => None,
@@ -145,7 +149,7 @@ impl TextGenerationSenderContextMode {
 impl std::fmt::Display for TextGenerationSenderContextMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TextGenerationSenderContextMode::No => write!(f, "none"),
+            TextGenerationSenderContextMode::None => write!(f, "none"),
             TextGenerationSenderContextMode::MatrixUserId => write!(f, "matrix_user_id"),
             TextGenerationSenderContextMode::MatrixUserIdAndTimestamp => {
                 write!(f, "matrix_user_id_and_timestamp")
