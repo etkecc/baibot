@@ -137,7 +137,11 @@ pub fn text_generation_sender_context_heading() -> &'static str {
 }
 
 pub fn text_generation_sender_context_intro() -> String {
-    "Controls how each conversation message is prefixed with sender metadata before being sent to the model. `none` leaves messages unchanged, `matrix_user_id` adds `[sender=@alice:example.com]`, and `matrix_user_id_and_timestamp` adds `[sender=@alice:example.com sent_at=2026-03-23T14:30:00Z]`. Enabling this sends Matrix user IDs, and optionally timestamps, to the model provider.".to_owned()
+    format!(
+        "{}\n{}",
+        "Controls whether the bot attaches sender information to conversation messages before sending them to the model.",
+        "`none` leaves messages unchanged, `matrix_user_id` adds `[sender=@alice:example.com]`, and `matrix_user_id_and_timestamp` adds `[sender=@alice:example.com sent_at=2026-03-23T14:30:00Z]`. Enabling this sends Matrix user IDs, and optionally timestamps, to the model provider.",
+    )
 }
 
 pub fn text_generation_prompt_override_heading() -> &'static str {
