@@ -64,6 +64,7 @@ mod tests {
                 original_prompt: "Generate a picture of a dog",
                 messages: vec![Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("Must be blue".to_owned()),
                     timestamp,
                 }],
@@ -75,16 +76,19 @@ mod tests {
                 messages: vec![
                     Message {
                         author: Author::User,
+                        sender_id: None,
                         content: MessageContent::Text("Must be blue".to_owned()),
                         timestamp,
                     },
                     Message {
                         author: Author::Assistant,
+                        sender_id: None,
                         content: MessageContent::Text("Whatever".to_owned()),
                         timestamp,
                     },
                     Message {
                         author: Author::User,
+                        sender_id: None,
                         content: MessageContent::Text(
                             "Must be 3-legged.\nMust be flying.".to_owned(),
                         ),
@@ -99,21 +103,25 @@ mod tests {
                 messages: vec![
                     Message {
                         author: Author::User,
+                        sender_id: None,
                         content: MessageContent::Text("Must be blue".to_owned()),
                         timestamp,
                     },
                     Message {
                         author: Author::Assistant,
+                        sender_id: None,
                         content: MessageContent::Text("Whatever".to_owned()),
                         timestamp,
                     },
                     Message {
                         author: Author::User,
+                        sender_id: None,
                         content: MessageContent::Text("Again".to_owned()),
                         timestamp,
                     },
                     Message {
                         author: Author::User,
+                        sender_id: None,
                         content: MessageContent::Text("again".to_owned()),
                         timestamp,
                     },

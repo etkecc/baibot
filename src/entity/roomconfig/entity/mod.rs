@@ -16,7 +16,9 @@ pub use handler::RoomSettingsHandler;
 pub use speech_to_text::{
     SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
 };
-pub use text_generation::{TextGenerationAutoUsage, TextGenerationPrefixRequirementType};
+pub use text_generation::{
+    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextGenerationSenderContextMode,
+};
 pub use text_to_speech::{TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType};
 
 #[derive(Clone, Debug, Deserialize, Serialize, EventContent)]

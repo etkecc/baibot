@@ -89,6 +89,7 @@ pub mod test {
 
         let message = super::Message {
             author: super::Author::User,
+            sender_id: None,
             content: super::MessageContent::Text("Hello there!".to_string()),
             timestamp: chrono::Utc::now(),
         };
@@ -108,6 +109,7 @@ pub mod test {
 
         let prompt = super::Message {
             author: super::Author::Prompt,
+            sender_id: None,
             content: super::MessageContent::Text("You are a bot!".to_string()),
             timestamp: chrono::Utc::now(),
         };
@@ -122,6 +124,7 @@ pub mod test {
 
         let first = super::Message {
             author: super::Author::User,
+            sender_id: None,
             content: super::MessageContent::Text("Hello there!".to_string()),
             timestamp: chrono::Utc::now(),
         };
@@ -136,6 +139,7 @@ pub mod test {
 
         let second = super::Message {
             author: super::Author::Assistant,
+            sender_id: None,
             content: super::MessageContent::Text("Hello!".to_string()),
             timestamp: chrono::Utc::now(),
         };
@@ -150,6 +154,7 @@ pub mod test {
 
         let third = super::Message {
             author: super::Author::User,
+            sender_id: None,
             content: super::MessageContent::Text(
                 "This is the 3rd message in this conversation. It shall be preserved.".to_owned(),
             ),
@@ -166,6 +171,7 @@ pub mod test {
 
         let forth = super::Message {
             author: super::Author::Assistant,
+            sender_id: None,
             content: super::MessageContent::Text(
                 "This is yet another message that shall be preserved.".to_owned(),
             ),
@@ -213,6 +219,7 @@ pub mod test {
 
         let prompt = super::Message {
             author: super::Author::User,
+            sender_id: None,
             content: super::MessageContent::Text("あなたはボットです。".to_string()),
             timestamp: chrono::Utc::now(),
         };
@@ -227,6 +234,7 @@ pub mod test {
 
         let first = super::Message {
             author: super::Author::User,
+            sender_id: None,
             content: super::MessageContent::Text("こんにちは!".to_string()),
             timestamp: chrono::Utc::now(),
         };
@@ -241,6 +249,7 @@ pub mod test {
 
         let second = super::Message {
             author: super::Author::Assistant,
+            sender_id: None,
             content: super::MessageContent::Text("こんにちは。今日は元気ですか。".to_string()),
             timestamp: chrono::Utc::now(),
         };
@@ -255,6 +264,7 @@ pub mod test {
 
         let third = super::Message {
             author: super::Author::User,
+            sender_id: None,
             content: super::MessageContent::Text(
                 "これは第3のメッセージなので、保存されます。".to_string(),
             ),
@@ -271,6 +281,7 @@ pub mod test {
 
         let forth = super::Message {
             author: super::Author::Assistant,
+            sender_id: None,
             content: super::MessageContent::Text(
                 "これはもう一つの保存されますメッセージです。".to_string(),
             ),

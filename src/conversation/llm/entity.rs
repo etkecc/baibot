@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use mxlink::matrix_sdk::ruma::OwnedUserId;
 use mxlink::matrix_sdk::ruma::events::room::message::{
     FileMessageEventContent, ImageMessageEventContent,
 };
@@ -16,6 +17,7 @@ pub enum Author {
 #[derive(Debug, Clone)]
 pub struct Message {
     pub author: Author,
+    pub sender_id: Option<OwnedUserId>,
     pub timestamp: DateTime<Utc>,
     pub content: MessageContent,
 }
@@ -104,6 +106,11 @@ impl Conversation {
     ///
     /// Certain models (like Anthropic) cannot tolerate consecutive messages by the same author,
     /// so combining them helps avoid issues.
+    ///
+    /// When multiple text messages by the same author are merged, the resulting message keeps a
+    /// `sender_id` only if all merged messages came from the same sender. Mixed-sender merges are
+    /// possible for user turns in multi-user rooms, so `sender_id` is cleared in that case to
+    /// avoid incorrectly attributing the whole merged turn to the first sender.
     /// See: https://github.com/etkecc/baibot/issues/13
     pub fn combine_consecutive_messages(&self) -> Conversation {
         // We'll likely get fewer messages, but let's reserve the maximum we expect.
@@ -134,6 +141,10 @@ impl Conversation {
                 text.push('\n');
                 text.push_str(message_text_content);
             }
+
+            if last_message.sender_id != message.sender_id {
+                last_message.sender_id = None;
+            }
         }
 
         Conversation {
@@ -150,7 +161,7 @@ impl Conversation {
 mod tests {
     use super::*;
     use chrono::{TimeZone, Utc};
-    use mxlink::matrix_sdk::ruma::OwnedMxcUri;
+    use mxlink::matrix_sdk::ruma::{OwnedMxcUri, OwnedUserId};
     use mxlink::mime;
 
     #[test]
@@ -173,21 +184,25 @@ mod tests {
                 // User's turn
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("Hello".to_string()),
                     timestamp: timestamp_1,
                 },
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("How are you?".to_string()),
                     timestamp: timestamp_2,
                 },
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("I'm OK, btw.".to_string()),
                     timestamp: timestamp_3,
                 },
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Image(ImageDetails::new(
                         image_event_content.clone(),
                         mime::IMAGE_PNG,
@@ -197,28 +212,33 @@ mod tests {
                 },
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("Above is an image.".to_string()),
                     timestamp: timestamp_4,
                 },
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("Would you take a look at it?".to_string()),
                     timestamp: timestamp_4,
                 },
                 // Assistant's turn
                 Message {
                     author: Author::Assistant,
+                    sender_id: None,
                     content: MessageContent::Text("Hi there!".to_string()),
                     timestamp: timestamp_2,
                 },
                 Message {
                     author: Author::Assistant,
+                    sender_id: None,
                     content: MessageContent::Text("I'm doing well, thank you.".to_string()),
                     timestamp: timestamp_3,
                 },
                 // User's turn
                 Message {
                     author: Author::User,
+                    sender_id: None,
                     content: MessageContent::Text("That's great!".to_string()),
                     timestamp: timestamp_3,
                 },
@@ -266,5 +286,40 @@ mod tests {
             MessageContent::Text("That's great!".to_string())
         );
         assert_eq!(conversation.messages[4].timestamp, timestamp_3);
+    }
+
+    #[test]
+    fn combine_consecutive_messages_clears_sender_id_for_mixed_sender_turns() {
+        let timestamp_1 = Utc.with_ymd_and_hms(2024, 9, 20, 18, 34, 15).unwrap();
+        let timestamp_2 = Utc.with_ymd_and_hms(2024, 9, 20, 18, 34, 16).unwrap();
+        let sender_1 = OwnedUserId::try_from("@alice:example.com").unwrap();
+        let sender_2 = OwnedUserId::try_from("@bob:example.com").unwrap();
+
+        let conversation = Conversation {
+            messages: vec![
+                Message {
+                    author: Author::User,
+                    sender_id: Some(sender_1),
+                    content: MessageContent::Text("Hello".to_string()),
+                    timestamp: timestamp_1,
+                },
+                Message {
+                    author: Author::User,
+                    sender_id: Some(sender_2),
+                    content: MessageContent::Text("Hi there".to_string()),
+                    timestamp: timestamp_2,
+                },
+            ],
+        };
+
+        let conversation = conversation.combine_consecutive_messages();
+
+        assert_eq!(conversation.messages.len(), 1);
+        assert_eq!(conversation.messages[0].sender_id, None);
+        assert_eq!(
+            conversation.messages[0].content,
+            MessageContent::Text("Hello\nHi there".to_string())
+        );
+        assert_eq!(conversation.messages[0].timestamp, timestamp_1);
     }
 }

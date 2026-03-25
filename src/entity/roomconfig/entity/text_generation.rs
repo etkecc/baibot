@@ -14,6 +14,9 @@ pub struct RoomSettingsTextGeneration {
     /// When enabled, the bot will automatically tokenize messages and try to shorten the message context intelligently.
     pub context_management_enabled: Option<bool>,
 
+    /// Controls how each message in the conversation context is annotated with sender metadata.
+    pub sender_context_mode: Option<TextGenerationSenderContextMode>,
+
     /// Allows customizing the system prompt that the agent would use
     pub prompt_override: Option<String>,
 
@@ -108,6 +111,49 @@ impl std::fmt::Display for TextGenerationAutoUsage {
             TextGenerationAutoUsage::Always => write!(f, "always"),
             TextGenerationAutoUsage::OnlyForVoice => write!(f, "only_for_voice"),
             TextGenerationAutoUsage::OnlyForText => write!(f, "only_for_text"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
+pub enum TextGenerationSenderContextMode {
+    #[serde(rename = "disabled")]
+    Disabled,
+
+    #[serde(rename = "matrix_user_id")]
+    MatrixUserId,
+
+    #[serde(rename = "matrix_user_id_and_timestamp")]
+    MatrixUserIdAndTimestamp,
+}
+
+impl TextGenerationSenderContextMode {
+    pub fn choices() -> Vec<Self> {
+        vec![
+            Self::Disabled,
+            Self::MatrixUserId,
+            Self::MatrixUserIdAndTimestamp,
+        ]
+    }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "disabled" => Some(Self::Disabled),
+            "matrix_user_id" => Some(Self::MatrixUserId),
+            "matrix_user_id_and_timestamp" => Some(Self::MatrixUserIdAndTimestamp),
+            _ => None,
+        }
+    }
+}
+
+impl std::fmt::Display for TextGenerationSenderContextMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TextGenerationSenderContextMode::Disabled => write!(f, "disabled"),
+            TextGenerationSenderContextMode::MatrixUserId => write!(f, "matrix_user_id"),
+            TextGenerationSenderContextMode::MatrixUserIdAndTimestamp => {
+                write!(f, "matrix_user_id_and_timestamp")
+            }
         }
     }
 }

@@ -17,14 +17,17 @@ pub fn convert_matrix_message_to_llm_message(
 
 fn convert_bot_message(matrix_message: &MatrixMessage) -> Option<Message> {
     match &matrix_message.content {
-        MatrixMessageContent::Text(text) => {
-            convert_bot_text_message(text, &matrix_message.timestamp)
-        }
+        MatrixMessageContent::Text(text) => convert_bot_text_message(
+            text,
+            &matrix_message.timestamp,
+            matrix_message.sender_id.clone(),
+        ),
         MatrixMessageContent::Notice(text) => {
             convert_bot_notice_message(text, &matrix_message.timestamp)
         }
         MatrixMessageContent::Image(image_content, mime_type, media_bytes) => Some(Message {
             author: Author::Assistant,
+            sender_id: Some(matrix_message.sender_id.clone()),
             content: MessageContent::Image(ImageDetails::new(
                 image_content.clone(),
                 mime_type.clone(),
@@ -34,6 +37,7 @@ fn convert_bot_message(matrix_message: &MatrixMessage) -> Option<Message> {
         }),
         MatrixMessageContent::File(file_content, mime_type, media_bytes) => Some(Message {
             author: Author::Assistant,
+            sender_id: Some(matrix_message.sender_id.clone()),
             content: MessageContent::File(FileDetails::new(
                 file_content.clone(),
                 mime_type.clone(),
@@ -47,9 +51,11 @@ fn convert_bot_message(matrix_message: &MatrixMessage) -> Option<Message> {
 fn convert_bot_text_message(
     text: &str,
     timestamp: &chrono::DateTime<chrono::Utc>,
+    sender_id: OwnedUserId,
 ) -> Option<Message> {
     Some(Message {
         author: Author::Assistant,
+        sender_id: Some(sender_id),
         content: MessageContent::Text(text.to_owned()),
         timestamp: timestamp.to_owned(),
     })
@@ -68,8 +74,10 @@ fn convert_bot_notice_message(
 
     if let Some(text) = text_to_speech_utils::parse_transcribed_message_text(text) {
         // This is a transcription message. We remove the prefix and consider it as a message sent by the user.
+        // sender_id is None because the original speaker is unknown.
         return Some(Message {
             author: Author::User,
+            sender_id: None,
             content: MessageContent::Text(text.to_owned()),
             timestamp: timestamp.to_owned(),
         });
@@ -82,16 +90,19 @@ fn convert_user_message(matrix_message: &MatrixMessage) -> Option<Message> {
     match &matrix_message.content {
         MatrixMessageContent::Text(text) => Some(Message {
             author: Author::User,
+            sender_id: Some(matrix_message.sender_id.clone()),
             content: MessageContent::Text(text.clone()),
             timestamp: matrix_message.timestamp.to_owned(),
         }),
         MatrixMessageContent::Notice(text) => Some(Message {
             author: Author::User,
+            sender_id: Some(matrix_message.sender_id.clone()),
             content: MessageContent::Text(text.clone()),
             timestamp: matrix_message.timestamp.to_owned(),
         }),
         MatrixMessageContent::Image(image_content, mime_type, media_bytes) => Some(Message {
             author: Author::User,
+            sender_id: Some(matrix_message.sender_id.clone()),
             content: MessageContent::Image(ImageDetails::new(
                 image_content.clone(),
                 mime_type.clone(),
@@ -101,6 +112,7 @@ fn convert_user_message(matrix_message: &MatrixMessage) -> Option<Message> {
         }),
         MatrixMessageContent::File(file_content, mime_type, media_bytes) => Some(Message {
             author: Author::User,
+            sender_id: Some(matrix_message.sender_id.clone()),
             content: MessageContent::File(FileDetails::new(
                 file_content.clone(),
                 mime_type.clone(),

@@ -20,6 +20,7 @@ fn test_messages_by_the_bot_are_identified_correctly() {
     let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
 
     assert_eq!(llm_message.author, Author::Assistant);
+    assert_eq!(llm_message.sender_id, Some(bot_user_id.clone()));
     assert_eq!(
         llm_message.content,
         MessageContent::Text("Hello!".to_string())
@@ -47,6 +48,7 @@ fn test_notice_messages_by_bot_with_speech_to_text_prefix_are_cleaned_up_and_con
     let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
 
     assert_eq!(llm_message.author, Author::User);
+    assert_eq!(llm_message.sender_id, None);
     assert_eq!(
         llm_message.content,
         MessageContent::Text(source_message_text.to_string())
@@ -73,6 +75,30 @@ fn test_notice_error_messages_by_bot_are_ignored() {
     let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id);
 
     assert!(llm_message.is_none());
+}
+
+#[test]
+fn test_user_messages_preserve_sender_id() {
+    let bot_user_id =
+        OwnedUserId::try_from("@bot:example.com").expect("Failed to parse bot user ID");
+
+    let user_id = OwnedUserId::try_from("@alice:example.com").expect("Failed to parse user ID");
+
+    let matrix_message = super::super::matrix::MatrixMessage {
+        sender_id: user_id.clone(),
+        content: super::super::matrix::MatrixMessageContent::Text("Hello!".to_owned()),
+        mentioned_users: vec![],
+        timestamp: chrono::Utc::now(),
+    };
+
+    let llm_message = convert_matrix_message_to_llm_message(&matrix_message, &bot_user_id).unwrap();
+
+    assert_eq!(llm_message.author, Author::User);
+    assert_eq!(llm_message.sender_id, Some(user_id));
+    assert_eq!(
+        llm_message.content,
+        MessageContent::Text("Hello!".to_string())
+    );
 }
 
 #[test]

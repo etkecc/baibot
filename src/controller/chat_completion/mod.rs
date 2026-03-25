@@ -15,7 +15,8 @@ use crate::conversation::matrix::MatrixMessageProcessingParams;
 use crate::entity::MessagePayload;
 use crate::entity::roomconfig::{
     SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
-    TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
+    TextGenerationSenderContextMode, TextToSpeechBotMessagesFlowType,
+    TextToSpeechUserMessagesFlowType,
 };
 use crate::strings;
 use crate::utils::text_to_speech::create_transcribed_message_text;
@@ -23,6 +24,7 @@ use crate::{
     Bot,
     conversation::{
         create_llm_conversation_for_matrix_reply_chain, create_llm_conversation_for_matrix_thread,
+        llm::{Author, Conversation, MessageContent},
         matrix::create_list_of_bot_user_prefixes_to_strip,
     },
     entity::MessageContext,
@@ -486,6 +488,13 @@ async fn handle_stage_text_generation(
         }
     };
 
+    let conversation = inject_sender_context(
+        conversation,
+        message_context
+            .room_config_context()
+            .text_generation_sender_context_mode(),
+    );
+
     tracing::debug!(
         agent_id = agent.identifier().as_string(),
         provider = format!("{}", agent.definition().provider.clone()),
@@ -760,4 +769,239 @@ async fn generate_and_send_tts_for_message(
         text,
     )
     .await
+}
+
+fn inject_sender_context(
+    conversation: Conversation,
+    sender_context_mode: TextGenerationSenderContextMode,
+) -> Conversation {
+    if sender_context_mode == TextGenerationSenderContextMode::Disabled {
+        return conversation;
+    }
+
+    let include_timestamp =
+        sender_context_mode == TextGenerationSenderContextMode::MatrixUserIdAndTimestamp;
+
+    let messages = conversation
+        .messages
+        .into_iter()
+        .map(|mut message| {
+            if message.author == Author::Prompt {
+                return message;
+            }
+
+            let Some(sender_id) = &message.sender_id else {
+                return message;
+            };
+
+            if let MessageContent::Text(ref mut text) = message.content {
+                *text = if include_timestamp {
+                    let timestamp = message.timestamp.format("%Y-%m-%dT%H:%M:%SZ");
+                    format!("[sender={} sent_at={}] {}", sender_id, timestamp, text)
+                } else {
+                    format!("[sender={}] {}", sender_id, text)
+                };
+            }
+
+            message
+        })
+        .collect();
+
+    Conversation { messages }
+}
+
+#[cfg(test)]
+mod sender_context_tests {
+    use super::inject_sender_context;
+    use crate::conversation::llm::{Author, Conversation, ImageDetails, Message, MessageContent};
+    use crate::entity::roomconfig::TextGenerationSenderContextMode;
+    use chrono::{TimeZone, Utc};
+    use mxlink::matrix_sdk::ruma::events::room::message::ImageMessageEventContent;
+    use mxlink::matrix_sdk::ruma::{OwnedMxcUri, OwnedUserId};
+    use mxlink::mime;
+
+    #[test]
+    fn test_inject_sender_context_prefixes_text_messages() {
+        let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
+        let user_id = OwnedUserId::try_from("@alice:example.com").unwrap();
+
+        let conversation = Conversation {
+            messages: vec![Message {
+                author: Author::User,
+                sender_id: Some(user_id),
+                timestamp,
+                content: MessageContent::Text("Hello bot".to_string()),
+            }],
+        };
+
+        let result = inject_sender_context(
+            conversation,
+            TextGenerationSenderContextMode::MatrixUserIdAndTimestamp,
+        );
+
+        assert_eq!(result.messages.len(), 1);
+        assert_eq!(
+            result.messages[0].content,
+            MessageContent::Text(
+                "[sender=@alice:example.com sent_at=2026-03-23T14:30:00Z] Hello bot".to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn test_inject_sender_context_can_prefix_without_timestamp() {
+        let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
+        let user_id = OwnedUserId::try_from("@alice:example.com").unwrap();
+
+        let conversation = Conversation {
+            messages: vec![Message {
+                author: Author::User,
+                sender_id: Some(user_id),
+                timestamp,
+                content: MessageContent::Text("Hello bot".to_string()),
+            }],
+        };
+
+        let result =
+            inject_sender_context(conversation, TextGenerationSenderContextMode::MatrixUserId);
+
+        assert_eq!(result.messages.len(), 1);
+        assert_eq!(
+            result.messages[0].content,
+            MessageContent::Text("[sender=@alice:example.com] Hello bot".to_string())
+        );
+    }
+
+    #[test]
+    fn test_inject_sender_context_prefixes_assistant_messages() {
+        let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
+        let user_id = OwnedUserId::try_from("@baibot:example.com").unwrap();
+
+        let conversation = Conversation {
+            messages: vec![Message {
+                author: Author::Assistant,
+                sender_id: Some(user_id),
+                timestamp,
+                content: MessageContent::Text("Hello human".to_string()),
+            }],
+        };
+
+        let result = inject_sender_context(
+            conversation,
+            TextGenerationSenderContextMode::MatrixUserIdAndTimestamp,
+        );
+
+        assert_eq!(result.messages.len(), 1);
+        assert_eq!(
+            result.messages[0].content,
+            MessageContent::Text(
+                "[sender=@baibot:example.com sent_at=2026-03-23T14:30:00Z] Hello human".to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn test_inject_sender_context_skips_prompt_messages() {
+        let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
+
+        let conversation = Conversation {
+            messages: vec![Message {
+                author: Author::Prompt,
+                sender_id: None,
+                timestamp,
+                content: MessageContent::Text("You are a bot".to_string()),
+            }],
+        };
+
+        let result =
+            inject_sender_context(conversation, TextGenerationSenderContextMode::MatrixUserId);
+
+        assert_eq!(
+            result.messages[0].content,
+            MessageContent::Text("You are a bot".to_string())
+        );
+    }
+
+    #[test]
+    fn test_inject_sender_context_skips_messages_without_sender_id() {
+        let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
+
+        let conversation = Conversation {
+            messages: vec![Message {
+                author: Author::User,
+                sender_id: None,
+                timestamp,
+                content: MessageContent::Text("Transcribed text".to_string()),
+            }],
+        };
+
+        let result = inject_sender_context(
+            conversation,
+            TextGenerationSenderContextMode::MatrixUserIdAndTimestamp,
+        );
+
+        assert_eq!(
+            result.messages[0].content,
+            MessageContent::Text("Transcribed text".to_string())
+        );
+    }
+
+    #[test]
+    fn test_inject_sender_context_leaves_non_text_content_unchanged() {
+        let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
+        let user_id = OwnedUserId::try_from("@alice:example.com").unwrap();
+        let image_event_content = ImageMessageEventContent::plain(
+            "image.png".to_string(),
+            OwnedMxcUri::from("mxc://example.com/1234567890"),
+        );
+
+        let conversation = Conversation {
+            messages: vec![Message {
+                author: Author::User,
+                sender_id: Some(user_id),
+                timestamp,
+                content: MessageContent::Image(ImageDetails::new(
+                    image_event_content.clone(),
+                    mime::IMAGE_PNG,
+                    vec![],
+                )),
+            }],
+        };
+
+        let result = inject_sender_context(
+            conversation,
+            TextGenerationSenderContextMode::MatrixUserIdAndTimestamp,
+        );
+
+        assert_eq!(
+            result.messages[0].content,
+            MessageContent::Image(ImageDetails::new(
+                image_event_content,
+                mime::IMAGE_PNG,
+                vec![]
+            ))
+        );
+    }
+
+    #[test]
+    fn test_inject_sender_context_none_leaves_text_unchanged() {
+        let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
+        let user_id = OwnedUserId::try_from("@alice:example.com").unwrap();
+
+        let conversation = Conversation {
+            messages: vec![Message {
+                author: Author::User,
+                sender_id: Some(user_id),
+                timestamp,
+                content: MessageContent::Text("Hello bot".to_string()),
+            }],
+        };
+
+        let result = inject_sender_context(conversation, TextGenerationSenderContextMode::Disabled);
+
+        assert_eq!(
+            result.messages[0].content,
+            MessageContent::Text("Hello bot".to_string())
+        );
+    }
 }

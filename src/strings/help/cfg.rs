@@ -132,6 +132,18 @@ pub fn text_generation_context_management_intro() -> String {
     )
 }
 
+pub fn text_generation_sender_context_heading() -> &'static str {
+    "👤 Sender Context Mode"
+}
+
+pub fn text_generation_sender_context_intro() -> String {
+    format!(
+        "{}\n{}",
+        "Controls whether the bot attaches sender information to conversation messages before sending them to the model.",
+        "`disabled` leaves messages unchanged, `matrix_user_id` adds `[sender=@alice:example.com]`, and `matrix_user_id_and_timestamp` adds `[sender=@alice:example.com sent_at=2026-03-23T14:30:00Z]`. Enabling this sends Matrix user IDs, and optionally timestamps, to the model provider.",
+    )
+}
+
 pub fn text_generation_prompt_override_heading() -> &'static str {
     "⌨️ Prompt Override"
 }
