@@ -63,7 +63,7 @@ In multi-user rooms, it may be useful for the model to know which participant se
 
 To support this, the bot has a `text-generation sender-context-mode` setting, which can be set to:
 
-- (default) `none`: do not attach sender metadata to messages before sending them to the model
+- (default) `disabled`: do not attach sender metadata to messages before sending them to the model
 
 - `matrix_user_id`: prefix text messages with the sender's Matrix user ID, for example: `[sender=@alice:example.com] Hello bot`
 

@@ -10,7 +10,7 @@ pub const TEXT_GENERATION_PREFIX_REQUIREMENT_TYPE: TextGenerationPrefixRequireme
 pub const TEXT_GENERATION_AUTO_USAGE: TextGenerationAutoUsage = TextGenerationAutoUsage::Always;
 
 pub const TEXT_GENERATION_SENDER_CONTEXT_MODE: TextGenerationSenderContextMode =
-    TextGenerationSenderContextMode::None;
+    TextGenerationSenderContextMode::Disabled;
 
 pub const TEXT_TO_SPEECH_BOT_MESSAGES_FLOW_TYPE: TextToSpeechBotMessagesFlowType =
     TextToSpeechBotMessagesFlowType::OnDemandForVoice;
