@@ -779,6 +779,9 @@ fn inject_sender_context(
         return conversation;
     }
 
+    let include_timestamp =
+        sender_context_mode == TextGenerationSenderContextMode::MatrixUserIdAndTimestamp;
+
     let messages = conversation
         .messages
         .into_iter()
@@ -792,15 +795,11 @@ fn inject_sender_context(
             };
 
             if let MessageContent::Text(ref mut text) = message.content {
-                *text = match sender_context_mode {
-                    TextGenerationSenderContextMode::Disabled => text.to_string(),
-                    TextGenerationSenderContextMode::MatrixUserId => {
-                        format!("[sender={}] {}", sender_id, text)
-                    }
-                    TextGenerationSenderContextMode::MatrixUserIdAndTimestamp => {
-                        let timestamp = message.timestamp.format("%Y-%m-%dT%H:%M:%SZ");
-                        format!("[sender={} sent_at={}] {}", sender_id, timestamp, text)
-                    }
+                *text = if include_timestamp {
+                    let timestamp = message.timestamp.format("%Y-%m-%dT%H:%M:%SZ");
+                    format!("[sender={} sent_at={}] {}", sender_id, timestamp, text)
+                } else {
+                    format!("[sender={}] {}", sender_id, text)
                 };
             }
 
