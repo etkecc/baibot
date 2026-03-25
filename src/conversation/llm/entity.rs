@@ -161,7 +161,7 @@ impl Conversation {
 mod tests {
     use super::*;
     use chrono::{TimeZone, Utc};
-    use mxlink::matrix_sdk::ruma::OwnedMxcUri;
+    use mxlink::matrix_sdk::ruma::{OwnedMxcUri, OwnedUserId};
     use mxlink::mime;
 
     #[test]
@@ -286,5 +286,40 @@ mod tests {
             MessageContent::Text("That's great!".to_string())
         );
         assert_eq!(conversation.messages[4].timestamp, timestamp_3);
+    }
+
+    #[test]
+    fn combine_consecutive_messages_clears_sender_id_for_mixed_sender_turns() {
+        let timestamp_1 = Utc.with_ymd_and_hms(2024, 9, 20, 18, 34, 15).unwrap();
+        let timestamp_2 = Utc.with_ymd_and_hms(2024, 9, 20, 18, 34, 16).unwrap();
+        let sender_1 = OwnedUserId::try_from("@alice:example.com").unwrap();
+        let sender_2 = OwnedUserId::try_from("@bob:example.com").unwrap();
+
+        let conversation = Conversation {
+            messages: vec![
+                Message {
+                    author: Author::User,
+                    sender_id: Some(sender_1),
+                    content: MessageContent::Text("Hello".to_string()),
+                    timestamp: timestamp_1,
+                },
+                Message {
+                    author: Author::User,
+                    sender_id: Some(sender_2),
+                    content: MessageContent::Text("Hi there".to_string()),
+                    timestamp: timestamp_2,
+                },
+            ],
+        };
+
+        let conversation = conversation.combine_consecutive_messages();
+
+        assert_eq!(conversation.messages.len(), 1);
+        assert_eq!(conversation.messages[0].sender_id, None);
+        assert_eq!(
+            conversation.messages[0].content,
+            MessageContent::Text("Hello\nHi there".to_string())
+        );
+        assert_eq!(conversation.messages[0].timestamp, timestamp_1);
     }
 }
