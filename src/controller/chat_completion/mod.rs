@@ -775,7 +775,7 @@ fn inject_sender_context(
     conversation: Conversation,
     sender_context_mode: TextGenerationSenderContextMode,
 ) -> Conversation {
-    if sender_context_mode == TextGenerationSenderContextMode::None {
+    if sender_context_mode == TextGenerationSenderContextMode::No {
         return conversation;
     }
 
@@ -793,7 +793,7 @@ fn inject_sender_context(
 
             if let MessageContent::Text(ref mut text) = message.content {
                 *text = match sender_context_mode {
-                    TextGenerationSenderContextMode::None => text.to_string(),
+                    TextGenerationSenderContextMode::No => text.to_string(),
                     TextGenerationSenderContextMode::MatrixUserId => {
                         format!("[sender={}] {}", sender_id, text)
                     }
@@ -931,7 +931,7 @@ mod sender_context_tests {
             }],
         };
 
-        let result = inject_sender_context(conversation, TextGenerationSenderContextMode::None);
+        let result = inject_sender_context(conversation, TextGenerationSenderContextMode::No);
 
         assert_eq!(
             result.messages[0].content,
