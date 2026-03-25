@@ -813,10 +813,12 @@ fn inject_sender_context(
 #[cfg(test)]
 mod sender_context_tests {
     use super::inject_sender_context;
-    use crate::conversation::llm::{Author, Conversation, Message, MessageContent};
+    use crate::conversation::llm::{Author, Conversation, ImageDetails, Message, MessageContent};
     use crate::entity::roomconfig::TextGenerationSenderContextMode;
     use chrono::{TimeZone, Utc};
-    use mxlink::matrix_sdk::ruma::OwnedUserId;
+    use mxlink::matrix_sdk::ruma::events::room::message::ImageMessageEventContent;
+    use mxlink::matrix_sdk::ruma::{OwnedMxcUri, OwnedUserId};
+    use mxlink::mime;
 
     #[test]
     fn test_inject_sender_context_prefixes_text_messages() {
@@ -941,6 +943,43 @@ mod sender_context_tests {
         assert_eq!(
             result.messages[0].content,
             MessageContent::Text("Transcribed text".to_string())
+        );
+    }
+
+    #[test]
+    fn test_inject_sender_context_leaves_non_text_content_unchanged() {
+        let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
+        let user_id = OwnedUserId::try_from("@alice:example.com").unwrap();
+        let image_event_content = ImageMessageEventContent::plain(
+            "image.png".to_string(),
+            OwnedMxcUri::from("mxc://example.com/1234567890"),
+        );
+
+        let conversation = Conversation {
+            messages: vec![Message {
+                author: Author::User,
+                sender_id: Some(user_id),
+                timestamp,
+                content: MessageContent::Image(ImageDetails::new(
+                    image_event_content.clone(),
+                    mime::IMAGE_PNG,
+                    vec![],
+                )),
+            }],
+        };
+
+        let result = inject_sender_context(
+            conversation,
+            TextGenerationSenderContextMode::MatrixUserIdAndTimestamp,
+        );
+
+        assert_eq!(
+            result.messages[0].content,
+            MessageContent::Image(ImageDetails::new(
+                image_event_content,
+                mime::IMAGE_PNG,
+                vec![]
+            ))
         );
     }
 
