@@ -106,6 +106,11 @@ impl Conversation {
     ///
     /// Certain models (like Anthropic) cannot tolerate consecutive messages by the same author,
     /// so combining them helps avoid issues.
+    ///
+    /// When multiple text messages by the same author are merged, the resulting message keeps a
+    /// `sender_id` only if all merged messages came from the same sender. Mixed-sender merges are
+    /// possible for user turns in multi-user rooms, so `sender_id` is cleared in that case to
+    /// avoid incorrectly attributing the whole merged turn to the first sender.
     /// See: https://github.com/etkecc/baibot/issues/13
     pub fn combine_consecutive_messages(&self) -> Conversation {
         // We'll likely get fewer messages, but let's reserve the maximum we expect.
@@ -135,6 +140,10 @@ impl Conversation {
             if let MessageContent::Text(ref mut text) = last_message.content {
                 text.push('\n');
                 text.push_str(message_text_content);
+            }
+
+            if last_message.sender_id != message.sender_id {
+                last_message.sender_id = None;
             }
         }
 
