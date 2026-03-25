@@ -1,3 +1,8 @@
+# (2026-03-25) Version 1.17.0
+
+- (**Feature**) Add `text-generation sender-context-mode` for attaching sender metadata to conversation messages. See the [💬 Text Generation](./docs/configuration/text-generation.md#-sender-context-mode) documentation for details. Thanks to [kschwank](https://github.com/kschwank) for the contribution in [#104](https://github.com/etkecc/baibot/pull/104)!
+
+
 # (2026-03-24) Version 1.16.1
 
 - (**Bugfix**) Fix compatibility with [async-openai](https://crates.io/crates/async-openai) 0.34.0 by populating the new `phase` field required for OpenAI Responses API message inputs. baibot does not currently distinguish between assistant `commentary` and `final_answer` turns, so using `None` preserves the previous behavior while remaining compatible with the updated crate.
