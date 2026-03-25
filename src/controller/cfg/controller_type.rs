@@ -3,7 +3,8 @@ use crate::{
     entity::roomconfig::{
         SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
         TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
-        TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
+        TextGenerationSenderContextMode, TextToSpeechBotMessagesFlowType,
+        TextToSpeechUserMessagesFlowType,
     },
 };
 
@@ -49,8 +50,8 @@ pub enum ConfigTextGenerationSettingRelatedControllerType {
     GetTemperatureOverride,
     SetTemperatureOverride(Option<f32>),
 
-    GetSenderContextEnabled,
-    SetSenderContextEnabled(Option<bool>),
+    GetSenderContextMode,
+    SetSenderContextMode(Option<TextGenerationSenderContextMode>),
 }
 
 #[derive(Debug, PartialEq)]

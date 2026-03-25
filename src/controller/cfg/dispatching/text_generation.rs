@@ -1,5 +1,6 @@
 use crate::entity::roomconfig::{
     RoomSettings, TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
+    TextGenerationSenderContextMode,
 };
 use crate::{Bot, entity::MessageContext};
 
@@ -152,23 +153,35 @@ pub(super) async fn dispatch(
             }
         }
 
-        ConfigTextGenerationSettingRelatedControllerType::GetSenderContextEnabled => {
-            let value = &room_settings.text_generation.sender_context_enabled;
-            setting_get::<bool>(bot, message_context, value).await
+        ConfigTextGenerationSettingRelatedControllerType::GetSenderContextMode => {
+            let value = &room_settings.text_generation.sender_context_mode;
+            setting_get::<TextGenerationSenderContextMode>(bot, message_context, value).await
         }
-        ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(value) => {
+        ConfigTextGenerationSettingRelatedControllerType::SetSenderContextMode(value) => {
             let value = value.to_owned();
 
             let setter_callback = Box::new(move |room_settings: &mut RoomSettings| {
-                room_settings.text_generation.sender_context_enabled = value;
+                room_settings.text_generation.sender_context_mode = value;
             });
 
             match config_type {
                 SettingsStorageSource::Room => {
-                    room_setting_set::<bool>(bot, message_context, &value, setter_callback).await
+                    room_setting_set::<TextGenerationSenderContextMode>(
+                        bot,
+                        message_context,
+                        &value,
+                        setter_callback,
+                    )
+                    .await
                 }
                 SettingsStorageSource::Global => {
-                    global_setting_set::<bool>(bot, message_context, &value, setter_callback).await
+                    global_setting_set::<TextGenerationSenderContextMode>(
+                        bot,
+                        message_context,
+                        &value,
+                        setter_callback,
+                    )
+                    .await
                 }
             }
         }

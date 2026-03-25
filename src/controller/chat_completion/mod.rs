@@ -15,7 +15,8 @@ use crate::conversation::matrix::MatrixMessageProcessingParams;
 use crate::entity::MessagePayload;
 use crate::entity::roomconfig::{
     SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
-    TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
+    TextGenerationSenderContextMode, TextToSpeechBotMessagesFlowType,
+    TextToSpeechUserMessagesFlowType,
 };
 use crate::strings;
 use crate::utils::text_to_speech::create_transcribed_message_text;
@@ -487,14 +488,12 @@ async fn handle_stage_text_generation(
         }
     };
 
-    let conversation = if message_context
-        .room_config_context()
-        .text_generation_sender_context_enabled()
-    {
-        inject_sender_context(conversation)
-    } else {
-        conversation
-    };
+    let conversation = inject_sender_context(
+        conversation,
+        message_context
+            .room_config_context()
+            .text_generation_sender_context_mode(),
+    );
 
     tracing::debug!(
         agent_id = agent.identifier().as_string(),
@@ -772,7 +771,14 @@ async fn generate_and_send_tts_for_message(
     .await
 }
 
-fn inject_sender_context(conversation: Conversation) -> Conversation {
+fn inject_sender_context(
+    conversation: Conversation,
+    sender_context_mode: TextGenerationSenderContextMode,
+) -> Conversation {
+    if sender_context_mode == TextGenerationSenderContextMode::None {
+        return conversation;
+    }
+
     let messages = conversation
         .messages
         .into_iter()
@@ -786,8 +792,16 @@ fn inject_sender_context(conversation: Conversation) -> Conversation {
             };
 
             if let MessageContent::Text(ref mut text) = message.content {
-                let timestamp = message.timestamp.format("%Y-%m-%dT%H:%M:%SZ");
-                *text = format!("[{}, {}] {}", sender_id, timestamp, text);
+                *text = match sender_context_mode {
+                    TextGenerationSenderContextMode::None => text.to_string(),
+                    TextGenerationSenderContextMode::MatrixUserId => {
+                        format!("[{}] {}", sender_id, text)
+                    }
+                    TextGenerationSenderContextMode::MatrixUserIdAndTimestamp => {
+                        let timestamp = message.timestamp.format("%Y-%m-%dT%H:%M:%SZ");
+                        format!("[{}, {}] {}", sender_id, timestamp, text)
+                    }
+                };
             }
 
             message
@@ -801,6 +815,7 @@ fn inject_sender_context(conversation: Conversation) -> Conversation {
 mod sender_context_tests {
     use super::inject_sender_context;
     use crate::conversation::llm::{Author, Conversation, Message, MessageContent};
+    use crate::entity::roomconfig::TextGenerationSenderContextMode;
     use chrono::{TimeZone, Utc};
     use mxlink::matrix_sdk::ruma::OwnedUserId;
 
@@ -818,7 +833,10 @@ mod sender_context_tests {
             }],
         };
 
-        let result = inject_sender_context(conversation);
+        let result = inject_sender_context(
+            conversation,
+            TextGenerationSenderContextMode::MatrixUserIdAndTimestamp,
+        );
 
         assert_eq!(result.messages.len(), 1);
         assert_eq!(
@@ -842,7 +860,8 @@ mod sender_context_tests {
             }],
         };
 
-        let result = inject_sender_context(conversation);
+        let result =
+            inject_sender_context(conversation, TextGenerationSenderContextMode::MatrixUserId);
 
         assert_eq!(
             result.messages[0].content,
@@ -863,11 +882,36 @@ mod sender_context_tests {
             }],
         };
 
-        let result = inject_sender_context(conversation);
+        let result = inject_sender_context(
+            conversation,
+            TextGenerationSenderContextMode::MatrixUserIdAndTimestamp,
+        );
 
         assert_eq!(
             result.messages[0].content,
             MessageContent::Text("Transcribed text".to_string())
+        );
+    }
+
+    #[test]
+    fn test_inject_sender_context_none_leaves_text_unchanged() {
+        let timestamp = Utc.with_ymd_and_hms(2026, 3, 23, 14, 30, 0).unwrap();
+        let user_id = OwnedUserId::try_from("@alice:example.com").unwrap();
+
+        let conversation = Conversation {
+            messages: vec![Message {
+                author: Author::User,
+                sender_id: Some(user_id),
+                timestamp,
+                content: MessageContent::Text("Hello bot".to_string()),
+            }],
+        };
+
+        let result = inject_sender_context(conversation, TextGenerationSenderContextMode::None);
+
+        assert_eq!(
+            result.messages[0].content,
+            MessageContent::Text("Hello bot".to_string())
         );
     }
 }

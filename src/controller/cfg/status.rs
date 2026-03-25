@@ -361,17 +361,17 @@ async fn generate_text_generation_section(
 
     // Sender Context
 
-    let effective_sender_context = room_config_context.text_generation_sender_context_enabled();
+    let effective_sender_context = room_config_context.text_generation_sender_context_mode();
     let room_config_sender_context = room_config_context
         .room_config
         .settings
         .text_generation
-        .sender_context_enabled;
+        .sender_context_mode;
     let global_config_sender_context = room_config_context
         .global_config
         .fallback_room_settings
         .text_generation
-        .sender_context_enabled;
+        .sender_context_mode;
 
     let sender_context_set_where = if room_config_sender_context.is_some() {
         strings::cfg::status_badge_set_in_room_config()

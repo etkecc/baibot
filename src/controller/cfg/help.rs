@@ -7,7 +7,8 @@ use crate::{
         roomconfig::{
             SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
             TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
-            TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
+            TextGenerationSenderContextMode, TextToSpeechBotMessagesFlowType,
+            TextToSpeechUserMessagesFlowType,
         },
     },
     strings,
@@ -243,14 +244,16 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push_str(&strings::help::cfg::text_generation_sender_context_intro());
     message.push('\n');
     message.push_str(
-        &strings::help::cfg::the_following_configuration_values_are_recognized(vec![true, false]),
+        &strings::help::cfg::the_following_configuration_values_are_recognized(
+            TextGenerationSenderContextMode::choices(),
+        ),
     );
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
         &strings::help::cfg::current_setting_show(
             command_prefix,
-            "text-generation sender-context-enabled"
+            "text-generation sender-context-mode"
         )
     ));
     message.push('\n');
@@ -258,7 +261,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
         "- {}",
         &strings::help::cfg::current_setting_set(
             command_prefix,
-            "text-generation set-sender-context-enabled VALUE"
+            "text-generation set-sender-context-mode VALUE"
         )
     ));
     message.push('\n');
@@ -266,7 +269,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
         "- {}",
         &strings::help::cfg::current_setting_unset(
             command_prefix,
-            "text-generation set-sender-context-enabled"
+            "text-generation set-sender-context-mode"
         )
     ));
     message.push_str("\n\n");

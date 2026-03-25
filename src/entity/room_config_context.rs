@@ -5,8 +5,9 @@ use super::roomconfig::RoomConfig;
 
 use crate::entity::roomconfig::{
     SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
-    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextToSpeechBotMessagesFlowType,
-    TextToSpeechUserMessagesFlowType, defaults as roomconfig_defaults,
+    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextGenerationSenderContextMode,
+    TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
+    defaults as roomconfig_defaults,
 };
 
 #[derive(Debug)]
@@ -135,18 +136,18 @@ impl RoomConfigContext {
             .unwrap_or(false)
     }
 
-    pub fn text_generation_sender_context_enabled(&self) -> bool {
+    pub fn text_generation_sender_context_mode(&self) -> TextGenerationSenderContextMode {
         self.room_config
             .settings
             .text_generation
-            .sender_context_enabled
+            .sender_context_mode
             .or({
                 self.global_config
                     .fallback_room_settings
                     .text_generation
-                    .sender_context_enabled
+                    .sender_context_mode
             })
-            .unwrap_or(roomconfig_defaults::TEXT_GENERATION_SENDER_CONTEXT_ENABLED)
+            .unwrap_or(roomconfig_defaults::TEXT_GENERATION_SENDER_CONTEXT_MODE)
     }
 
     pub fn text_generation_prefix_requirement_type(&self) -> TextGenerationPrefixRequirementType {

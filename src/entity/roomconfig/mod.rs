@@ -6,8 +6,8 @@ use mxlink::helpers::account_data_config::RoomConfigManager as AccountDataRoomCo
 pub use entity::{RoomConfig, RoomConfigCarrierContent, RoomSettings, RoomSettingsHandler};
 pub use entity::{
     SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
-    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextToSpeechBotMessagesFlowType,
-    TextToSpeechUserMessagesFlowType,
+    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextGenerationSenderContextMode,
+    TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
 };
 
 pub type RoomConfigurationManager =

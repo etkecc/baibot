@@ -94,6 +94,7 @@ fn determine_controller_context_management() {
 fn determine_controller_sender_context() {
     use super::ConfigTextGenerationSettingRelatedControllerType;
     use super::ControllerType;
+    use crate::entity::roomconfig::TextGenerationSenderContextMode;
 
     struct TestCase {
         name: &'static str,
@@ -103,50 +104,50 @@ fn determine_controller_sender_context() {
 
     let test_cases = vec![
         TestCase {
-            name: "sender-context-enabled getter ok",
-            input: "sender-context-enabled",
-            expected: Ok(ConfigTextGenerationSettingRelatedControllerType::GetSenderContextEnabled),
+            name: "sender-context-mode getter ok",
+            input: "sender-context-mode",
+            expected: Ok(ConfigTextGenerationSettingRelatedControllerType::GetSenderContextMode),
         },
         TestCase {
-            name: "sender-context-enabled getter extra args",
-            input: "sender-context-enabled some values here",
+            name: "sender-context-mode getter extra args",
+            input: "sender-context-mode some values here",
             expected: Err(ControllerType::Error(
                 crate::strings::cfg::configuration_getter_used_with_extra_text(
-                    "sender-context-enabled",
+                    "sender-context-mode",
                     "some values here",
                 ),
             )),
         },
         TestCase {
-            name: "sender-context-enabled setter true",
-            input: "set-sender-context-enabled true",
+            name: "sender-context-mode setter matrix_user_id",
+            input: "set-sender-context-mode matrix_user_id",
             expected: Ok(
-                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(Some(
-                    true,
+                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextMode(Some(
+                    TextGenerationSenderContextMode::MatrixUserId,
                 )),
             ),
         },
         TestCase {
-            name: "sender-context-enabled setter uppercase",
-            input: "set-sender-context-enabled TRUE",
+            name: "sender-context-mode setter uppercase",
+            input: "set-sender-context-mode MATRIX_USER_ID_AND_TIMESTAMP",
             expected: Ok(
-                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(Some(
-                    true,
+                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextMode(Some(
+                    TextGenerationSenderContextMode::MatrixUserIdAndTimestamp,
                 )),
             ),
         },
         TestCase {
-            name: "sender-context-enabled setter non-bool",
-            input: "set-sender-context-enabled non-Bool-Value",
+            name: "sender-context-mode setter invalid",
+            input: "set-sender-context-mode non-Enum-Value",
             expected: Err(ControllerType::Error(
-                crate::strings::cfg::configuration_value_unrecognized("non-Bool-Value"),
+                crate::strings::cfg::configuration_value_unrecognized("non-Enum-Value"),
             )),
         },
         TestCase {
-            name: "sender-context-enabled unsetter",
-            input: "set-sender-context-enabled",
+            name: "sender-context-mode unsetter",
+            input: "set-sender-context-mode",
             expected: Ok(
-                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(None),
+                ConfigTextGenerationSettingRelatedControllerType::SetSenderContextMode(None),
             ),
         },
     ];

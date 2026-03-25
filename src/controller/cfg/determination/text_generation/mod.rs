@@ -3,7 +3,10 @@ mod tests;
 
 use crate::{
     controller::ControllerType,
-    entity::roomconfig::{TextGenerationAutoUsage, TextGenerationPrefixRequirementType},
+    entity::roomconfig::{
+        TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
+        TextGenerationSenderContextMode,
+    },
     strings,
 };
 
@@ -197,41 +200,41 @@ pub(super) fn determine(
         );
     }
 
-    if let Some(remaining_text) = text.strip_prefix("sender-context-enabled") {
+    if let Some(remaining_text) = text.strip_prefix("sender-context-mode") {
         let remaining_text = remaining_text.trim();
 
         if !remaining_text.is_empty() {
             return Err(ControllerType::Error(
                 strings::cfg::configuration_getter_used_with_extra_text(
-                    "sender-context-enabled",
+                    "sender-context-mode",
                     remaining_text,
                 )
                 .to_owned(),
             ));
         }
 
-        return Ok(ConfigTextGenerationSettingRelatedControllerType::GetSenderContextEnabled);
+        return Ok(ConfigTextGenerationSettingRelatedControllerType::GetSenderContextMode);
     }
 
-    if let Some(value_string) = text.strip_prefix("set-sender-context-enabled") {
+    if let Some(value_string) = text.strip_prefix("set-sender-context-mode") {
         let value_string = value_string.trim().to_owned();
-        let value_opt = if value_string.is_empty() {
+        let value_choice = if value_string.is_empty() {
             None
         } else {
-            let value_string_lowercase = value_string.to_lowercase();
-            Some(match value_string_lowercase.as_str() {
-                "true" => true,
-                "false" => false,
-                _ => {
-                    return Err(ControllerType::Error(
-                        strings::cfg::configuration_value_unrecognized(&value_string).to_owned(),
-                    ));
-                }
-            })
+            let value_choice =
+                TextGenerationSenderContextMode::from_str(&value_string.to_lowercase());
+
+            if value_choice.is_none() {
+                return Err(ControllerType::Error(
+                    strings::cfg::configuration_value_unrecognized(&value_string).to_owned(),
+                ));
+            }
+
+            value_choice
         };
 
         return Ok(
-            ConfigTextGenerationSettingRelatedControllerType::SetSenderContextEnabled(value_opt),
+            ConfigTextGenerationSettingRelatedControllerType::SetSenderContextMode(value_choice),
         );
     }
 
