@@ -1,15 +1,15 @@
 use tiktoken_rs::CoreBPE;
-use tiktoken_rs::get_bpe_from_tokenizer;
+use tiktoken_rs::bpe_for_tokenizer;
 use tiktoken_rs::tokenizer;
 
 use super::{Author, Message, MessageContent};
 
-fn get_bpe_for_model(model: &str) -> CoreBPE {
+fn get_bpe_for_model(model: &str) -> &'static CoreBPE {
     let tokenizer = tokenizer::get_tokenizer(model)
         .or_else(|| tokenizer::get_tokenizer("gpt-4"))
         .unwrap();
 
-    get_bpe_from_tokenizer(tokenizer).unwrap()
+    bpe_for_tokenizer(tokenizer).unwrap()
 }
 
 pub fn shorten_messages_list_to_context_size(
@@ -26,7 +26,7 @@ pub fn shorten_messages_list_to_context_size(
     // We want to retain the prompt in all cases, so we always count it first.
     // We also always reserve enough tokens for the maximum response we expect.
     let mut current_context_length: u32 = if let Some(prompt_message) = prompt_message {
-        calculate_token_size_for_message(&bpe, model, prompt_message)
+        calculate_token_size_for_message(bpe, model, prompt_message)
             + max_response_tokens.unwrap_or(0)
     } else {
         0
@@ -37,7 +37,7 @@ pub fn shorten_messages_list_to_context_size(
     let mut messages_to_keep: Vec<Message> = Vec::new();
 
     for message in messages {
-        let tokens_for_message = calculate_token_size_for_message(&bpe, model, &message);
+        let tokens_for_message = calculate_token_size_for_message(bpe, model, &message);
 
         if current_context_length + tokens_for_message > max_context_tokens {
             break;
@@ -94,7 +94,7 @@ pub mod test {
             timestamp: chrono::Utc::now(),
         };
 
-        let tokens = super::calculate_token_size_for_message(&bpe, model, &message);
+        let tokens = super::calculate_token_size_for_message(bpe, model, &message);
 
         assert_eq!(8, tokens);
     }
@@ -117,7 +117,7 @@ pub mod test {
 
         assert_eq!(
             prompt_length,
-            super::calculate_token_size_for_message(&bpe, model, &prompt)
+            super::calculate_token_size_for_message(bpe, model, &prompt)
         );
 
         let mut conversation_messages = Vec::new();
@@ -132,7 +132,7 @@ pub mod test {
 
         assert_eq!(
             first_length,
-            super::calculate_token_size_for_message(&bpe, model, &first)
+            super::calculate_token_size_for_message(bpe, model, &first)
         );
 
         conversation_messages.push(first);
@@ -147,7 +147,7 @@ pub mod test {
 
         assert_eq!(
             second_length,
-            super::calculate_token_size_for_message(&bpe, model, &second)
+            super::calculate_token_size_for_message(bpe, model, &second)
         );
 
         conversation_messages.push(second);
@@ -164,7 +164,7 @@ pub mod test {
 
         assert_eq!(
             third_length,
-            super::calculate_token_size_for_message(&bpe, model, &third)
+            super::calculate_token_size_for_message(bpe, model, &third)
         );
 
         conversation_messages.push(third.clone());
@@ -181,7 +181,7 @@ pub mod test {
 
         assert_eq!(
             forth_length,
-            super::calculate_token_size_for_message(&bpe, model, &forth)
+            super::calculate_token_size_for_message(bpe, model, &forth)
         );
 
         conversation_messages.push(forth.clone());
@@ -227,7 +227,7 @@ pub mod test {
 
         assert_eq!(
             prompt_length,
-            super::calculate_token_size_for_message(&bpe, model, &prompt)
+            super::calculate_token_size_for_message(bpe, model, &prompt)
         );
 
         let mut conversation_messages = Vec::new();
@@ -242,7 +242,7 @@ pub mod test {
 
         assert_eq!(
             first_length,
-            super::calculate_token_size_for_message(&bpe, model, &first)
+            super::calculate_token_size_for_message(bpe, model, &first)
         );
 
         conversation_messages.push(first);
@@ -257,7 +257,7 @@ pub mod test {
 
         assert_eq!(
             second_length,
-            super::calculate_token_size_for_message(&bpe, model, &second)
+            super::calculate_token_size_for_message(bpe, model, &second)
         );
 
         conversation_messages.push(second);
@@ -274,7 +274,7 @@ pub mod test {
 
         assert_eq!(
             third_length,
-            super::calculate_token_size_for_message(&bpe, model, &third)
+            super::calculate_token_size_for_message(bpe, model, &third)
         );
 
         conversation_messages.push(third.clone());
@@ -291,7 +291,7 @@ pub mod test {
 
         assert_eq!(
             forth_length,
-            super::calculate_token_size_for_message(&bpe, model, &forth)
+            super::calculate_token_size_for_message(bpe, model, &forth)
         );
 
         conversation_messages.push(forth.clone());
