@@ -1,3 +1,12 @@
+# (2026-04-11) Version 1.18.0
+
+- (**Bugfix**) Fix the bot not sending a welcome message when joining a room on homeservers (like [Continuwuity](https://continuwuity.org/)) that place the join membership event in the sync response's `state` block rather than the `timeline` block, via [mxlink](https://crates.io/crates/mxlink) 1.13.1
+
+- (**Improvement**) Update [tiktoken-rs](https://crates.io/crates/tiktoken-rs) to 0.11, adding tokenization support for newer GPT models (gpt-5.x, codex, etc.) and fixing context sizes for o1-mini/chatgpt-4o/gpt-4.5
+
+- (**Internal Improvement**) Dependency updates
+
+
 # (2026-03-25) Version 1.17.0
 
 - (**Feature**) Add `text-generation sender-context-mode` for attaching sender metadata to conversation messages. See the [💬 Text Generation](./docs/configuration/text-generation.md#-sender-context-mode) documentation for details. Thanks to [kschwank](https://github.com/kschwank) for the contribution in [#104](https://github.com/etkecc/baibot/pull/104)!
