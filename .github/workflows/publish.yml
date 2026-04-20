@@ -1,30 +1,15 @@
-name: CI
+name: Publish
 on:
-  pull_request:
-    branches: [ "main" ]
   push:
     branches: [ "main" ]
     tags: [ "v*" ]
 permissions:
   contents: read
-  pull-requests: read
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: publish-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  test-and-clippy:
-    name: Unit testing and linting
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@1.93.0
-      - name: Install SQLite3
-        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
-      - run: cargo test --all-features
-      - run: cargo clippy
-
   docker-clean-metadata:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       json: ${{ steps.meta.outputs.json }}
@@ -40,7 +25,6 @@ jobs:
             type=semver,pattern={{raw}}
 
   docker-build:
-    if: github.event_name == 'push'
     permissions:
       contents: read
       packages: write
@@ -86,7 +70,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   docker-manifest:
-    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
     needs:
       - docker-build
       - docker-clean-metadata

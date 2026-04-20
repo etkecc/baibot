@@ -1,0 +1,26 @@
+name: CI
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches:
+      - "**"
+    tags: [ "v*" ]
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  test-and-clippy:
+    name: Unit testing and linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@1.93.0
+      - name: Install SQLite3
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+      - run: cargo test --all-features
+      - run: cargo clippy
