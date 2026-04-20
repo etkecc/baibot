@@ -1,12 +1,12 @@
-name: CI (main and tags)
+name: CI
 on:
+  pull_request:
+    branches: [ "main" ]
   push:
     branches: [ "main" ]
     tags: [ "v*" ]
 permissions:
-  checks: write
-  contents: write
-  packages: write
+  contents: read
   pull-requests: read
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,6 +24,7 @@ jobs:
       - run: cargo clippy
 
   docker-clean-metadata:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       json: ${{ steps.meta.outputs.json }}
@@ -39,6 +40,7 @@ jobs:
             type=semver,pattern={{raw}}
 
   docker-build:
+    if: github.event_name == 'push'
     permissions:
       contents: read
       packages: write
@@ -84,6 +86,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   docker-manifest:
+    if: github.event_name == 'push'
     needs:
       - docker-build
       - docker-clean-metadata
