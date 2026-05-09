@@ -1,5 +1,5 @@
 [tools]
-prek = "0.3.2"
+prek = "0.3.13"
 
 [settings]
 # Disable automatic trust prompts - we trust this config
