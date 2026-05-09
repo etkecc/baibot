@@ -34,7 +34,7 @@ jobs:
             ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=latest,enable=${{ github.event.workflow_run.head_branch == 'main' }}
-            type=semver,pattern={{raw}}
+            type=semver,pattern={{raw}},value=${{ github.event.workflow_run.head_branch }},enable=${{ startsWith(github.event.workflow_run.head_branch || '', 'v') }}
 
   docker-build:
     if: |
@@ -77,7 +77,7 @@ jobs:
         with:
           tags: |
             type=raw,value=latest,enable=${{ github.event.workflow_run.head_branch == 'main' }}
-            type=semver,pattern={{raw}}
+            type=semver,pattern={{raw}},value=${{ github.event.workflow_run.head_branch }},enable=${{ startsWith(github.event.workflow_run.head_branch || '', 'v') }}
           flavor: |
             latest=auto
             suffix=-${{ matrix.arch }},onlatest=true
