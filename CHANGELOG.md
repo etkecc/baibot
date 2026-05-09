@@ -1,3 +1,10 @@
+# (2026-05-09) Version 1.19.1
+
+- (**Internal Improvement**) Update [async-openai](https://crates.io/crates/async-openai) to 0.38.0.
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-05-09) Version 1.19.0
 
 - (**Internal Improvement**) Update [matrix-sdk](https://crates.io/crates/matrix-sdk) from 0.16 to 0.17 and [mxlink](https://crates.io/crates/mxlink) to 1.14.0. matrix-sdk 0.17 dropped its `native-tls` feature and now uses [rustls](https://github.com/rustls/rustls) exclusively as its TLS backend.
