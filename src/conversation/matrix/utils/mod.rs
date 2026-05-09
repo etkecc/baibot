@@ -119,7 +119,7 @@ async fn get_matrix_messages_in_reply_chain_native(
             AnySyncMessageLikeEvent::RoomMessage(room_message) => {
                 if let SyncMessageLikeEvent::Original(room_message_original) = room_message {
                     match room_message_original.content.relates_to {
-                        Some(Relation::Reply { in_reply_to }) => Some(in_reply_to.event_id.clone()),
+                        Some(Relation::Reply(reply)) => Some(reply.in_reply_to.event_id.clone()),
                         _ => None,
                     }
                 } else {
@@ -420,11 +420,11 @@ pub async fn determine_interaction_context_for_room_event(
             )
             .await
         }
-        Relation::Reply { in_reply_to } => {
+        Relation::Reply(reply) => {
             determine_interaction_context_for_room_event_related_to_reply(
                 current_event,
                 current_event_is_mentioning_bot,
-                in_reply_to.event_id.clone(),
+                reply.in_reply_to.event_id.clone(),
             )
             .await
         }
