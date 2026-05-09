@@ -1,3 +1,12 @@
+# (2026-05-09) Version 1.19.0
+
+- (**Internal Improvement**) Update [matrix-sdk](https://crates.io/crates/matrix-sdk) from 0.16 to 0.17 and [mxlink](https://crates.io/crates/mxlink) to 1.14.0. matrix-sdk 0.17 dropped its `native-tls` feature and now uses [rustls](https://github.com/rustls/rustls) exclusively as its TLS backend.
+
+- (**Internal Improvement**) Bump the pinned Rust toolchain from 1.93.0 to 1.95.0 (in `rust-toolchain.toml` and the Docker build images).
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-04-11) Version 1.18.0
 
 - (**Bugfix**) Fix the bot not sending a welcome message when joining a room on homeservers (like [Continuwuity](https://continuwuity.org/)) that place the join membership event in the sync response's `state` block rather than the `timeline` block, via [mxlink](https://crates.io/crates/mxlink) 1.13.1
