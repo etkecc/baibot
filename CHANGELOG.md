@@ -1,3 +1,10 @@
+# (2026-05-21) Version 1.19.2
+
+- (**Internal Improvement**) Update [async-openai](https://crates.io/crates/async-openai) to 0.40.0.
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-05-09) Version 1.19.1
 
 - (**Internal Improvement**) Update [async-openai](https://crates.io/crates/async-openai) to 0.38.0.
