@@ -1,3 +1,10 @@
+# (2026-05-27) Version 1.19.3
+
+- (**Internal Improvement**) Update [async-openai](https://crates.io/crates/async-openai) to 0.40.2, pulling in several upstream fixes (streaming HTTP error surfacing, default `ResponseTextParam.format` deserialization, etc.).
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-05-21) Version 1.19.2
 
 - (**Internal Improvement**) Update [async-openai](https://crates.io/crates/async-openai) to 0.40.0.

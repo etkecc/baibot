@@ -315,7 +315,7 @@ dependencies = [
 
 [[package]]
 name = "baibot"
-version = "1.19.2"
+version = "1.19.3"
 dependencies = [
  "anthropic",
  "anyhow",
