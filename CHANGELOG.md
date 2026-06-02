@@ -1,3 +1,14 @@
+# (2026-06-02) Version 1.20.0
+
+- (**Internal Improvement**) Update [matrix-sdk](https://crates.io/crates/matrix-sdk) from 0.17 to 0.18 and [mxlink](https://crates.io/crates/mxlink) to 1.15.0.
+
+- (**Internal Improvement**) Update [tiktoken-rs](https://crates.io/crates/tiktoken-rs) to 0.12, backporting OpenAI [tiktoken](https://github.com/openai/tiktoken) 0.13.0 for better alignment with upstream tokenization behavior.
+
+- (**Internal Improvement**) Bump the pinned Rust toolchain from 1.95.0 to 1.96.0 (in `rust-toolchain.toml` and the Docker build images).
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-05-27) Version 1.19.3
 
 - (**Internal Improvement**) Update [async-openai](https://crates.io/crates/async-openai) to 0.40.2, pulling in several upstream fixes (streaming HTTP error surfacing, default `ResponseTextParam.format` deserialization, etc.).
