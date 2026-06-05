@@ -1,3 +1,8 @@
+# (2026-06-05) Version 1.21.1
+
+- (**Security**) Update the [anthropic](https://github.com/etkecc/anthropic-rs) dependency to use [reqwest](https://crates.io/crates/reqwest) 0.12 / [rustls](https://crates.io/crates/rustls) 0.23, replacing the vulnerable `rustls-webpki` 0.101 line with 0.103.13. This resolves [`GHSA-82j2-j2ch-gfr8`](https://github.com/advisories/GHSA-82j2-j2ch-gfr8) (high — denial of service via panic on a malformed CRL), [`GHSA-xgp8-3hg3-c2mh`](https://github.com/advisories/GHSA-xgp8-3hg3-c2mh) and [`GHSA-965h-392x-2mh5`](https://github.com/advisories/GHSA-965h-392x-2mh5) (name-constraint validation issues).
+
+
 # (2026-06-05) Version 1.21.0
 
 - (**Improvement**) Default to OpenAI's `gpt-image-2` model for image generation (in newly-created OpenAI agents and the sample provider configs).
