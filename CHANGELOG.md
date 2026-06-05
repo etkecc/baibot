@@ -1,3 +1,12 @@
+# (2026-06-05) Version 1.21.0
+
+- (**Improvement**) Default to OpenAI's `gpt-image-2` model for image generation (in newly-created OpenAI agents and the sample provider configs).
+
+- (**Internal Improvement**) Update [async-openai](https://crates.io/crates/async-openai) from 0.40 to 0.41, which [resynchronizes with the upstream OpenAI API spec](https://github.com/64bit/async-openai/issues/557) after it had drifted out of sync — a mismatch that was already causing some breakage (hopefully now resolved). Adapts to the newly-added `gpt-image-2` image model and an `ImageSize` type change.
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-06-02) Version 1.20.0
 
 - (**Internal Improvement**) Update [matrix-sdk](https://crates.io/crates/matrix-sdk) from 0.17 to 0.18 and [mxlink](https://crates.io/crates/mxlink) to 1.15.0.
