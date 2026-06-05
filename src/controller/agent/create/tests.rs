@@ -9,7 +9,7 @@ fn agent_config_parsing_works() {
     let sample_config = crate::agent::default_config_for_provider(&provider);
     let sample_config_pretty_yaml = serde_yaml_ng::to_string(&sample_config).unwrap();
 
-    let test_cases = vec![
+    let test_cases = [
         // Invalid input
         TestCase {
             input: r#"Hello"#.to_owned(),

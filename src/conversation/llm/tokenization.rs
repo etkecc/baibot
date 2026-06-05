@@ -105,7 +105,8 @@ pub mod test {
 
         let bpe = super::get_bpe_for_model(model);
 
-        let max_response_tokens: Option<u32> = Some(5);
+        let max_response_tokens_value: u32 = 5;
+        let max_response_tokens: Option<u32> = Some(max_response_tokens_value);
 
         let prompt = super::Message {
             author: super::Author::Prompt,
@@ -193,7 +194,7 @@ pub mod test {
             &Some(prompt),
             conversation_messages,
             max_response_tokens,
-            prompt_length + max_response_tokens.unwrap_or(0) + forth_length + third_length,
+            prompt_length + max_response_tokens_value + forth_length + third_length,
         );
 
         assert_eq!(2, new_conversation_messages.len());
@@ -215,7 +216,8 @@ pub mod test {
 
         let bpe = super::get_bpe_for_model(model);
 
-        let max_response_tokens: Option<u32> = Some(5);
+        let max_response_tokens_value: u32 = 5;
+        let max_response_tokens: Option<u32> = Some(max_response_tokens_value);
 
         let prompt = super::Message {
             author: super::Author::User,
@@ -303,7 +305,7 @@ pub mod test {
             &Some(prompt),
             conversation_messages,
             max_response_tokens,
-            prompt_length + max_response_tokens.unwrap_or(0) + forth_length + third_length,
+            prompt_length + max_response_tokens_value + forth_length + third_length,
         );
 
         assert_eq!(2, new_conversation_messages.len());
