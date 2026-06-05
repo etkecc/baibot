@@ -271,6 +271,7 @@ impl ControllerTrait for Controller {
                 ImageModel::GptImage1 => ImageModel::GptImage1Mini,
                 ImageModel::GptImage1dot5 => ImageModel::GptImage1Mini,
                 ImageModel::GptImage1Mini => ImageModel::GptImage1Mini,
+                ImageModel::GptImage2 => ImageModel::GptImage1Mini,
                 ImageModel::Other(_) => ImageModel::DallE2,
             }
         } else {
@@ -310,7 +311,7 @@ impl ControllerTrait for Controller {
         let size = if params.smallest_size_possible {
             Some(get_sticker_size(&model))
         } else {
-            image_generation_config.size
+            image_generation_config.size.clone()
         };
 
         let response_format = match model.clone() {
@@ -321,6 +322,7 @@ impl ControllerTrait for Controller {
             ImageModel::GptImage1 => None,
             ImageModel::GptImage1Mini => None,
             ImageModel::GptImage1dot5 => None,
+            ImageModel::GptImage2 => None,
             ImageModel::Other(_) => Some(ImageResponseFormat::B64Json),
         };
 
@@ -430,6 +432,7 @@ impl ControllerTrait for Controller {
             ImageModel::GptImage1 => None,
             ImageModel::GptImage1Mini => None,
             ImageModel::GptImage1dot5 => None,
+            ImageModel::GptImage2 => None,
             ImageModel::Other(_) => Some(ImageResponseFormat::B64Json),
         };
 
@@ -647,6 +650,7 @@ fn get_sticker_size(model: &ImageModel) -> async_openai::types::images::ImageSiz
         ImageModel::GptImage1 => ImageSize::S1024x1024,
         ImageModel::GptImage1Mini => ImageSize::S1024x1024,
         ImageModel::GptImage1dot5 => ImageSize::S1024x1024,
+        ImageModel::GptImage2 => ImageSize::S1024x1024,
         ImageModel::Other(_) => ImageSize::S1024x1024,
     }
 }
