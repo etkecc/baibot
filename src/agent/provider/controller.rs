@@ -61,6 +61,7 @@ pub enum ControllerType {
     OpenAI(Box<super::openai::Controller>),
     OpenAICompat(Box<super::openai_compat::Controller>),
     Anthropic(Box<super::anthropic::Controller>),
+    Venice(Box<super::venice::Controller>),
 }
 
 impl ControllerTrait for ControllerType {
@@ -69,6 +70,7 @@ impl ControllerTrait for ControllerType {
             ControllerType::OpenAI(controller) => controller.supports_purpose(purpose),
             ControllerType::OpenAICompat(controller) => controller.supports_purpose(purpose),
             ControllerType::Anthropic(controller) => controller.supports_purpose(purpose),
+            ControllerType::Venice(controller) => controller.supports_purpose(purpose),
         }
     }
 
@@ -77,6 +79,7 @@ impl ControllerTrait for ControllerType {
             ControllerType::OpenAI(controller) => controller.text_generation_model_id(),
             ControllerType::OpenAICompat(controller) => controller.text_generation_model_id(),
             ControllerType::Anthropic(controller) => controller.text_generation_model_id(),
+            ControllerType::Venice(controller) => controller.text_generation_model_id(),
         }
     }
 
@@ -85,6 +88,7 @@ impl ControllerTrait for ControllerType {
             ControllerType::OpenAI(controller) => controller.text_generation_prompt(),
             ControllerType::OpenAICompat(controller) => controller.text_generation_prompt(),
             ControllerType::Anthropic(controller) => controller.text_generation_prompt(),
+            ControllerType::Venice(controller) => controller.text_generation_prompt(),
         }
     }
 
@@ -93,6 +97,7 @@ impl ControllerTrait for ControllerType {
             ControllerType::OpenAI(controller) => controller.text_to_speech_voice(),
             ControllerType::OpenAICompat(controller) => controller.text_to_speech_voice(),
             ControllerType::Anthropic(controller) => controller.text_to_speech_voice(),
+            ControllerType::Venice(controller) => controller.text_to_speech_voice(),
         }
     }
 
@@ -101,6 +106,7 @@ impl ControllerTrait for ControllerType {
             ControllerType::OpenAI(controller) => controller.text_to_speech_speed(),
             ControllerType::OpenAICompat(controller) => controller.text_to_speech_speed(),
             ControllerType::Anthropic(controller) => controller.text_to_speech_speed(),
+            ControllerType::Venice(controller) => controller.text_to_speech_speed(),
         }
     }
 
@@ -109,6 +115,7 @@ impl ControllerTrait for ControllerType {
             ControllerType::OpenAI(controller) => controller.text_generation_temperature(),
             ControllerType::OpenAICompat(controller) => controller.text_generation_temperature(),
             ControllerType::Anthropic(controller) => controller.text_generation_temperature(),
+            ControllerType::Venice(controller) => controller.text_generation_temperature(),
         }
     }
 
@@ -117,6 +124,7 @@ impl ControllerTrait for ControllerType {
             ControllerType::OpenAI(controller) => controller.ping().await,
             ControllerType::OpenAICompat(controller) => controller.ping().await,
             ControllerType::Anthropic(controller) => controller.ping().await,
+            ControllerType::Venice(controller) => controller.ping().await,
         }
     }
 
@@ -133,6 +141,9 @@ impl ControllerTrait for ControllerType {
                 controller.generate_text(conversation, params).await
             }
             ControllerType::Anthropic(controller) => {
+                controller.generate_text(conversation, params).await
+            }
+            ControllerType::Venice(controller) => {
                 controller.generate_text(conversation, params).await
             }
         }
@@ -154,6 +165,9 @@ impl ControllerTrait for ControllerType {
             ControllerType::Anthropic(controller) => {
                 controller.speech_to_text(mime_type, media, params).await
             }
+            ControllerType::Venice(controller) => {
+                controller.speech_to_text(mime_type, media, params).await
+            }
         }
     }
 
@@ -168,6 +182,9 @@ impl ControllerTrait for ControllerType {
                 controller.generate_image(prompt, params).await
             }
             ControllerType::Anthropic(controller) => {
+                controller.generate_image(prompt, params).await
+            }
+            ControllerType::Venice(controller) => {
                 controller.generate_image(prompt, params).await
             }
         }
@@ -189,6 +206,9 @@ impl ControllerTrait for ControllerType {
             ControllerType::Anthropic(controller) => {
                 controller.create_image_edit(prompt, images, params).await
             }
+            ControllerType::Venice(controller) => {
+                controller.create_image_edit(prompt, images, params).await
+            }
         }
     }
 
@@ -203,6 +223,7 @@ impl ControllerTrait for ControllerType {
                 controller.text_to_speech(text, params).await
             }
             ControllerType::Anthropic(controller) => controller.text_to_speech(text, params).await,
+            ControllerType::Venice(controller) => controller.text_to_speech(text, params).await,
         }
     }
 }

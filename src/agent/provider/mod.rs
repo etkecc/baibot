@@ -10,6 +10,7 @@ pub mod openai;
 pub mod openai_compat;
 pub(super) mod openrouter;
 pub(super) mod togetherai;
+pub mod venice;
 
 fn default_temperature() -> f32 {
     1.0

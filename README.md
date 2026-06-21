@@ -13,7 +13,7 @@ It's influenced by [chaz](https://github.com/arcuru/chaz), but does **not** use 
 
 ## 🌟 Features
 
-- 🎨 Encourages **[provider](./docs/providers.md) choice** ([Anthropic](./docs/providers.md#anthropic), [Groq](./docs/providers.md#groq), [LocalAI](./docs/providers.md#localai), [OpenAI](./docs/providers.md#openai) and [☁️ many more](./docs/providers.md#️-providers)) as well as **[mixing & matching models](./docs/features.md#-mixing--matching-models)**:
+- 🎨 Encourages **[provider](./docs/providers.md) choice** ([Anthropic](./docs/providers.md#anthropic), [Groq](./docs/providers.md#groq), [LocalAI](./docs/providers.md#localai), [OpenAI](./docs/providers.md#openai), [Venice](./docs/providers.md#venice) and [☁️ many more](./docs/providers.md#️-providers)) as well as **[mixing & matching models](./docs/features.md#-mixing--matching-models)**:
 
 - Supports **different use purposes** (depending on the [☁️ provider](./docs/providers.md) & model):
 
