@@ -31,6 +31,11 @@ regex = "1.12.*"
 # HTTP client for the native `venice` provider. rustls only (no extra TLS stack), matching the
 # reqwest copy async-openai/matrix-sdk/mxlink already use.
 reqwest = { version = "0.13.*", default-features = false, features = ["json", "multipart", "rustls"] }
+# ureq copy etke_openai_api_rust uses. We enable `native-certs` so the OpenAI-compatible
+# provider trusts the system CA store (via rustls-native-certs, honouring SSL_CERT_FILE)
+# instead of only the bundled webpki-roots. Without this, endpoints behind a private/internal
+# CA fail with "invalid peer certificate: UnknownIssuer".
+ureq = { version = "2.*", default-features = false, features = ["tls", "gzip", "json", "native-certs"] }
 serde = { version = "1.0.*", features = ["derive"], default-features = false }
 serde_json = "1.0.*"
 serde_yaml_ng = "0.10.*"
