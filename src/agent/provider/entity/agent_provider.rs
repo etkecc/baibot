@@ -11,6 +11,7 @@ pub enum AgentProvider {
     OpenAICompat,
     OpenRouter,
     TogetherAI,
+    Venice,
 }
 
 impl AgentProvider {
@@ -25,6 +26,7 @@ impl AgentProvider {
             &Self::OpenAICompat,
             &Self::OpenRouter,
             &Self::TogetherAI,
+            &Self::Venice,
         ]
     }
 
@@ -39,6 +41,7 @@ impl AgentProvider {
             Self::OpenAICompat => "openai-compatible",
             Self::OpenRouter => "openrouter",
             Self::TogetherAI => "together-ai",
+            Self::Venice => "venice",
         }
     }
 
@@ -53,6 +56,7 @@ impl AgentProvider {
             "openai-compatible" => Ok(Self::OpenAICompat),
             "openrouter" => Ok(Self::OpenRouter),
             "together-ai" => Ok(Self::TogetherAI),
+            "venice" => Ok(Self::Venice),
             _ => Err("Unexpected string value"),
         }
     }
@@ -179,6 +183,25 @@ impl AgentProvider {
                 models_list_url: Some("https://api.together.xyz/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: false,
+                text_generation_supports_tools: false,
+            },
+            Self::Venice => AgentProviderInfo {
+                id: Self::Venice.to_static_str(),
+                name: "Venice",
+                description: "Venice AI runs inference on Venice-controlled GPUs or zero-data-retention partner infrastructure and stores no prompts or responses. It serves frontier proprietary and open-source models with text-generation (including vision), speech-to-text, text-to-speech, native image generation and editing, and native web search.",
+                homepage_url: Some("https://venice.ai"),
+                wiki_url: None,
+                sign_up_url: Some("https://venice.ai"),
+                models_list_url: Some("https://api.venice.ai/api/v1/models"),
+                supported_purposes: vec![
+                    AgentPurpose::ImageGeneration,
+                    AgentPurpose::TextGeneration,
+                    AgentPurpose::TextToSpeech,
+                    AgentPurpose::SpeechToText,
+                ],
+                text_generation_supports_vision: true,
+                // Venice does native web search via `venice_parameters`, NOT baibot's built-in
+                // tools mechanism (the OpenAI web_search/code_interpreter block), so this is false.
                 text_generation_supports_tools: false,
             },
         }

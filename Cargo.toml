@@ -7,7 +7,7 @@ license = "AGPL-3.0-or-later"
 readme = "README.md"
 keywords = ["matrix", "chat", "bot", "AI", "LLM"]
 include = ["/etc/assets/baibot-torso-768.png", "/src", "/README.md", "/CHANGELOG.md", "/LICENSE"]
-version = "1.21.1"
+version = "1.22.0"
 edition = "2024"
 
 [lib]
@@ -28,6 +28,10 @@ mxlink = ">=1.15.0"
 etke_openai_api_rust = "0.1.*"
 quick_cache = "0.6.*"
 regex = "1.12.*"
+# Direct dep for the native `venice` provider's HTTP client. Pinned to 0.12 (the version
+# async-openai 0.41 already resolves) with rustls only and default-features off, so we ride
+# the existing reqwest+rustls copy instead of pulling a second TLS stack (native-tls/openssl).
+reqwest = { version = "0.12.*", default-features = false, features = ["json", "multipart", "rustls-tls"] }
 serde = { version = "1.0.*", features = ["derive"], default-features = false }
 serde_json = "1.0.*"
 serde_yaml_ng = "0.10.*"

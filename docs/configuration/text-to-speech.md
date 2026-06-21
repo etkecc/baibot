@@ -56,7 +56,7 @@ Example: `!bai config room text-to-speech set-speed-override 1.5` (this can also
 
 ### 👫 Voice override
 
-The voice override setting lets you change the voice being used by the text-to-speech model configured at the [🤖 agent](../agents.md) level (usually `onyx` when using [OpenAI](../providers.md#openai)).
+The voice override setting lets you change the voice being used by the text-to-speech model configured at the [🤖 agent](../agents.md) level (e.g. `onyx` when using [OpenAI](../providers.md#openai), or `af_sky` when using [Venice](../providers.md#venice)).
 
 Possible values (e.g. `onyx`) depend on the model you're using. For example, for [OpenAI](../providers.md#openai)'s Whisper model, [these voices](https://platform.openai.com/docs/guides/text-to-speech/voice-options) are available.
 

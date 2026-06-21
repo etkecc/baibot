@@ -1,0 +1,97 @@
+base_url: https://api.venice.ai/api/v1
+api_key: YOUR_API_KEY_HERE
+text_generation:
+  model_id: kimi-k2-5
+  prompt: "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time of this conversation's start is: {{ baibot_conversation_start_time_utc }}."
+  temperature: 1.0
+  max_response_tokens: 4096
+  max_context_tokens: 128000
+  # Venice-specific request parameters. Only the keys present below are sent to Venice; omit a
+  # key to fall back to Venice's own default. Omitting a knob is NOT the same as setting it to
+  # `false` — `false` actively sends `false`.
+  venice_parameters:
+    # Web search: "auto" (model decides), "on" (always), or "off".
+    enable_web_search: "auto"
+    # Strip <think></think> blocks from reasoning models so the user sees only the answer.
+    strip_thinking_response: true
+    # Run in TEE-only mode instead of end-to-end encryption (works across all models).
+    enable_e2ee: false
+    # Other available knobs — uncomment to override Venice's default:
+    # enable_web_citations: true
+    # enable_web_scraping: true
+    # include_venice_system_prompt: false
+    # include_search_results_in_stream: true
+    # return_search_results_as_documents: true
+    # enable_x_search: true
+    # disable_thinking: true
+    # character_slug: public-character-id
+speech_to_text:
+  model_id: nvidia/parakeet-tdt-0.6b-v3
+text_to_speech:
+  # The Venice TTS model. Others include tts-qwen3-1-7b, tts-xai-v1,
+  # tts-elevenlabs-turbo-v2-5, tts-minimax-speech-02-hd. See the models list endpoint.
+  model_id: tts-kokoro
+  # The voice to synthesize with. Voices are model-specific: Kokoro uses af_*/am_*/bf_*/bm_*
+  # (e.g. af_sky, am_adam), other models have their own sets. You can also pass a cloned-voice
+  # handle (vv_<id>) created via Venice's voice-cloning API. An incompatible voice returns an error.
+  voice: af_sky
+  # Output audio format: mp3, opus, aac, flac, wav, or pcm. mp3 is the broadest Matrix-client fit.
+  response_format: mp3
+  # Other available knobs — uncomment to override Venice's default:
+  # Playback speed, 0.25–4.0 (1.0 is normal).
+  # speed: 1.0
+  # A style prompt steering emotion/delivery (e.g. "Excited and energetic."). Only Qwen 3 TTS uses it.
+  # prompt: "Calm and warm."
+  # Sampling temperature, 0.0–2.0 (higher = more varied). Only Qwen 3 / Orpheus / Chatterbox HD use it.
+  # temperature: 0.9
+  # Nucleus sampling, 0.0–1.0. Only Qwen 3 TTS uses it.
+  # top_p: 1.0
+image_generation:
+  # The image-generation model. See the models list endpoint for the full set.
+  model_id: chroma
+  # The image-edit model, used when editing an existing image rather than generating a new one.
+  # Editing shares this same image_generation config block; only the model differs.
+  edit:
+    model_id: firered-image-edit
+    # Other edit knobs — uncomment to override Venice's default:
+    # Output format: jpeg, png, or webp. When omitted, Venice infers it (PNG at 1K, JPEG at 2K/4K).
+    # output_format: png
+    # Aspect ratio of the result: auto, 1:1, 3:2, 16:9, 21:9, 9:16, 2:3, 3:4, 4:5 (model-specific).
+    # aspect_ratio: auto
+    # Resolution tier: 1K, 2K, 4K (model-specific). Defaults to 1K.
+    # resolution: 1K
+    # Blur images classified as adult content. Defaults to true.
+    # safe_mode: true
+  # Other generation knobs — uncomment to override Venice's default. Omitting a knob is NOT the same
+  # as setting it: an omitted knob lets Venice apply its own default, a set value is sent verbatim.
+  # A description of what should NOT appear in the image.
+  # negative_prompt: "blurry, watermark, text"
+  # CFG scale, 0–20. Higher values make the image adhere more closely to the prompt.
+  # cfg_scale: 7.5
+  # Number of inference steps. Model-specific; some models ignore it.
+  # steps: 8
+  # A named style to apply (e.g. "3D Model"). See Venice's image-styles reference.
+  # style_preset: "3D Model"
+  # Random seed, -999999999–999999999. Fix it for reproducible results; omit for a random seed.
+  # seed: 123456789
+  # Blur images classified as adult content. Defaults to true.
+  # safe_mode: true
+  # Hide the Venice watermark. Venice may ignore this for certain generated content. Defaults to false.
+  # hide_watermark: false
+  # Output format: jpeg, png, or webp. webp is smallest; png is highest-quality. Defaults to webp.
+  # format: webp
+  # Image dimensions in pixels, each 1–1280. Default 1024×1024.
+  # width: 1024
+  # height: 1024
+  # Aspect ratio (used by certain models, e.g. Nano Banana): "1:1", "16:9". An alternative to width/height.
+  # aspect_ratio: "1:1"
+  # Resolution tier (used by certain models): "1K", "2K", "4K".
+  # resolution: "1K"
+  # Output quality for supported models (e.g. GPT Image 2): low, medium, high. Higher can cost more.
+  # quality: high
+  # Lora strength, 0–100. Only applies if the model uses additional Loras.
+  # lora_strength: 50
+  # Embed the generation prompt into the image's EXIF metadata. Defaults to false.
+  # embed_exif_metadata: false
+  # Let the model pull the latest info from the web for the image. Model-specific; costs extra credits.
+  # enable_web_search: false

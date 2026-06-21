@@ -109,6 +109,9 @@ fn create_controller_from_provider_and_json_value_config(
         AgentProvider::TogetherAI => {
             provider::openai_compat::create_controller_from_yaml_value_config(agent_id, config)
         }
+        AgentProvider::Venice => {
+            provider::venice::create_controller_from_yaml_value_config(agent_id, config)
+        }
     }
 }
 
@@ -148,6 +151,10 @@ pub fn default_config_for_provider(provider: &AgentProvider) -> serde_yaml_ng::V
         }
         AgentProvider::TogetherAI => {
             let config = super::provider::togetherai::default_config();
+            serde_yaml_ng::to_value(config).expect("Failed to serialize config")
+        }
+        AgentProvider::Venice => {
+            let config = super::provider::venice::default_config();
             serde_yaml_ng::to_value(config).expect("Failed to serialize config")
         }
     }

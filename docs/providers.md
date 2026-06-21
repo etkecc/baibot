@@ -19,6 +19,7 @@ The list of supported providers is below.
   - [OpenAI Compatible](#openai-compatible)
   - [OpenRouter](#openrouter)
   - [Together AI](#together-ai)
+  - [Venice](#venice)
 
 
 ### How to choose a provider
@@ -171,3 +172,82 @@ This provider is just as featureful as the [OpenAI](#openai) provider, but is mo
   - create a global agent: `!bai agent create-global together-ai my-together-ai-agent`
 
 💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/together-ai.yml).
+
+
+### Venice
+
+[Venice AI](https://venice.ai) runs inference on Venice-controlled GPUs or zero-data-retention partner infrastructure and stores no prompts or responses, so your conversations don't linger anywhere. It serves both frontier proprietary models and the latest open-source ones.
+
+- 🆔 Identifier: `venice`
+- 🔗 Links: [🏠 Home page](https://venice.ai), [👤 Sign up](https://venice.ai), [📋 Models list](https://api.venice.ai/api/v1/models)
+- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation) (incl. editing, via the native knob-rich `/image/generate` and `/image/edit` endpoints), [💬 text-generation](./features.md#-text-generation) (incl. vision; native web search via the `venice_parameters` config), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
+- 🗲 Quick start:
+  - create a room-local agent: `!bai agent create-room-local venice my-venice-agent`
+  - create a global agent: `!bai agent create-global venice my-venice-agent`
+
+💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/venice.yml).
+
+Unlike the [OpenAI Compatible](#openai-compatible) provider (which can talk to Venice but drops images and can't reach its audio or native image endpoints), this is a first-class Venice integration that exposes Venice's full parameter set. Image generation uses the native `/image/generate` endpoint rather than the OpenAI-compatible `/images/generations` shim, so every Venice-specific knob below is available.
+
+#### Configuration reference
+
+Every parameter below is optional unless marked otherwise. Omitting a knob lets Venice apply its own server-side default; this is **not** the same as setting it to `false`, which actively sends `false`.
+
+**`text_generation.venice_parameters`** — Venice-specific request knobs sent in the `venice_parameters` bag (alongside the standard `model_id`, `prompt`, `temperature`, `max_response_tokens`, and `max_context_tokens` fields). Set any of them to override Venice's behavior. The `Default` column shows the value baibot's sample config ships; a `—` means the knob is left unset, so Venice's own default applies.
+
+| Knob | What it does | Default |
+|------|--------------|---------|
+| `enable_web_search` | Web search mode: `auto` (model decides), `on` (always), or `off`. | `auto` |
+| `enable_web_citations` | Append source citations to web-search answers. | — |
+| `enable_web_scraping` | Allow the model to scrape page contents during web search. | — |
+| `enable_x_search` | Include X (Twitter) in web search. | — |
+| `include_search_results_in_stream` | Stream search results back as they arrive. | — |
+| `return_search_results_as_documents` | Return search results as structured documents. | — |
+| `include_venice_system_prompt` | Prepend Venice's own system prompt alongside yours. | — |
+| `character_slug` | Use a public Venice character by its slug. | — |
+| `strip_thinking_response` | Strip `<think></think>` blocks from reasoning models so the user sees only the answer. | `true` |
+| `disable_thinking` | Disable the model's reasoning step entirely. | — |
+| `enable_e2ee` | Run in end-to-end-encrypted mode rather than the default TEE-only mode. | `false` |
+
+**`text_to_speech`**:
+
+| Knob | What it does | Default |
+|------|--------------|---------|
+| `model_id` | The Venice TTS model (e.g. `tts-kokoro`, `tts-qwen3-1-7b`, `tts-xai-v1`). | `tts-kokoro` |
+| `voice` | The voice to synthesize with. Model-specific (Kokoro: `af_*`/`am_*`/`bf_*`/`bm_*`); a cloned-voice handle (`vv_<id>`) also works. | `af_sky` |
+| `response_format` | Audio format: `mp3`, `opus`, `aac`, `flac`, `wav`, or `pcm`. | `mp3` |
+| `speed` | Playback speed, `0.25`–`4.0`. | `1.0` |
+| `prompt` | A style prompt steering emotion/delivery. Only Qwen 3 TTS honors it. | — |
+| `temperature` | Sampling temperature, `0.0`–`2.0`. Only Qwen 3 / Orpheus / Chatterbox HD honor it. | — |
+| `top_p` | Nucleus sampling, `0.0`–`1.0`. Only Qwen 3 TTS honors it. | — |
+
+**`image_generation`**:
+
+| Knob | What it does | Default |
+|------|--------------|---------|
+| `model_id` | The image-generation model. | `chroma` |
+| `negative_prompt` | A description of what should **not** appear in the image. | — |
+| `cfg_scale` | CFG scale, `0`–`20`. Higher values adhere more closely to the prompt. | — |
+| `steps` | Number of inference steps. Model-specific; some models ignore it. | — |
+| `style_preset` | A named style to apply (e.g. `3D Model`). | — |
+| `seed` | Random seed, `-999999999`–`999999999`. Fix it for reproducible results. | random |
+| `safe_mode` | Blur images classified as adult content. | `true` |
+| `hide_watermark` | Hide the Venice watermark (may be ignored for some content). | `false` |
+| `format` | Output format: `jpeg`, `png`, or `webp`. | `webp` |
+| `width` / `height` | Image dimensions in pixels, each `1`–`1280`. | `1024` |
+| `aspect_ratio` | Aspect ratio for models that support it (e.g. `1:1`, `16:9`). Alternative to `width`/`height`. | — |
+| `resolution` | Resolution tier for models that support it (`1K`, `2K`, `4K`). | — |
+| `quality` | Output quality for supported models: `low`, `medium`, `high`. Higher can cost more. | — |
+| `lora_strength` | Lora strength, `0`–`100`. Only applies if the model uses additional Loras. | — |
+| `embed_exif_metadata` | Embed the generation prompt into the image's EXIF metadata. | `false` |
+| `enable_web_search` | Let the model pull the latest info from the web. Model-specific; costs extra credits. | — |
+
+**`image_generation.edit`** — image editing reuses the `image_generation` block; only the model and a few output knobs differ:
+
+| Knob | What it does | Default |
+|------|--------------|---------|
+| `model_id` | The image-edit model. | `firered-image-edit` |
+| `output_format` | Output format: `jpeg`, `png`, or `webp`. When omitted, Venice infers it (PNG at 1K, JPEG at 2K/4K). | inferred |
+| `aspect_ratio` | Aspect ratio of the result: `auto`, `1:1`, `3:2`, `16:9`, `21:9`, `9:16`, `2:3`, `3:4`, `4:5` (model-specific). | — |
+| `resolution` | Resolution tier: `1K`, `2K`, `4K` (model-specific). | `1K` |
+| `safe_mode` | Blur images classified as adult content. | `true` |

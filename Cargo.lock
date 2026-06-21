@@ -315,7 +315,7 @@ dependencies = [
 
 [[package]]
 name = "baibot"
-version = "1.21.1"
+version = "1.22.0"
 dependencies = [
  "anthropic",
  "anyhow",
@@ -329,6 +329,7 @@ dependencies = [
  "mxlink",
  "quick_cache",
  "regex",
+ "reqwest 0.12.28",
  "serde",
  "serde_json",
  "serde_yaml_ng",
@@ -1590,6 +1591,7 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tower-service",
+ "webpki-roots 1.0.7",
 ]
 
 [[package]]
@@ -3074,6 +3076,7 @@ dependencies = [
  "hyper-util",
  "js-sys",
  "log",
+ "mime_guess",
  "percent-encoding",
  "pin-project-lite",
  "quinn",
@@ -3095,6 +3098,7 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-streams 0.4.2",
  "web-sys",
+ "webpki-roots 1.0.7",
 ]
 
 [[package]]

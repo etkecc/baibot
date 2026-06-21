@@ -1,3 +1,8 @@
+# (2026-06-21) Version 1.22.0
+
+- (**Feature**) Add a native [Venice](https://venice.ai) provider with [🖌️ image-generation](./docs/features.md#️-image-creation) (incl. editing), [💬 text-generation](./docs/features.md#-text-generation) (incl. vision), [🗣️ text-to-speech](./docs/features.md#️-text-to-speech), [🦻 speech-to-text](./docs/features.md#-speech-to-text), and Venice's native web search via the full `venice_parameters` knob set. Unlike the [OpenAI-compatible](./docs/providers.md#openai-compatible) path (which drops images and can't reach Venice's audio or native image endpoints), it talks to Venice's API directly, using the knob-rich native `/image/generate` and `/image/edit` endpoints. See the [Venice provider docs](./docs/providers.md#venice).
+
+
 # (2026-06-05) Version 1.21.1
 
 - (**Security**) Update the [anthropic](https://github.com/etkecc/anthropic-rs) dependency to use [reqwest](https://crates.io/crates/reqwest) 0.12 / [rustls](https://crates.io/crates/rustls) 0.23, replacing the vulnerable `rustls-webpki` 0.101 line with 0.103.13. This resolves [`GHSA-82j2-j2ch-gfr8`](https://github.com/advisories/GHSA-82j2-j2ch-gfr8) (high — denial of service via panic on a malformed CRL), [`GHSA-xgp8-3hg3-c2mh`](https://github.com/advisories/GHSA-xgp8-3hg3-c2mh) and [`GHSA-965h-392x-2mh5`](https://github.com/advisories/GHSA-965h-392x-2mh5) (name-constraint validation issues).
