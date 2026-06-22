@@ -26,7 +26,7 @@ Text Generation is the bot's ability to **respond to users' messages with text**
 
 ![Screenshot of Text Generation - a user sends a message and the bot replies in a new conversation thread](./screenshots/text-generation.webp)
 
-Some models also support vision and document understanding, so you may be able to mix text, images, and files (PDFs, text documents, etc.) in the same conversation. Note that certain providers may not support all file types or may have issues with specific files (e.g. scanned/image-based PDFs). If a file is rejected by the provider, the conversation thread may become unusable — start a new thread to work around this.
+Some models also support vision and document understanding, so you may be able to mix text, images, and files (PDFs, text documents, etc.) in the same conversation. File inputs (documents such as PDFs) are currently accepted only by the OpenAI and Venice providers; the others skip them. Note that certain providers may not support all file types or may have issues with specific files (e.g. scanned/image-based PDFs). If a file is rejected by the provider, the conversation thread may become unusable — start a new thread to work around this.
 
 In multi-user (group) rooms, to avoid disturbing the normal conversation between people, the bot is auto-configured to only respond to messages starting with the command prefix (`!bai`) or direct mentions via the [💬 Text Generation / 🗟 Prefix Requirement Type](./configuration/text-generation.md#-prefix-requirement-type) setting.
 

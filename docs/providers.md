@@ -180,7 +180,7 @@ This provider is just as featureful as the [OpenAI](#openai) provider, but is mo
 
 - 🆔 Identifier: `venice`
 - 🔗 Links: [🏠 Home page](https://venice.ai), [👤 Sign up](https://venice.ai), [📋 Models list](https://api.venice.ai/api/v1/models)
-- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation) (incl. editing, via the native knob-rich `/image/generate` and `/image/edit` endpoints), [💬 text-generation](./features.md#-text-generation) (incl. vision; native web search via the `venice_parameters` config), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
+- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation) (incl. editing, via the native knob-rich `/image/generate` and `/image/edit` endpoints), [💬 text-generation](./features.md#-text-generation) (incl. vision, file inputs like PDF and DOCX, and prompt caching; native web search via the `venice_parameters` config), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local venice my-venice-agent`
   - create a global agent: `!bai agent create-global venice my-venice-agent`
@@ -193,7 +193,19 @@ Unlike the [OpenAI Compatible](#openai-compatible) provider (which can talk to V
 
 Every parameter below is optional unless marked otherwise. Omitting a knob lets Venice apply its own server-side default; this is **not** the same as setting it to `false`, which actively sends `false`.
 
-**`text_generation.venice_parameters`** — Venice-specific request knobs sent in the `venice_parameters` bag (alongside the standard `model_id`, `prompt`, `temperature`, `max_response_tokens`, and `max_context_tokens` fields). Set any of them to override Venice's behavior. The `Default` column shows the value baibot's sample config ships; a `—` means the knob is left unset, so Venice's own default applies.
+**`text_generation`** (top-level knobs) — sampling, caching, and reasoning controls that sit directly on `text_generation`, next to `model_id`, `prompt`, `temperature`, `max_response_tokens`, and `max_context_tokens`. They map to top-level fields on Venice's request, separate from the `venice_parameters` bag below.
+
+| Knob | What it does | Default |
+|------|--------------|---------|
+| `top_p` | Nucleus sampling, `0.0`–`1.0`. An alternative to `temperature`. | — |
+| `frequency_penalty` | Penalize tokens by how often they have already appeared, `-2.0`–`2.0`. | — |
+| `presence_penalty` | Penalize tokens that have appeared at all, `-2.0`–`2.0`. | — |
+| `repetition_penalty` | Penalize repetition. Values above `1.0` discourage repeats. | — |
+| `reasoning_effort` | Reasoning budget for models that support it: `low`, `medium`, `high`. | — |
+| `prompt_cache_retention` | How long Venice keeps the prompt prefix cached: `default`, `extended`, or `24h`. `24h` is the lever that makes a long, stable system prompt cheap across a day of conversations. | `24h` |
+| `show_reasoning` | Append the model's reasoning (its `reasoning_content`) below the answer. Reads a field separate from the answer text, so it works regardless of `strip_thinking_response`. | `false` |
+
+**`text_generation.venice_parameters`** — Venice-specific request knobs sent in the `venice_parameters` bag. Set any of them to override Venice's behavior. The `Default` column shows the value baibot's sample config ships; a `—` means the knob is left unset, so Venice's own default applies.
 
 | Knob | What it does | Default |
 |------|--------------|---------|
@@ -208,6 +220,7 @@ Every parameter below is optional unless marked otherwise. Omitting a knob lets 
 | `strip_thinking_response` | Strip `<think></think>` blocks from reasoning models so the user sees only the answer. | `true` |
 | `disable_thinking` | Disable the model's reasoning step entirely. | — |
 | `enable_e2ee` | Run in end-to-end-encrypted mode rather than the default TEE-only mode. | `false` |
+| `verbosity` | Response verbosity for models that support it: `low`, `medium`, `high`. | — |
 
 **`text_to_speech`**:
 

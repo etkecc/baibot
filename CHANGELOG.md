@@ -1,3 +1,16 @@
+# (2026-06-22) Version 1.23.0
+
+- (**Feature**) The [Venice](https://venice.ai) provider now accepts file inputs (PDF, DOCX, and other documents, up to 25MB), the same way it already handled images. This makes Venice the second provider after OpenAI to accept files; the others (Anthropic and the OpenAI-compatible providers) skip them. See the [text-generation feature docs](./docs/features.md#-text-generation).
+
+- (**Feature**) Add prompt caching to the Venice provider, on by default (`prompt_cache_retention: 24h`). baibot derives the cache key from the system prompt and the conversation start time (both fixed for the life of a conversation), so a long, stable system prompt stays cached across the day instead of being reprocessed and re-billed on every turn. See [Text Generation / Prompt Override](./docs/configuration/text-generation.md#️-prompt-override).
+
+- (**Feature**) Wire up the rest of Venice's sampling and reasoning controls: top-level `top_p`, `frequency_penalty`, `presence_penalty`, `repetition_penalty`, and `reasoning_effort`; `verbosity` in the `venice_parameters` bag; and a `show_reasoning` toggle that appends the model's reasoning to the reply (off by default). See the [Venice configuration reference](./docs/providers.md#venice).
+
+- (**Feature**) Render Venice web-search citations as readable `[n]` references with a `Sources:` list of links, instead of leaving Venice's raw `^n^` superscripts in the reply.
+
+- (**Security**) Escape citation titles and validate citation URLs before rendering them, and drop user-supplied filenames from error messages, so a hostile web page or a crafted filename cannot inject a spoofed link into the bot's reply.
+
+
 # (2026-06-21) Version 1.22.0
 
 - (**Feature**) Add a native [Venice](https://venice.ai) provider with [🖌️ image-generation](./docs/features.md#️-image-creation) (incl. editing), [💬 text-generation](./docs/features.md#-text-generation) (incl. vision), [🗣️ text-to-speech](./docs/features.md#️-text-to-speech), [🦻 speech-to-text](./docs/features.md#-speech-to-text), and Venice's native web search via the full `venice_parameters` knob set. Unlike the [OpenAI-compatible](./docs/providers.md#openai-compatible) path (which drops images and can't reach Venice's audio or native image endpoints), it talks to Venice's API directly, using the knob-rich native `/image/generate` and `/image/edit` endpoints. See the [Venice provider docs](./docs/providers.md#venice).

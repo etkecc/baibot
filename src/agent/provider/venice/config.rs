@@ -61,6 +61,39 @@ pub struct TextGenerationConfig {
     #[serde(default)]
     pub max_context_tokens: u32,
 
+    /// Sampling and reasoning knobs that live at the top level of Venice's `/chat/completions`
+    /// body, not inside the `venice_parameters` bag. Venice silently ignores a top-level knob
+    /// placed in the bag, so these sit here as siblings and map straight to top-level wire fields
+    /// in `chat.rs`. Each is omitted from the request when unset.
+    #[serde(default)]
+    pub top_p: Option<f32>,
+
+    #[serde(default)]
+    pub frequency_penalty: Option<f32>,
+
+    #[serde(default)]
+    pub presence_penalty: Option<f32>,
+
+    #[serde(default)]
+    pub repetition_penalty: Option<f32>,
+
+    #[serde(default)]
+    pub reasoning_effort: Option<String>,
+
+    /// Prompt-cache retention window (`default`, `extended`, or `24h`). This carries a named
+    /// default rather than a bare `#[serde(default)]` (which would yield `None`), so a config that
+    /// omits the key still ships `24h` and keeps caching on. Caching is the per-deployment cost
+    /// lever, so the omitted-key case must not silently disable it. The value here must agree with
+    /// the `Default` impl below.
+    #[serde(default = "default_prompt_cache_retention")]
+    pub prompt_cache_retention: Option<String>,
+
+    /// When set, the model's `reasoning_content` (its thinking) is appended to the reply. Off by
+    /// default to match today's `strip_thinking_response: true` behavior, so existing deployments
+    /// see no change.
+    #[serde(default)]
+    pub show_reasoning: bool,
+
     /// Venice-specific request knobs, serialized 1:1 into the `venice_parameters` bag on the
     /// wire. Any unset field is omitted, so Venice applies its own server-side default.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -79,6 +112,16 @@ impl Default for TextGenerationConfig {
             // Matches Venice's own `availableContextTokens` (131072) and the non-OpenAI sibling
             // providers (ollama/localai/mistral all default to 128_000).
             max_context_tokens: 128_000,
+            // Sampling knobs stay None so Venice applies its own server-side default. Caching is
+            // the one exception: retention defaults to 24h here so a programmatic default caches
+            // out of the box, agreeing with the `#[serde(default = ...)]` on the field.
+            top_p: None,
+            frequency_penalty: None,
+            presence_penalty: None,
+            repetition_penalty: None,
+            reasoning_effort: None,
+            prompt_cache_retention: default_prompt_cache_retention(),
+            show_reasoning: false,
             // A usable starting point, not an everything-set dump: only these three are sent;
             // every other knob stays None so Venice applies its own default (omitting != false).
             venice_parameters: Some(VeniceParameters {
@@ -93,6 +136,13 @@ impl Default for TextGenerationConfig {
 
 fn default_text_model_id() -> String {
     "kimi-k2-5".to_owned()
+}
+
+/// Defaults prompt-cache retention to 24h so caching is on unless a config explicitly opts out.
+/// A bare `#[serde(default)]` would deserialize an omitted key to `None`, which disables caching;
+/// this keeps the cost lever engaged for configs that never mention it.
+fn default_prompt_cache_retention() -> Option<String> {
+    Some("24h".to_owned())
 }
 
 /// The full `venice_parameters` knob set, mirroring Venice's `ChatCompletionRequest`
@@ -133,6 +183,11 @@ pub struct VeniceParameters {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub disable_thinking: Option<bool>,
+
+    /// Response verbosity (`low`, `medium`, `high`). Venice accepts this both top-level and inside
+    /// the bag; it lives here so the top-level config stays lean, and Venice reads it from the bag.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verbosity: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

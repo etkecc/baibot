@@ -101,6 +101,8 @@ Prompts may contain the following **placeholder variables** which will be replac
 
 💡 `{{ baibot_now_utc }}` changes as time goes on, which prevents [prompt caching](https://platform.openai.com/docs/guides/prompt-caching) from working. It's better to use `{{ baibot_conversation_start_time_utc }}` in prompts, as its value doesn't change yet still orients the bot to the current date/time.
 
+💡 On the [Venice provider](../providers.md#venice), baibot derives the prompt-cache key from the system prompt and the conversation start time, both stable for the life of a conversation, and ships `prompt_cache_retention: 24h` by default. A stable system prompt then stays cached across the whole conversation instead of being reprocessed (and re-billed) on every turn.
+
 Here's a prompt that combines some of the above variables:
 
 > You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time of this conversation's start is: {{ baibot_conversation_start_time_utc }}."
