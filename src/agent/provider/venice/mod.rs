@@ -3,6 +3,7 @@ mod chat;
 mod config;
 mod controller;
 mod images;
+mod recovery;
 mod utils;
 mod wire;
 
