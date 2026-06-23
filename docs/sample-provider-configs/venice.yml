@@ -6,6 +6,24 @@ text_generation:
   temperature: 1.0
   max_response_tokens: 4096
   max_context_tokens: 128000
+  # Prompt caching: how long Venice keeps the prompt prefix cached. "default", "extended", or "24h".
+  # "24h" (shipped by default) makes a long, stable system prompt cheap across a day of conversations.
+  prompt_cache_retention: 24h
+  # Top-level sampling and reasoning knobs (uncomment to override Venice's default):
+  # Nucleus sampling, 0.0-1.0 (an alternative to temperature).
+  # top_p: 0.9
+  # Penalize tokens by how often they have already appeared, -2.0-2.0.
+  # frequency_penalty: 0.0
+  # Penalize tokens that have appeared at all, -2.0-2.0.
+  # presence_penalty: 0.0
+  # Penalize repetition; values above 1.0 discourage repeats.
+  # repetition_penalty: 1.0
+  # Reasoning budget for models that support it: low, medium, high.
+  # reasoning_effort: medium
+  # Append the model's reasoning below the answer as a collapsible "💭 Reasoning" block (folded by
+  # default). Reads a field separate from the answer text, so it works alongside
+  # strip_thinking_response (which only strips <think> blocks from the answer).
+  # show_reasoning: true
   # Venice-specific request parameters. Only the keys present below are sent to Venice; omit a
   # key to fall back to Venice's own default. Omitting a knob is NOT the same as setting it to
   # `false` — `false` actively sends `false`.
@@ -24,6 +42,8 @@ text_generation:
     # return_search_results_as_documents: true
     # enable_x_search: true
     # disable_thinking: true
+    # Response verbosity for models that support it: low, medium, high.
+    # verbosity: medium
     # character_slug: public-character-id
 speech_to_text:
   model_id: nvidia/parakeet-tdt-0.6b-v3

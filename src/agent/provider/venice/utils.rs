@@ -3,21 +3,26 @@ use crate::conversation::llm::{
 };
 use crate::utils::base64::base64_encode;
 
-use super::wire::{ChatMessage, ContentPart, ImageUrl, MessageContent};
+use super::wire::{ChatMessage, ContentPart, FilePart, ImageUrl, MessageContent};
 
-pub fn convert_llm_messages_to_venice(messages: Vec<LLMMessage>) -> Vec<ChatMessage> {
+/// Venice's documented file-input ceiling is 25MB on the decoded bytes (swagger `file_data`).
+/// We check it here so an oversized file gets a clear message instead of an opaque 413 from the
+/// API; the 413 status branch in `chat.rs` is the backstop if a file slips past this guard.
+const MAX_FILE_BYTES: usize = 25 * 1024 * 1024;
+
+pub fn convert_llm_messages_to_venice(
+    messages: Vec<LLMMessage>,
+) -> anyhow::Result<Vec<ChatMessage>> {
     let mut venice_messages: Vec<ChatMessage> = Vec::with_capacity(messages.len());
 
     for message in messages {
-        if let Some(venice_message) = convert_llm_message_to_venice(message) {
-            venice_messages.push(venice_message);
-        }
+        venice_messages.push(convert_llm_message_to_venice(message)?);
     }
 
-    venice_messages
+    Ok(venice_messages)
 }
 
-fn convert_llm_message_to_venice(message: LLMMessage) -> Option<ChatMessage> {
+fn convert_llm_message_to_venice(message: LLMMessage) -> anyhow::Result<ChatMessage> {
     let role = match message.author {
         LLMAuthor::Prompt => "system",
         LLMAuthor::Assistant => "assistant",
@@ -25,7 +30,7 @@ fn convert_llm_message_to_venice(message: LLMMessage) -> Option<ChatMessage> {
     };
 
     match message.content {
-        LLMMessageContent::Text(text) => Some(ChatMessage {
+        LLMMessageContent::Text(text) => Ok(ChatMessage {
             role: role.to_owned(),
             content: MessageContent::Text(text),
         }),
@@ -38,18 +43,39 @@ fn convert_llm_message_to_venice(message: LLMMessage) -> Option<ChatMessage> {
                 base64_encode(&image_details.data)
             );
 
-            Some(ChatMessage {
+            Ok(ChatMessage {
                 role: role.to_owned(),
                 content: MessageContent::Parts(vec![ContentPart::ImageUrl {
                     image_url: ImageUrl { url: data_uri },
                 }]),
             })
         }
-        LLMMessageContent::File(_file_details) => {
-            tracing::warn!(
-                "The Venice provider does not support file content. This file message will be skipped."
+        LLMMessageContent::File(file_details) => {
+            // Inline the file as a base64 data URI in a `file` content part. This is the input
+            // type the openai_compat provider drops; baibot already extracts the bytes upstream.
+            // The message reaches the room, so it carries no user-controlled filename: a crafted
+            // name could otherwise inject markdown (a spoofed link) into the bot's reply.
+            if file_details.data.len() > MAX_FILE_BYTES {
+                return Err(anyhow::anyhow!(
+                    "The attached file is too large for Venice (the limit is 25MB)."
+                ));
+            }
+
+            let data_uri = format!(
+                "data:{};base64,{}",
+                file_details.mime,
+                base64_encode(&file_details.data)
             );
-            None
+
+            Ok(ChatMessage {
+                role: role.to_owned(),
+                content: MessageContent::Parts(vec![ContentPart::File {
+                    file: FilePart {
+                        file_data: data_uri,
+                        filename: Some(file_details.filename()),
+                    },
+                }]),
+            })
         }
     }
 }

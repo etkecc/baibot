@@ -26,6 +26,27 @@ pub struct ChatCompletionRequest {
     pub max_completion_tokens: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub top_p: Option<f32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frequency_penalty: Option<f32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub presence_penalty: Option<f32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repetition_penalty: Option<f32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning_effort: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prompt_cache_key: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prompt_cache_retention: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub venice_parameters: Option<VeniceParameters>,
 }
 
@@ -37,8 +58,8 @@ pub struct ChatMessage {
 }
 
 /// A message body is either a bare string or a list of content parts. Venice accepts both; we
-/// send the parts form only when a message carries an image (baibot keeps text and images in
-/// separate messages, so a parts list only ever holds images in v1).
+/// send the parts form when a message carries an image or a file (baibot keeps text, images, and
+/// files in separate messages, so a parts list holds a single image part or file part).
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum MessageContent {
@@ -50,6 +71,7 @@ pub enum MessageContent {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ContentPart {
     ImageUrl { image_url: ImageUrl },
+    File { file: FilePart },
 }
 
 #[derive(Debug, Serialize)]
@@ -58,12 +80,26 @@ pub struct ImageUrl {
     pub url: String,
 }
 
-/// Standard OpenAI-shaped chat completion response. We only read `choices[0].message.content`;
-/// when web search is on, Venice inlines citations as `^n^` superscripts in that content and we
-/// pass it through untouched.
+#[derive(Debug, Serialize)]
+pub struct FilePart {
+    /// A `data:<mime>;base64,<data>` URI carrying the file bytes inline.
+    pub file_data: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filename: Option<String>,
+}
+
+/// Standard OpenAI-shaped chat completion response. We read `choices[0].message.content` and,
+/// when web search is on, the structured `venice_parameters.web_search_citations` (requested via
+/// `return_search_results_as_documents`) to rewrite the inline `^n^` superscripts into readable
+/// `[n]` references plus a `Sources:` block. `reasoning_content` carries the model's thinking when
+/// the model exposes it; it is appended only when `show_reasoning` is set.
 #[derive(Debug, Deserialize)]
 pub struct ChatCompletionResponse {
     pub choices: Vec<ChatChoice>,
+
+    #[serde(default)]
+    pub venice_parameters: Option<ResponseVeniceParameters>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -75,6 +111,31 @@ pub struct ChatChoice {
 pub struct ResponseMessage {
     #[serde(default)]
     pub content: Option<String>,
+
+    #[serde(default)]
+    pub reasoning_content: Option<String>,
+}
+
+/// The `venice_parameters` envelope on a chat-completion *response*, distinct from the request-side
+/// `VeniceParameters` bag. Only the citation list is read; other response-side fields are ignored.
+#[derive(Debug, Deserialize, Default)]
+pub struct ResponseVeniceParameters {
+    #[serde(default)]
+    pub web_search_citations: Vec<WebSearchCitation>,
+}
+
+/// Only the `title` and `url` are read (for rendering the `Sources:` block). Venice also returns
+/// `content` and `date` per citation; serde drops them, the same way the response structs above
+/// ignore the response fields baibot does not use. Both fields default to empty so a single
+/// citation that arrives without one (schema drift on scraped results) degrades gracefully in the
+/// rendered list instead of failing the whole response deserialization.
+#[derive(Debug, Deserialize)]
+pub struct WebSearchCitation {
+    #[serde(default)]
+    pub title: String,
+
+    #[serde(default)]
+    pub url: String,
 }
 
 /// `/audio/transcriptions` response. We read `text`; the optional `duration`/`timestamps` the
