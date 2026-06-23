@@ -1,3 +1,10 @@
+# (2026-06-23) Version 1.23.1
+
+- (**Bugfix**) The [Venice](https://venice.ai) provider now auto-recovers when a model rejects an optional knob it does not support. Venice's request body is strict (`additionalProperties: false`), so a model that lacks `prompt_cache_retention`, `reasoning_effort`, or `prompt_cache_key` rejected the whole request with a `400 Bad Request` — breaking agent creation and every reply. baibot now drops the unsupported field and retries, remembering the rejection per model so later requests skip it without a wasted round-trip. Only these meaning-preserving fields are dropped; sampling knobs that change the output (`temperature`, `top_p`, the penalties) are never silently removed and still surface as an error.
+
+- (**Improvement**) When Venice rejects a request with a `400 Bad Request`, baibot now surfaces Venice's actual error message (e.g. `Extra inputs are not permitted, field: 'prompt_cache_retention'`) instead of a generic "configuration does not result in a working agent". This makes agent-creation failures self-explanatory. Other error statuses keep their bodies redacted, since those can carry account or rate-limit details.
+
+
 # (2026-06-23) Version 1.23.0
 
 - (**Feature**) The [Venice](https://venice.ai) provider now accepts file inputs (PDF, DOCX, and other documents, up to 25MB), the same way it already handled images. This makes Venice the second provider after OpenAI to accept files; the others (Anthropic and the OpenAI-compatible providers) skip them. See the [text-generation feature docs](./docs/features.md#-text-generation).

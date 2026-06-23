@@ -13,11 +13,16 @@ use crate::conversation::llm::{
 
 use super::super::ControllerTrait;
 use super::config::Config;
+use super::recovery::UnsupportedFieldsCache;
 
 #[derive(Debug, Clone)]
 pub struct Controller {
     config: Config,
     http: reqwest::Client,
+    // Per-model record of chat fields this Venice deployment has rejected as unsupported, learned at
+    // runtime. `Arc`-backed inside, so the `Clone` derive shares one cache across all clones of an
+    // agent's controller.
+    unsupported_fields: UnsupportedFieldsCache,
 }
 
 impl Controller {
@@ -30,7 +35,11 @@ impl Controller {
             .build()
             .unwrap_or_else(|_| reqwest::Client::new());
 
-        Self { config, http }
+        Self {
+            config,
+            http,
+            unsupported_fields: UnsupportedFieldsCache::default(),
+        }
     }
 }
 
@@ -62,7 +71,14 @@ impl ControllerTrait for Controller {
         conversation: LLMConversation,
         params: TextGenerationParams,
     ) -> anyhow::Result<TextGenerationResult> {
-        super::chat::generate_text(&self.config, &self.http, conversation, params).await
+        super::chat::generate_text(
+            &self.config,
+            &self.http,
+            &self.unsupported_fields,
+            conversation,
+            params,
+        )
+        .await
     }
 
     async fn speech_to_text(

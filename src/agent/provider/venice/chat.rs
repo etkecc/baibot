@@ -19,6 +19,7 @@ use super::wire::{ChatCompletionRequest, ChatCompletionResponse, WebSearchCitati
 pub async fn generate_text(
     config: &Config,
     http: &reqwest::Client,
+    unsupported: &super::recovery::UnsupportedFieldsCache,
     conversation: LLMConversation,
     params: TextGenerationParams,
 ) -> anyhow::Result<TextGenerationResult> {
@@ -98,7 +99,7 @@ pub async fn generate_text(
             vp
         });
 
-    let request = ChatCompletionRequest {
+    let mut request = ChatCompletionRequest {
         model: text_generation_config.model_id.clone(),
         messages,
         temperature: Some(temperature),
@@ -117,40 +118,82 @@ pub async fn generate_text(
 
     let url = format!("{}/chat/completions", config.base_url.trim_end_matches('/'));
 
-    tracing::trace!(
-        model = text_generation_config.model_id,
-        messages_count = request.messages.len(),
-        "Sending Venice chat completion API request"
-    );
+    let model_id = text_generation_config.model_id.clone();
 
-    let response = http
-        .post(&url)
-        .bearer_auth(&config.api_key)
-        .json(&request)
-        .send()
-        .await?;
+    // Proactively drop fields this model has already rejected earlier in this process, so a known
+    // mismatch costs zero wasted round-trips after the first discovery. Venice's body is
+    // `additionalProperties: false`, so sending a known-unsupported field would 400 again.
+    for field in unsupported.known_for(&model_id) {
+        super::recovery::strip_droppable_field(&mut request, &field);
+    }
 
-    let status = response.status();
-    if !status.is_success() {
-        // Log the body server-side for debugging (Venice explains a rejected strict body there),
-        // but keep it OUT of the returned error: that error surfaces in the Matrix room, and the
-        // body can carry account / rate-limit details that shouldn't reach room members.
+    // Send with bounded auto-recovery. When Venice 400s because a model does not support an optional
+    // knob, it names the field (`field: '...'`); if that field is one we may safely drop, we strip
+    // it, remember the rejection for this model, and retry. The loop is bounded: each retry clears a
+    // distinct droppable field (strip returns false once it is gone), so after at most
+    // `DROPPABLE_FIELDS.len()` retries the request either succeeds or surfaces the error.
+    let response = loop {
+        tracing::trace!(
+            model = model_id,
+            messages_count = request.messages.len(),
+            "Sending Venice chat completion API request"
+        );
+
+        let response = http
+            .post(&url)
+            .bearer_auth(&config.api_key)
+            .json(&request)
+            .send()
+            .await?;
+
+        let status = response.status();
+        if status.is_success() {
+            break response;
+        }
+
+        // Always log the body server-side: Venice explains a rejected strict body there.
         let body = response.text().await.unwrap_or_default();
         tracing::warn!(%status, body, "Venice chat completion request failed");
 
+        // Recover from a strict-body 400 over an unsupported optional knob: strip the named field
+        // and retry. Only fields in `DROPPABLE_FIELDS` are eligible, so a meaning-bearing knob (a
+        // sampling parameter) is never silently dropped; that case falls through to surface below.
+        if status == reqwest::StatusCode::BAD_REQUEST
+            && let Some(field) = super::recovery::parse_rejected_field(&body)
+            && super::recovery::strip_droppable_field(&mut request, &field)
+        {
+            unsupported.record(&model_id, &field);
+            tracing::info!(
+                model = model_id,
+                field,
+                "Venice rejected an unsupported field; dropping it and retrying"
+            );
+            continue;
+        }
+
         // A 413 almost always means an attached file pushed the request past Venice's size limit.
-        // Surface a clear, actionable message rather than the opaque status; the raw body still
-        // stays out of the room for the reason above.
         if status == reqwest::StatusCode::PAYLOAD_TOO_LARGE {
             return Err(anyhow::anyhow!(
                 "The request was too large for Venice, most likely an attached file over the 25MB limit."
             ));
         }
 
+        // A 400 is a complaint about the request baibot built, so the body is safe and useful to
+        // surface: it tells the operator (e.g. at agent-create time) exactly which field or value
+        // Venice rejected, instead of an opaque status. Other statuses keep the body OUT of the
+        // returned error, since it can carry account / rate-limit details that shouldn't reach the
+        // room.
+        if status == reqwest::StatusCode::BAD_REQUEST {
+            return Err(anyhow::anyhow!(
+                "Venice rejected the request (400 Bad Request): {}",
+                super::recovery::extract_error_message(&body)
+            ));
+        }
+
         return Err(anyhow::anyhow!(
             "Venice chat completion request failed with status {status}"
         ));
-    }
+    };
 
     let response: ChatCompletionResponse = response.json().await?;
 
