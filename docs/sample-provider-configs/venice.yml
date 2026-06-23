@@ -20,8 +20,9 @@ text_generation:
   # repetition_penalty: 1.0
   # Reasoning budget for models that support it: low, medium, high.
   # reasoning_effort: medium
-  # Append the model's reasoning below the answer. Reads a field separate from the answer text, so
-  # it works alongside strip_thinking_response (which only strips <think> blocks from the answer).
+  # Append the model's reasoning below the answer as a collapsible "💭 Reasoning" block (folded by
+  # default). Reads a field separate from the answer text, so it works alongside
+  # strip_thinking_response (which only strips <think> blocks from the answer).
   # show_reasoning: true
   # Venice-specific request parameters. Only the keys present below are sent to Venice; omit a
   # key to fall back to Venice's own default. Omitting a knob is NOT the same as setting it to

@@ -115,10 +115,7 @@ pub async fn generate_text(
         venice_parameters,
     };
 
-    let url = format!(
-        "{}/chat/completions",
-        config.base_url.trim_end_matches('/')
-    );
+    let url = format!("{}/chat/completions", config.base_url.trim_end_matches('/'));
 
     tracing::trace!(
         model = text_generation_config.model_id,
@@ -201,6 +198,13 @@ pub(super) fn derive_prompt_cache_key(prompt_text: &str, conversation_start_time
 /// `strip_thinking_response`, which only strips inline `<think>` blocks from `content`), so reading
 /// it here is independent of that knob. Default-off matches today's behavior: thinking never reaches
 /// a room that did not ask for it.
+///
+/// The thinking renders as a Matrix-native collapsible `<details>` block: folded by default, one
+/// click to expand, so it stays out of the way of the answer instead of dumping a wall of reasoning
+/// inline. This survives the send path: the reply goes through markdown (`send_text_markdown`),
+/// whose pulldown-cmark pass writes raw HTML verbatim rather than escaping it, and ruma's HTML
+/// sanitizer allow-lists `<details>`/`<summary>`. Clients that do not render `<details>` degrade to
+/// showing the summary and reasoning inline, so nothing is lost there either.
 pub(super) fn append_reasoning(
     text: String,
     reasoning_content: Option<String>,
@@ -212,7 +216,13 @@ pub(super) fn append_reasoning(
 
     match reasoning_content {
         Some(reasoning) if !reasoning.trim().is_empty() => {
-            format!("{text}\n\n---\n\n*Reasoning:*\n\n{reasoning}")
+            // The blank lines around the trimmed reasoning keep it a separate markdown block from
+            // the surrounding `<details>`/`</details>` HTML blocks, so the reasoning itself still
+            // renders as markdown (lists, code, emphasis) inside the collapsible.
+            let reasoning = reasoning.trim();
+            format!(
+                "{text}\n\n<details><summary>💭 Reasoning</summary>\n\n{reasoning}\n\n</details>"
+            )
         }
         _ => text,
     }

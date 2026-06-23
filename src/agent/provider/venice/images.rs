@@ -185,8 +185,6 @@ fn image_format_to_mime_type(format: Option<&str>) -> mxlink::mime::Mime {
         "jpeg" | "jpg" => mxlink::mime::IMAGE_JPEG,
         "png" => mxlink::mime::IMAGE_PNG,
         // No mxlink::mime constant for webp; parse it, falling back to PNG on any surprise value.
-        _ => "image/webp"
-            .parse()
-            .unwrap_or(mxlink::mime::IMAGE_PNG),
+        _ => "image/webp".parse().unwrap_or(mxlink::mime::IMAGE_PNG),
     }
 }

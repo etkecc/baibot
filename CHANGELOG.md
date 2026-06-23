@@ -4,7 +4,7 @@
 
 - (**Feature**) Add prompt caching to the Venice provider, on by default (`prompt_cache_retention: 24h`). baibot derives the cache key from the system prompt and the conversation start time (both fixed for the life of a conversation), so a long, stable system prompt stays cached across the day instead of being reprocessed and re-billed on every turn. See [Text Generation / Prompt Override](./docs/configuration/text-generation.md#️-prompt-override).
 
-- (**Feature**) Wire up the rest of Venice's sampling and reasoning controls: top-level `top_p`, `frequency_penalty`, `presence_penalty`, `repetition_penalty`, and `reasoning_effort`; `verbosity` in the `venice_parameters` bag; and a `show_reasoning` toggle that appends the model's reasoning to the reply (off by default). See the [Venice configuration reference](./docs/providers.md#venice).
+- (**Feature**) Wire up the rest of Venice's sampling and reasoning controls: top-level `top_p`, `frequency_penalty`, `presence_penalty`, `repetition_penalty`, and `reasoning_effort`; `verbosity` in the `venice_parameters` bag; and a `show_reasoning` toggle that appends the model's reasoning to the reply as a collapsible, folded-by-default `💭 Reasoning` block (off by default). See the [Venice configuration reference](./docs/providers.md#venice).
 
 - (**Feature**) Render Venice web-search citations as readable `[n]` references with a `Sources:` list of links, instead of leaving Venice's raw `^n^` superscripts in the reply.
 

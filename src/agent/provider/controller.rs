@@ -184,9 +184,7 @@ impl ControllerTrait for ControllerType {
             ControllerType::Anthropic(controller) => {
                 controller.generate_image(prompt, params).await
             }
-            ControllerType::Venice(controller) => {
-                controller.generate_image(prompt, params).await
-            }
+            ControllerType::Venice(controller) => controller.generate_image(prompt, params).await,
         }
     }
 

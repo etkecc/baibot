@@ -10,7 +10,9 @@ use super::wire::{ChatMessage, ContentPart, FilePart, ImageUrl, MessageContent};
 /// API; the 413 status branch in `chat.rs` is the backstop if a file slips past this guard.
 const MAX_FILE_BYTES: usize = 25 * 1024 * 1024;
 
-pub fn convert_llm_messages_to_venice(messages: Vec<LLMMessage>) -> anyhow::Result<Vec<ChatMessage>> {
+pub fn convert_llm_messages_to_venice(
+    messages: Vec<LLMMessage>,
+) -> anyhow::Result<Vec<ChatMessage>> {
     let mut venice_messages: Vec<ChatMessage> = Vec::with_capacity(messages.len());
 
     for message in messages {

@@ -203,7 +203,7 @@ Every parameter below is optional unless marked otherwise. Omitting a knob lets 
 | `repetition_penalty` | Penalize repetition. Values above `1.0` discourage repeats. | — |
 | `reasoning_effort` | Reasoning budget for models that support it: `low`, `medium`, `high`. | — |
 | `prompt_cache_retention` | How long Venice keeps the prompt prefix cached: `default`, `extended`, or `24h`. `24h` is the lever that makes a long, stable system prompt cheap across a day of conversations. | `24h` |
-| `show_reasoning` | Append the model's reasoning (its `reasoning_content`) below the answer. Reads a field separate from the answer text, so it works regardless of `strip_thinking_response`. | `false` |
+| `show_reasoning` | Append the model's reasoning (its `reasoning_content`) below the answer, as a collapsible `💭 Reasoning` block that stays folded until clicked. Reads a field separate from the answer text, so it works regardless of `strip_thinking_response`. | `false` |
 
 **`text_generation.venice_parameters`** — Venice-specific request knobs sent in the `venice_parameters` bag. Set any of them to override Venice's behavior. The `Default` column shows the value baibot's sample config ships; a `—` means the knob is left unset, so Venice's own default applies.
 

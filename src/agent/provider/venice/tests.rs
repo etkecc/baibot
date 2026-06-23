@@ -57,7 +57,10 @@ speech_to_text:
         !json.contains("character_slug"),
         "an unset knob must be omitted entirely: {json}"
     );
-    assert!(!json.contains("null"), "no nulls belong in the body: {json}");
+    assert!(
+        !json.contains("null"),
+        "no nulls belong in the body: {json}"
+    );
 }
 
 #[test]
@@ -97,8 +100,7 @@ fn converts_text_image_and_file_to_content_parts() {
         },
     ];
 
-    let converted =
-        convert_llm_messages_to_venice(messages).expect("conversion should succeed");
+    let converted = convert_llm_messages_to_venice(messages).expect("conversion should succeed");
 
     // Text, image, AND file all survive now: the file is no longer warn-skipped.
     assert_eq!(converted.len(), 3);
@@ -202,7 +204,10 @@ fn speech_request_serializes_voice_and_omits_unset() {
         !json.contains("temperature"),
         "an unset knob must be omitted (not null): {json}"
     );
-    assert!(!json.contains("null"), "no nulls belong in the body: {json}");
+    assert!(
+        !json.contains("null"),
+        "no nulls belong in the body: {json}"
+    );
 }
 
 #[test]
@@ -245,7 +250,10 @@ fn generate_image_request_pins_flags_and_omits_unset() {
         !json.contains("cfg_scale"),
         "an unset knob must be omitted: {json}"
     );
-    assert!(!json.contains("null"), "no nulls belong in the body: {json}");
+    assert!(
+        !json.contains("null"),
+        "no nulls belong in the body: {json}"
+    );
 }
 
 #[test]
@@ -262,10 +270,7 @@ fn edit_image_request_carries_model_and_base64_image() {
 
     let json = serde_json::to_string(&request).expect("serialize EditImageRequest");
 
-    assert!(
-        json.contains("\"model\":\"firered-image-edit\""),
-        "{json}"
-    );
+    assert!(json.contains("\"model\":\"firered-image-edit\""), "{json}");
     assert!(
         json.contains("\"image\":\"aGVsbG8=\""),
         "the base64 image string must be present: {json}"
@@ -504,10 +509,14 @@ fn reasoning_is_appended_only_when_show_reasoning_is_set() {
     let off = append_reasoning(base.clone(), Some("secret thinking".to_owned()), false);
     assert_eq!(off, "the answer");
 
-    // On: thinking is appended below the answer.
-    let on = append_reasoning(base.clone(), Some("visible thinking".to_owned()), true);
-    assert!(on.contains("the answer"));
-    assert!(on.contains("visible thinking"));
+    // On: thinking is appended below the answer in a collapsible <details> block (folded by
+    // default, expandable in clients that support it).
+    let on = append_reasoning(base.clone(), Some("  visible thinking  ".to_owned()), true);
+    assert!(on.starts_with("the answer"));
+    assert!(on.contains("<details><summary>💭 Reasoning</summary>"));
+    assert!(on.contains("</details>"));
+    // The reasoning sits as its own markdown block (blank lines around it) and is trimmed.
+    assert!(on.contains("\n\nvisible thinking\n\n"));
 
     // On but empty or missing reasoning: nothing is appended.
     assert_eq!(
