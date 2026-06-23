@@ -1,4 +1,4 @@
-# (2026-06-22) Version 1.23.0
+# (2026-06-23) Version 1.23.0
 
 - (**Feature**) The [Venice](https://venice.ai) provider now accepts file inputs (PDF, DOCX, and other documents, up to 25MB), the same way it already handled images. This makes Venice the second provider after OpenAI to accept files; the others (Anthropic and the OpenAI-compatible providers) skip them. See the [text-generation feature docs](./docs/features.md#-text-generation).
 
@@ -9,6 +9,8 @@
 - (**Feature**) Render Venice web-search citations as readable `[n]` references with a `Sources:` list of links, instead of leaving Venice's raw `^n^` superscripts in the reply.
 
 - (**Security**) Escape citation titles and validate citation URLs before rendering them, and drop user-supplied filenames from error messages, so a hostile web page or a crafted filename cannot inject a spoofed link into the bot's reply.
+
+- (**Bugfix**) The [OpenAI-compatible](./docs/providers.md#openai-compatible) provider now trusts the system CA store (honoring `SSL_CERT_FILE`), so endpoints served behind a private/internal CA (FreeIPA, organization PKI) no longer fail the TLS handshake with `invalid peer certificate: UnknownIssuer`. Fixed upstream in `etke_openai_api_rust` 0.1.10. Thanks to [@shaba](https://github.com/shaba) for the report in [#188](https://github.com/etkecc/baibot/pull/188).
 
 
 # (2026-06-21) Version 1.22.0
