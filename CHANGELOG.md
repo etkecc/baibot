@@ -1,4 +1,4 @@
-# (2026-06-23) Version 1.23.1
+# (2026-06-24) Version 1.23.1
 
 - (**Bugfix**) The [Venice](https://venice.ai) provider now auto-recovers when a model rejects an optional knob it does not support. Venice's request body is strict (`additionalProperties: false`), so a model that lacks `prompt_cache_retention`, `reasoning_effort`, or `prompt_cache_key` rejected the whole request with a `400 Bad Request` — breaking agent creation and every reply. baibot now drops the unsupported field and retries, remembering the rejection per model so later requests skip it without a wasted round-trip. Only these meaning-preserving fields are dropped; sampling knobs that change the output (`temperature`, `top_p`, the penalties) are never silently removed and still surface as an error.
 
