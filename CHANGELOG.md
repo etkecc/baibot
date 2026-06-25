@@ -1,3 +1,10 @@
+# (2026-06-25) Version 1.24.0
+
+- (**Feature**) Add an opt-in 💭 **thinking notice** for text generation. When enabled, a slow response (for example, from a reasoning model that runs for minutes) posts a "thinking…" placeholder after a short delay, refreshes it periodically with varying flavor text, and then edits that same message into the final answer, so a long wait no longer looks like a stuck bot. The notice is **disabled by default** and configurable per-room or globally via `text-generation set-thinking-notice-enabled true`. Fast responses (under the delay threshold) never show a placeholder. See the [text-generation configuration docs](./docs/configuration/text-generation.md#-thinking-notice).
+
+- (**Bugfix**) The [Venice](https://venice.ai) unsupported-field auto-recovery (added in 1.23.1) now actually remembers rejections across messages. The cache lived on the provider's controller, which is rebuilt on every message for room-local and global agents, so each turn started with an empty cache, re-sent the unsupported field, and logged the same `400 Bad Request` warning again. The cache is now process-global (keyed per Venice deployment), so a field a model rejects is dropped proactively on every later request instead of being re-discovered each turn.
+
+
 # (2026-06-24) Version 1.23.1
 
 - (**Bugfix**) The [Venice](https://venice.ai) provider now auto-recovers when a model rejects an optional knob it does not support. Venice's request body is strict (`additionalProperties: false`), so a model that lacks `prompt_cache_retention`, `reasoning_effort`, or `prompt_cache_key` rejected the whole request with a `400 Bad Request` — breaking agent creation and every reply. baibot now drops the unsupported field and retries, remembering the rejection per model so later requests skip it without a wasted round-trip. Only these meaning-preserving fields are dropped; sampling knobs that change the output (`temperature`, `top_p`, the penalties) are never silently removed and still surface as an error.

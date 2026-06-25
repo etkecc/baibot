@@ -57,6 +57,15 @@ This feature relies on [tokenization](https://en.wikipedia.org/wiki/Large_langua
 This setting is **disabled by default**, but can be enabled via `!bai config room text-generation set-context-management-enabled true` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings)).
 
 
+### 💭 Thinking Notice
+
+The bot can post a 💭 **"thinking…" notice** while text generation is running, useful for slow models (for example, reasoning models that may run for minutes) where the response would otherwise look stuck.
+
+When enabled, a placeholder message appears only after a short delay (so fast responses get no notice), updates periodically with varying status text, and is then edited in place to become the final answer.
+
+This setting is **disabled by default**, but can be enabled via `!bai config room text-generation set-thinking-notice-enabled true` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings)).
+
+
 ### 👤 Sender Context Mode
 
 In multi-user rooms, it may be useful for the model to know which participant sent each message in the conversation context.

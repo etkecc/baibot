@@ -136,6 +136,20 @@ impl RoomConfigContext {
             .unwrap_or(false)
     }
 
+    pub fn text_generation_thinking_notice_enabled(&self) -> bool {
+        self.room_config
+            .settings
+            .text_generation
+            .thinking_notice_enabled
+            .or({
+                self.global_config
+                    .fallback_room_settings
+                    .text_generation
+                    .thinking_notice_enabled
+            })
+            .unwrap_or(false)
+    }
+
     pub fn text_generation_sender_context_mode(&self) -> TextGenerationSenderContextMode {
         self.room_config
             .settings

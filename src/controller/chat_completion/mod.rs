@@ -30,6 +30,13 @@ use crate::{
     entity::MessageContext,
 };
 
+/// How long text generation must run before the first "thinking…" placeholder appears.
+/// Fast responses (under this threshold) never get a placeholder.
+const THINKING_NOTICE_FIRST_DELAY: std::time::Duration = std::time::Duration::from_secs(3);
+
+/// How often the "thinking…" placeholder is refreshed once it has appeared.
+const THINKING_NOTICE_INTERVAL: std::time::Duration = std::time::Duration::from_secs(10);
+
 #[derive(Debug, PartialEq)]
 pub enum ChatCompletionControllerType {
     // Invoked via a command prefix (e.g. `!bai Hello!`)
@@ -520,6 +527,16 @@ async fn handle_stage_text_generation(
         conversation.start_time(),
     );
 
+    // Cloned only when the thinking-notice is enabled; the original is moved into `params` below.
+    let notice_prompt_variables = if message_context
+        .room_config_context()
+        .text_generation_thinking_notice_enabled()
+    {
+        Some(prompt_variables.clone())
+    } else {
+        None
+    };
+
     let params = TextGenerationParams {
         context_management_enabled: message_context
             .room_config_context()
@@ -536,10 +553,73 @@ async fn handle_stage_text_generation(
         prompt_variables,
     };
 
-    let result = controller
-        .generate_text(conversation, params)
-        .instrument(span)
-        .await;
+    // When the thinking-notice is enabled, race generation against a timer that posts and then
+    // periodically edits a "thinking…" placeholder. `biased;` makes generation win a tie, and the
+    // loop exits the instant generation resolves, so there is no detached task and no late edit can
+    // ever clobber the real answer. `placeholder` is the event we must finalize in every exit path.
+    let (result, placeholder) = if let Some(notice_prompt_variables) = notice_prompt_variables {
+        let generation = controller.generate_text(conversation, params).instrument(span);
+        tokio::pin!(generation);
+
+        let mut placeholder: Option<OwnedEventId> = None;
+        // Seed the flavor sequence per-generation so different turns don't all open on the same
+        // line; the monotonic increment then guarantees consecutive notices differ.
+        let mut notice_sequence: usize = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|since| since.subsec_nanos() as usize)
+            .unwrap_or(0);
+        let mut tick = tokio::time::interval_at(
+            tokio::time::Instant::now() + THINKING_NOTICE_FIRST_DELAY,
+            THINKING_NOTICE_INTERVAL,
+        );
+        // If an edit runs long, hold ~INTERVAL spacing rather than bursting the missed ticks.
+        tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+
+        let result = loop {
+            tokio::select! {
+                biased;
+                generation_result = &mut generation => break generation_result,
+                _ = tick.tick() => {
+                    let message = notice_prompt_variables.format(
+                        strings::thinking::pick_message(start_time.elapsed(), notice_sequence),
+                    );
+                    notice_sequence = notice_sequence.wrapping_add(1);
+
+                    match &placeholder {
+                        None => {
+                            placeholder = bot
+                                .messaging()
+                                .send_text_markdown_no_fail_quietly(
+                                    message_context.room(),
+                                    message,
+                                    response_type.clone(),
+                                )
+                                .await
+                                .map(|response| response.event_id);
+                        }
+                        Some(event_id) => {
+                            bot.messaging()
+                                .edit_text_markdown_no_fail(
+                                    message_context.room(),
+                                    event_id,
+                                    message,
+                                )
+                                .await;
+                        }
+                    }
+                }
+            }
+        };
+
+        (result, placeholder)
+    } else {
+        let result = controller
+            .generate_text(conversation, params)
+            .instrument(span)
+            .await;
+
+        (result, None)
+    };
 
     let duration = std::time::Instant::now().duration_since(start_time);
 
@@ -560,17 +640,20 @@ async fn handle_stage_text_generation(
                 err,
             );
 
-            bot.messaging()
-                .send_error_markdown_no_fail(
-                    message_context.room(),
-                    &strings::agent::error_while_serving_purpose(
-                        agent.identifier(),
-                        &AgentPurpose::TextGeneration,
-                        &err,
-                    ),
-                    response_type,
-                )
-                .await;
+            let error_text = strings::agent::error_while_serving_purpose(
+                agent.identifier(),
+                &AgentPurpose::TextGeneration,
+                &err,
+            );
+
+            finalize_thinking_notice_with_error(
+                bot,
+                message_context,
+                placeholder.as_ref(),
+                &error_text,
+                response_type,
+            )
+            .await;
 
             return None;
         }
@@ -583,26 +666,70 @@ async fn handle_stage_text_generation(
             "Agent returned empty text",
         );
 
-        bot.messaging()
-            .send_error_markdown_no_fail(
-                message_context.room(),
-                &strings::agent::empty_response_returned(agent.identifier()),
-                response_type,
-            )
-            .await;
+        let empty_text = strings::agent::empty_response_returned(agent.identifier());
+
+        finalize_thinking_notice_with_error(
+            bot,
+            message_context,
+            placeholder.as_ref(),
+            &empty_text,
+            response_type,
+        )
+        .await;
 
         return None;
     }
 
-    let send_message_response = bot
-        .messaging()
-        .send_text_markdown_no_fail(message_context.room(), text.clone(), response_type)
-        .await?;
+    // Finalize the answer into a single message. With a placeholder, edit it in place (so the
+    // "thinking…" message becomes the answer); the TTS payload then points at that same event.
+    // If the edit fails, fall back to a fresh send so the real answer is never lost.
+    let event_id = match &placeholder {
+        Some(event_id)
+            if bot
+                .messaging()
+                .edit_text_markdown_no_fail(message_context.room(), event_id, text.clone())
+                .await
+                .is_some() =>
+        {
+            event_id.clone()
+        }
+        _ => {
+            bot.messaging()
+                .send_text_markdown_no_fail(message_context.room(), text.clone(), response_type)
+                .await?
+                .event_id
+        }
+    };
 
-    Some(TextToSpeechEligiblePayload {
-        text,
-        event_id: send_message_response.event_id,
-    })
+    Some(TextToSpeechEligiblePayload { text, event_id })
+}
+
+/// Finalizes a thinking-notice placeholder (if one was posted) with error/notice text, so a
+/// failed or empty generation never leaves an orphaned "thinking…" message behind. With no
+/// placeholder, this is the original behavior: a fresh error notice.
+async fn finalize_thinking_notice_with_error(
+    bot: &Bot,
+    message_context: &MessageContext,
+    placeholder: Option<&OwnedEventId>,
+    text: &str,
+    response_type: MessageResponseType,
+) {
+    match placeholder {
+        Some(event_id) => {
+            bot.messaging()
+                .edit_text_markdown_no_fail(
+                    message_context.room(),
+                    event_id,
+                    crate::utils::status::create_error_message_text(text),
+                )
+                .await;
+        }
+        None => {
+            bot.messaging()
+                .send_error_markdown_no_fail(message_context.room(), text, response_type)
+                .await;
+        }
+    }
 }
 
 async fn handle_stage_speech_to_text_actual_transcribing(

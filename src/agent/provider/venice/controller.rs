@@ -35,10 +35,15 @@ impl Controller {
             .build()
             .unwrap_or_else(|_| reqwest::Client::new());
 
+        // Process-global per-deployment cache rather than a fresh one: dynamic agents rebuild their
+        // controller on every message, so an instance-owned cache would never retain a learned
+        // rejection and the same unsupported field would 400 (and warn) on every turn.
+        let unsupported_fields = UnsupportedFieldsCache::shared_for(&config.base_url);
+
         Self {
             config,
             http,
-            unsupported_fields: UnsupportedFieldsCache::default(),
+            unsupported_fields,
         }
     }
 }
