@@ -33,7 +33,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: just
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v4
 
       # Run the same prek hooks devs run locally; .pre-commit-config.yaml is the
       # source of truth. Tests are a separate step for visible timing.
