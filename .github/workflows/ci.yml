@@ -36,7 +36,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: just
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v4
 
       # Run the exact hook suite developers run locally: file hygiene, `cargo fmt
       # --all -- --check`, and `cargo clippy -- -D warnings`. The hook config in
