@@ -1,8 +1,11 @@
 use mxlink::matrix_sdk::{
     Room,
+    room::edit::EditedContent,
     ruma::{
-        OwnedEventId, api::client::receipt::create_receipt::v3::ReceiptType,
-        events::room::message::OriginalSyncRoomMessageEvent,
+        EventId, OwnedEventId, api::client::receipt::create_receipt::v3::ReceiptType,
+        events::room::message::{
+            OriginalSyncRoomMessageEvent, RoomMessageEventContentWithoutRelation,
+        },
     },
 };
 
@@ -46,6 +49,83 @@ impl Messaging {
                     room_id = format!("{:?}", room.room_id()),
                     ?err,
                     "Failed to send text message to room",
+                );
+                None
+            }
+        }
+    }
+
+    /// Like `send_text_markdown_no_fail`, but logs send failures at `warn` instead of `error`.
+    /// For cosmetic, best-effort sends (the thinking-notice placeholder) where a failure is
+    /// acceptable-impact: the real response still ships, so this must NOT page the team.
+    pub async fn send_text_markdown_no_fail_quietly(
+        &self,
+        room: &Room,
+        message: String,
+        response_type: MessageResponseType,
+    ) -> Option<mxlink::matrix_sdk::ruma::api::client::message::send_message_event::v3::Response>
+    {
+        let result = self
+            .bot
+            .matrix_link()
+            .messaging()
+            .send_text_markdown(room, message, response_type)
+            .await;
+
+        match result {
+            Ok(result) => Some(result),
+            Err(err) => {
+                tracing::warn!(
+                    room_id = format!("{:?}", room.room_id()),
+                    ?err,
+                    "Failed to send thinking-notice placeholder to room",
+                );
+                None
+            }
+        }
+    }
+
+    /// Edits an existing message's text in place (`m.replace`), best-effort.
+    ///
+    /// Built and sent directly via matrix-sdk's `make_edit_event` + `room.send`,
+    /// deliberately bypassing the mxlink messaging layer: that layer overwrites
+    /// `relates_to` from a `MessageResponseType`, which would clobber the
+    /// `m.replace` relation and turn the edit into a brand-new message. The edit
+    /// stays in the original's thread by inheritance, so no `response_type` is needed.
+    /// Failures are warned and swallowed so a flickered notice never breaks the real response.
+    pub async fn edit_text_markdown_no_fail(
+        &self,
+        room: &Room,
+        event_id: &EventId,
+        markdown: String,
+    ) -> Option<mxlink::matrix_sdk::ruma::api::client::message::send_message_event::v3::Response>
+    {
+        let new_content = RoomMessageEventContentWithoutRelation::text_markdown(markdown);
+
+        let edit_content = match room
+            .make_edit_event(event_id, EditedContent::RoomMessage(new_content))
+            .await
+        {
+            Ok(edit_content) => edit_content,
+            Err(err) => {
+                tracing::warn!(
+                    room_id = format!("{:?}", room.room_id()),
+                    ?event_id,
+                    ?err,
+                    "Failed to build edit event",
+                );
+                return None;
+            }
+        };
+
+        match room.send(edit_content).await {
+            Ok(result) => Some(result.response),
+            Err(err) => {
+                tracing::warn!(
+                    room_id = format!("{:?}", room.room_id()),
+                    ?event_id,
+                    ?err,
+                    "Failed to send edit to room",
                 );
                 None
             }

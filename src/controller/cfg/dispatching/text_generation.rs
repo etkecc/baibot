@@ -43,6 +43,27 @@ pub(super) async fn dispatch(
             }
         }
 
+        ConfigTextGenerationSettingRelatedControllerType::GetThinkingNoticeEnabled => {
+            let value = &room_settings.text_generation.thinking_notice_enabled;
+            setting_get::<bool>(bot, message_context, value).await
+        }
+        ConfigTextGenerationSettingRelatedControllerType::SetThinkingNoticeEnabled(value) => {
+            let value = value.to_owned();
+
+            let setter_callback = Box::new(move |room_settings: &mut RoomSettings| {
+                room_settings.text_generation.thinking_notice_enabled = value;
+            });
+
+            match config_type {
+                SettingsStorageSource::Room => {
+                    room_setting_set::<bool>(bot, message_context, &value, setter_callback).await
+                }
+                SettingsStorageSource::Global => {
+                    global_setting_set::<bool>(bot, message_context, &value, setter_callback).await
+                }
+            }
+        }
+
         ConfigTextGenerationSettingRelatedControllerType::GetPrefixRequirementType => {
             let value = &room_settings.text_generation.prefix_requirement_type;
             setting_get::<TextGenerationPrefixRequirementType>(bot, message_context, value).await

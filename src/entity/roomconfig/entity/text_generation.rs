@@ -14,6 +14,10 @@ pub struct RoomSettingsTextGeneration {
     /// When enabled, the bot will automatically tokenize messages and try to shorten the message context intelligently.
     pub context_management_enabled: Option<bool>,
 
+    /// Controls whether a "thinking…" notice is posted while text generation runs longer than a threshold.
+    /// When enabled, a placeholder message appears for slow responses and is edited in place (with elapsed-tiered flavor text) until it becomes the final answer.
+    pub thinking_notice_enabled: Option<bool>,
+
     /// Controls how each message in the conversation context is annotated with sender metadata.
     pub sender_context_mode: Option<TextGenerationSenderContextMode>,
 

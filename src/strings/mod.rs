@@ -11,6 +11,7 @@ pub mod provider;
 pub mod room_config;
 pub mod speech_to_text;
 pub mod text_to_speech;
+pub mod thinking;
 pub mod usage;
 
 pub const PROGRESS_INDICATOR_EMOJI: &str = "⏳";

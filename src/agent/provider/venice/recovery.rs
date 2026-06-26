@@ -45,7 +45,38 @@ pub(super) struct UnsupportedFieldsCache {
     inner: Arc<RwLock<HashMap<String, HashSet<String>>>>,
 }
 
+/// Process-global registry of per-deployment caches, keyed by Venice base URL. A `Controller` is
+/// rebuilt from its config on every message for dynamic (global/room-local) agents (see
+/// `agent::manager::available_room_agents_by_room_config_context`), so a cache stored on the
+/// controller would be reset each message and the "process-lived" intent above would never hold.
+/// The registry lets a rebuilt controller re-attach to the same cache. Keyed by base URL because
+/// "which fields a model rejects" is a property of the deployment+model, not of the agent instance:
+/// agents on the same Venice deployment share learnings, while a distinct deployment keeps its own,
+/// so a model name that supports a field on one deployment is never proactively stripped against
+/// another.
+fn registry() -> &'static RwLock<HashMap<String, UnsupportedFieldsCache>> {
+    static REGISTRY: OnceLock<RwLock<HashMap<String, UnsupportedFieldsCache>>> = OnceLock::new();
+    REGISTRY.get_or_init(|| RwLock::new(HashMap::new()))
+}
+
 impl UnsupportedFieldsCache {
+    /// The process-global cache for `base_url`, created on first use and shared by every controller
+    /// for that deployment thereafter. This is what makes a learned rejection survive the
+    /// per-message controller rebuild. A poisoned registry lock degrades to an isolated cache:
+    /// correctness holds, only cross-controller sharing is lost for that call.
+    pub(super) fn shared_for(base_url: &str) -> Self {
+        if let Ok(map) = registry().read()
+            && let Some(cache) = map.get(base_url)
+        {
+            return cache.clone();
+        }
+
+        match registry().write() {
+            Ok(mut map) => map.entry(base_url.to_owned()).or_default().clone(),
+            Err(_) => Self::default(),
+        }
+    }
+
     /// Fields already known unsupported for `model_id`. Returns an empty set on an unknown model or
     /// a poisoned lock, so a cache failure degrades to "strip nothing proactively" rather than
     /// breaking the request path.
@@ -229,6 +260,33 @@ mod tests {
 
         // A rejection learned for one model must not leak to another.
         assert!(cache.known_for("kimi-k2-5").is_empty());
+    }
+
+    #[test]
+    fn shared_for_survives_controller_rebuild_and_isolates_deployments() {
+        // Distinct, test-only base URLs so the process-global registry can't collide with another
+        // test running in parallel.
+        let url_a = "https://shared-for-test-a.invalid/api/v1";
+        let url_b = "https://shared-for-test-b.invalid/api/v1";
+
+        // A controller rebuilt for the same deployment (a fresh `shared_for` call, as happens per
+        // message for dynamic agents) re-attaches to the SAME cache, so an earlier learning holds.
+        let first = UnsupportedFieldsCache::shared_for(url_a);
+        first.record("model-x", "reasoning_effort");
+
+        let rebuilt = UnsupportedFieldsCache::shared_for(url_a);
+        assert!(
+            rebuilt.known_for("model-x").contains("reasoning_effort"),
+            "a rebuilt controller for the same deployment must see the earlier rejection"
+        );
+
+        // A different deployment keeps its own learnings: a model name that rejects a field on one
+        // Venice must not silence/strip it on another.
+        let other_deployment = UnsupportedFieldsCache::shared_for(url_b);
+        assert!(
+            other_deployment.known_for("model-x").is_empty(),
+            "rejections must not leak across deployments"
+        );
     }
 
     #[test]

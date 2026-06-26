@@ -38,6 +38,9 @@ pub enum ConfigTextGenerationSettingRelatedControllerType {
     GetContextManagementEnabled,
     SetContextManagementEnabled(Option<bool>),
 
+    GetThinkingNoticeEnabled,
+    SetThinkingNoticeEnabled(Option<bool>),
+
     GetPrefixRequirementType,
     SetPrefixRequirementType(Option<TextGenerationPrefixRequirementType>),
 

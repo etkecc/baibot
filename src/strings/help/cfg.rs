@@ -132,6 +132,18 @@ pub fn text_generation_context_management_intro() -> String {
     )
 }
 
+pub fn text_generation_thinking_notice_heading() -> &'static str {
+    "💭 Thinking Notice"
+}
+
+pub fn text_generation_thinking_notice_intro() -> String {
+    format!(
+        "{}\n{}",
+        "Controls whether the bot posts a **\"thinking…\" notice** while text generation takes a while, so slow responses (for example, from reasoning models that run for minutes) don't look stuck.",
+        "When enabled, a placeholder message appears only after a short delay, updates periodically with varying status text, and is then edited in place to become the final answer. Disabled by default.",
+    )
+}
+
 pub fn text_generation_sender_context_heading() -> &'static str {
     "👤 Sender Context Mode"
 }

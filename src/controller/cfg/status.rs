@@ -359,6 +359,33 @@ async fn generate_text_generation_section(
         ),
     );
 
+    // Thinking Notice
+
+    let effective_thinking_notice = room_config_context.text_generation_thinking_notice_enabled();
+    let room_config_thinking_notice = room_config_context
+        .room_config
+        .settings
+        .text_generation
+        .thinking_notice_enabled;
+    let global_config_thinking_notice = room_config_context
+        .global_config
+        .fallback_room_settings
+        .text_generation
+        .thinking_notice_enabled;
+
+    let thinking_notice_set_where = if room_config_thinking_notice.is_some() {
+        strings::cfg::status_badge_set_in_room_config()
+    } else if global_config_thinking_notice.is_some() {
+        strings::cfg::status_badge_set_in_global_config()
+    } else {
+        strings::cfg::status_badge_using_hardcoded_default()
+    };
+
+    message.push_str(&strings::cfg::status_text_generation_entry_thinking_notice(
+        effective_thinking_notice,
+        thinking_notice_set_where,
+    ));
+
     // Sender Context
 
     let effective_sender_context = room_config_context.text_generation_sender_context_mode();

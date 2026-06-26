@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct TextGenerationPromptVariables {
     map: HashMap<String, String>,
 }

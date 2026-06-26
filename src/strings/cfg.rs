@@ -249,6 +249,10 @@ pub fn status_text_generation_entry_context_management(value: bool, set_where: &
     format!("- ♻️ Context management: `{}` ({})\n", value, set_where)
 }
 
+pub fn status_text_generation_entry_thinking_notice(value: bool, set_where: &str) -> String {
+    format!("- 💭 Thinking notice: `{}` ({})\n", value, set_where)
+}
+
 pub fn status_text_generation_entry_sender_context(
     value: impl std::fmt::Display,
     set_where: &str,
