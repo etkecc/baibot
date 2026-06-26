@@ -558,7 +558,9 @@ async fn handle_stage_text_generation(
     // loop exits the instant generation resolves, so there is no detached task and no late edit can
     // ever clobber the real answer. `placeholder` is the event we must finalize in every exit path.
     let (result, placeholder) = if let Some(notice_prompt_variables) = notice_prompt_variables {
-        let generation = controller.generate_text(conversation, params).instrument(span);
+        let generation = controller
+            .generate_text(conversation, params)
+            .instrument(span);
         tokio::pin!(generation);
 
         let mut placeholder: Option<OwnedEventId> = None;

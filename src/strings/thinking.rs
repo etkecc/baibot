@@ -84,11 +84,23 @@ mod tests {
         // Boundaries: light below 30s, medium [30s, 90s), deep at/after 90s.
         // The pools have distinct content, so value comparison identifies the tier.
         assert_eq!(messages_for_elapsed(Duration::from_secs(0)), MESSAGES_LIGHT);
-        assert_eq!(messages_for_elapsed(Duration::from_secs(29)), MESSAGES_LIGHT);
-        assert_eq!(messages_for_elapsed(Duration::from_secs(30)), MESSAGES_MEDIUM);
-        assert_eq!(messages_for_elapsed(Duration::from_secs(89)), MESSAGES_MEDIUM);
+        assert_eq!(
+            messages_for_elapsed(Duration::from_secs(29)),
+            MESSAGES_LIGHT
+        );
+        assert_eq!(
+            messages_for_elapsed(Duration::from_secs(30)),
+            MESSAGES_MEDIUM
+        );
+        assert_eq!(
+            messages_for_elapsed(Duration::from_secs(89)),
+            MESSAGES_MEDIUM
+        );
         assert_eq!(messages_for_elapsed(Duration::from_secs(90)), MESSAGES_DEEP);
-        assert_eq!(messages_for_elapsed(Duration::from_secs(600)), MESSAGES_DEEP);
+        assert_eq!(
+            messages_for_elapsed(Duration::from_secs(600)),
+            MESSAGES_DEEP
+        );
     }
 
     #[test]

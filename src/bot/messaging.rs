@@ -2,7 +2,8 @@ use mxlink::matrix_sdk::{
     Room,
     room::edit::EditedContent,
     ruma::{
-        EventId, OwnedEventId, api::client::receipt::create_receipt::v3::ReceiptType,
+        EventId, OwnedEventId,
+        api::client::receipt::create_receipt::v3::ReceiptType,
         events::room::message::{
             OriginalSyncRoomMessageEvent, RoomMessageEventContentWithoutRelation,
         },
