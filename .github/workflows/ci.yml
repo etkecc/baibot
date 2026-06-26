@@ -20,11 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Rust version AND components (rustfmt, clippy) come from rust-toolchain.toml,
-      # the single source of truth shared with local dev. Nothing is pinned here, so
-      # CI can never drift from the toolchain developers (and the prek hooks) use.
-      # rustflags is cleared so a plain `cargo build`/`cargo test` keeps its previous
-      # behavior; the clippy hook still enforces `-D warnings` on lints.
+      # Toolchain version + components come from rust-toolchain.toml. rustflags is
+      # cleared so plain builds don't fail on warnings; the clippy hook still does.
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           rustflags: ''
@@ -32,17 +29,14 @@ jobs:
       - name: Install SQLite3
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
-      # `just` drives the prek recipes; `mise` provides the pinned prek (mise.toml).
+      # just drives the prek recipes; mise provides the pinned prek (mise.toml).
       - uses: taiki-e/install-action@v2
         with:
           tool: just
       - uses: jdx/mise-action@v2
 
-      # Run the exact hook suite developers run locally: file hygiene, `cargo fmt
-      # --all -- --check`, and `cargo clippy -- -D warnings`. The hook config in
-      # .pre-commit-config.yaml is the single source of truth for what gets checked.
-      # The slow test hook is split out into its own step below so the Actions UI
-      # surfaces its timing separately.
+      # Run the same prek hooks devs run locally; .pre-commit-config.yaml is the
+      # source of truth. Tests are a separate step for visible timing.
       - name: Lint & format (prek hooks, excluding tests)
         run: just prek-run-on-all --skip test-unit
 
