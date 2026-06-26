@@ -10,42 +10,42 @@ const TIER_DEEP_AFTER: Duration = Duration::from_secs(90);
 const MESSAGES_LIGHT: &[&str] = &[
     "*{{ baibot_name }} is thinking…*",
     "*{{ baibot_name }} is mulling that over…*",
-    "*hmm, let me think about that…*",
+    "*Hmm, let me think about that…*",
     "*{{ baibot_name }} is gathering some thoughts…*",
-    "*one moment, {{ baibot_name }} is working on it…*",
+    "*One moment, {{ baibot_name }} is working on it…*",
     "*{{ baibot_name }} is putting the pieces together…*",
-    "*give {{ baibot_name }} a second here…*",
-    "*let me think this one through…*",
+    "*Give {{ baibot_name }} a second here…*",
+    "*Let me think this one through…*",
     "*{{ baibot_name }} is warming up the gears…*",
     "*{{ baibot_name }} is on it…*",
 ];
 
 /// Mid flavor: this is a real question and the model is genuinely working.
 const MESSAGES_MEDIUM: &[&str] = &[
-    "*huh, good one. {{ baibot_name }} is really thinking now…*",
-    "*still working on it, {{ baibot_name }} wants to get this right…*",
-    "*this one needs a bit more thought…*",
+    "*Huh, good one. {{ baibot_name }} is really thinking now…*",
+    "*Still working on it, {{ baibot_name }} wants to get this right…*",
+    "*This one needs a bit more thought…*",
     "*{{ baibot_name }} is digging into this…*",
-    "*hang tight, {{ baibot_name }} is turning it over…*",
-    "*not a quick one, this. {{ baibot_name }} is still at it…*",
+    "*Hang tight, {{ baibot_name }} is turning it over…*",
+    "*Not a quick one, this. {{ baibot_name }} is still at it…*",
     "*{{ baibot_name }} is chewing on this properly now…*",
-    "*this deserves some real thought, bear with {{ baibot_name }}…*",
+    "*This deserves some real thought, bear with {{ baibot_name }}…*",
     "*{{ baibot_name }} is working through the details…*",
-    "*won't be long, {{ baibot_name }} is closing in on it…*",
+    "*Won't be long, {{ baibot_name }} is closing in on it…*",
 ];
 
 /// Deep flavor: a long-running generation (e.g. a reasoning model going for minutes).
 const MESSAGES_DEEP: &[&str] = &[
-    "*okay, this is a hard one. {{ baibot_name }} is really deep in thought…*",
+    "*Okay, this is a hard one. {{ baibot_name }} is really deep in thought…*",
     "*{{ baibot_name }} is in the weeds on this one, thanks for your patience…*",
-    "*still here, still thinking. {{ baibot_name }} doesn't want to rush it…*",
-    "*a proper puzzle, this. {{ baibot_name }} is taking the time to do it justice…*",
+    "*Still here, still thinking. {{ baibot_name }} doesn't want to rush it…*",
+    "*A proper puzzle, this. {{ baibot_name }} is taking the time to do it justice…*",
     "*{{ baibot_name }} is really wrestling with this one…*",
-    "*a meaty question. {{ baibot_name }} is still turning it over…*",
+    "*A meaty question. {{ baibot_name }} is still turning it over…*",
     "*{{ baibot_name }} hasn't forgotten you, just thinking hard…*",
-    "*almost there, {{ baibot_name }} is pulling it all together…*",
+    "*Almost there, {{ baibot_name }} is pulling it all together…*",
     "*{{ baibot_name }} is going the extra mile on this one…*",
-    "*deep thoughts in progress. {{ baibot_name }} appreciates your patience…*",
+    "*Deep thoughts in progress. {{ baibot_name }} appreciates your patience…*",
 ];
 
 /// Returns the flavor pool matching how long generation has been running.

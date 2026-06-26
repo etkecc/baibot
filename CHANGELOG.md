@@ -1,4 +1,4 @@
-# (2026-06-25) Version 1.24.0
+# (2026-06-26) Version 1.24.0
 
 - (**Feature**) Add an opt-in 💭 **thinking notice** for text generation. When enabled, a slow response (for example, from a reasoning model that runs for minutes) posts a "thinking…" placeholder after a short delay, refreshes it periodically with varying flavor text, and then edits that same message into the final answer, so a long wait no longer looks like a stuck bot. The notice is **disabled by default** and configurable per-room or globally via `text-generation set-thinking-notice-enabled true`. Fast responses (under the delay threshold) never show a placeholder. See the [text-generation configuration docs](./docs/configuration/text-generation.md#-thinking-notice).
 
