@@ -176,10 +176,10 @@ This provider is just as featureful as the [OpenAI](#openai) provider, but is mo
 
 ### Venice
 
-[Venice AI](https://venice.ai) runs inference on Venice-controlled GPUs or zero-data-retention partner infrastructure and stores no prompts or responses, so your conversations don't linger anywhere. It serves both frontier proprietary models and the latest open-source ones.
+[Venice AI](https://venice.ai/chat?ref=kpXDe6) _(ref link with $10 bonus for you)_ runs inference on Venice-controlled GPUs or zero-data-retention partner infrastructure and stores no prompts or responses, so your conversations don't linger anywhere. It serves both frontier proprietary models and the latest open-source ones.
 
 - 🆔 Identifier: `venice`
-- 🔗 Links: [🏠 Home page](https://venice.ai), [👤 Sign up](https://venice.ai), [📋 Models list](https://api.venice.ai/api/v1/models)
+- 🔗 Links: [🏠 Home page](https://venice.ai/chat?ref=kpXDe6), [👤 Sign up](https://venice.ai/chat?ref=kpXDe6), [📋 Models list](https://docs.venice.ai/models/overview)
 - 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation) (incl. editing, via the native knob-rich `/image/generate` and `/image/edit` endpoints), [💬 text-generation](./features.md#-text-generation) (incl. vision, file inputs like PDF and DOCX, and prompt caching; native web search via the `venice_parameters` config), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local venice my-venice-agent`
