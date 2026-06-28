@@ -6,5 +6,5 @@ mod utils;
 mod tests;
 
 pub use entity::*;
-pub use tokenization::shorten_messages_list_to_context_size;
+pub use tokenization::{TokenEstimate, shorten_messages_list_to_context_size};
 pub use utils::*;

@@ -1,3 +1,10 @@
+# (2026-06-28) Version 1.25.0
+
+- (**Feature**) [♻️ Context management](./docs/configuration/text-generation.md#️-context-management) now works with every provider, not only [OpenAI](./docs/providers.md#openai). Token counting previously went through [tiktoken-rs](https://github.com/zurawiki/tiktoken-rs), which is accurate only for OpenAI models and silently mis-counted everything else (worst of all for non-English text). OpenAI agents keep using tiktoken-rs; every other provider, including the recommended [Venice](./docs/providers.md#venice), now uses a provider-neutral approximation that needs no per-model tokenizer (ASCII counted at about four characters per token, other scripts such as Cyrillic and CJK at about two), landing within roughly 10-20% of the real count. See the [context management docs](./docs/configuration/text-generation.md#️-context-management).
+
+- (**Improvement**) Context management now trims a conversation on whole-turn boundaries for every provider, so an assistant reply is never kept without the user message it answered. This also adjusts how the OpenAI provider trims: a dangling assistant reply at the oldest edge of the kept history is now dropped along with its missing prompt, rather than left in place.
+
+
 # (2026-06-26) Version 1.24.0
 
 - (**Feature**) Add an opt-in 💭 **thinking notice** for text generation. When enabled, a slow response (for example, from a reasoning model that runs for minutes) posts a "thinking…" placeholder after a short delay, refreshes it periodically with varying flavor text, and then edits that same message into the final answer, so a long wait no longer looks like a stuck bot. The notice is **disabled by default** and configurable per-room or globally via `text-generation set-thinking-notice-enabled true`. Fast responses (under the delay threshold) never show a placeholder. See the [text-generation configuration docs](./docs/configuration/text-generation.md#-thinking-notice).

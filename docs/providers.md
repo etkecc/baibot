@@ -24,7 +24,7 @@ The list of supported providers is below.
 
 ### How to choose a provider
 
-If you're not sure which provider to start with, **we recommend [OpenAI](#openai)** as it's the most popular and has the **widest range of capabilities**: [💬 text-generation](./features.md#-text-generation) (incl. vision, incl. [🛠️ tools](./features.md#️-built-in-tools-openai-only)), [🖌️ image-generation](./features.md#️image-generation), [🦻 speech-to-text](./features.md#-speech-to-text), [🗣️ text-to-speech](./features.md#️-text-to-speech).
+If you're not sure which provider to start with, **we recommend [Venice](#venice)**: it's the most capable provider baibot supports (covering [💬 text-generation](./features.md#-text-generation) with vision, file inputs, prompt caching, and native web search, plus [🖌️ image-generation](./features.md#️-image-creation) incl. editing, [🦻 speech-to-text](./features.md#-speech-to-text), and [🗣️ text-to-speech](./features.md#️-text-to-speech)) and the only one that runs inference with no logging and no training on your data. If you'd rather start with the most widely-used option, [OpenAI](#openai) is a solid, well-supported choice too.
 
 You don't need to choose just one though. The bot supports [mixing & matching models](./features.md#-mixing--matching-models), so you can use multiple providers at the same time.
 
@@ -176,7 +176,7 @@ This provider is just as featureful as the [OpenAI](#openai) provider, but is mo
 
 ### Venice
 
-[Venice AI](https://venice.ai/chat?ref=kpXDe6) _(ref link with $10 bonus for you)_ runs inference on Venice-controlled GPUs or zero-data-retention partner infrastructure and stores no prompts or responses, so your conversations don't linger anywhere. It serves both frontier proprietary models and the latest open-source ones.
+[Venice AI](https://venice.ai/chat?ref=kpXDe6) _(ref link with a $10 bonus for you)_ runs inference on Venice-controlled GPUs or zero-data-retention partner infrastructure and stores no prompts or responses, so your conversations don't linger anywhere. It serves both frontier proprietary models and the latest open-source ones.
 
 - 🆔 Identifier: `venice`
 - 🔗 Links: [🏠 Home page](https://venice.ai/chat?ref=kpXDe6), [👤 Sign up](https://venice.ai/chat?ref=kpXDe6), [📋 Models list](https://docs.venice.ai/models/overview)
