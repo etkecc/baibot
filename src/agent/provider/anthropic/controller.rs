@@ -15,7 +15,7 @@ use crate::agent::provider::{
 };
 use crate::conversation::llm::{
     Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
-    MessageContent as LLMMessageContent, shorten_messages_list_to_context_size,
+    MessageContent as LLMMessageContent, TokenEstimate, shorten_messages_list_to_context_size,
 };
 use crate::strings;
 
@@ -130,7 +130,7 @@ impl ControllerTrait for Controller {
             tracing::trace!("Shortening messages list to context size");
 
             conversation_messages = shorten_messages_list_to_context_size(
-                &text_generation_config.model_id,
+                TokenEstimate::Approximate,
                 &prompt_message,
                 conversation_messages,
                 Some(text_generation_config.max_response_tokens),

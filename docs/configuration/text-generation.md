@@ -50,9 +50,9 @@ Example: `!bai config room text-generation set-auto-usage only_for_voice` (this 
 
 ### ♻️ Context Management
 
-The bot also supports ♻️ **context management**, which automatically adjusts the message history length, etc.
+The bot also supports ♻️ **context management**, which automatically trims the oldest messages once a conversation grows past the context window. It drops whole turns at a time, so a reply is never separated from the message it answered.
 
-This feature relies on [tokenization](https://en.wikipedia.org/wiki/Large_language_model#Tokenization) performed by the [tiktoken-rs](https://github.com/zurawiki/tiktoken-rs) library which is [poorly well-maintained](https://github.com/zurawiki/tiktoken-rs/issues/50) and only works well for [OpenAI](../providers.md#openai) models.
+Counting tokens precisely needs the model's own tokenizer. For [OpenAI](../providers.md#openai) models, the bot counts them with the [tiktoken-rs](https://github.com/zurawiki/tiktoken-rs) library. For every other provider, including the recommended [Venice](../providers.md#venice), the bot falls back to a provider-neutral **approximation** that needs no per-model tokenizer: it counts ASCII text at about four characters per token and other scripts (Cyrillic, CJK, and so on) at about two. Treat it as rough, within roughly 10-20% of the real count for typical text, which is plenty for keeping a long conversation inside the context window.
 
 This setting is **disabled by default**, but can be enabled via `!bai config room text-generation set-context-management-enabled true` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings)).
 

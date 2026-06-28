@@ -128,7 +128,7 @@ pub fn text_generation_context_management_intro() -> String {
     format!(
         "{}\n{}",
         "Controls the bot's ability to **intelligently drop old messages from the conversation context** when it gets too large.",
-        "This feature relies on [tokenization](https://en.wikipedia.org/wiki/Large_language_model#Tokenization) performed by the [tiktoken-rs](https://github.com/zurawiki/tiktoken-rs) library which is [poorly well-maintained](https://github.com/zurawiki/tiktoken-rs/issues/50) and only works well for [OpenAI](./providers.md#openai) models.",
+        "Counting tokens precisely needs the model's own tokenizer. For [OpenAI](./providers.md#openai) models the bot uses the [tiktoken-rs](https://github.com/zurawiki/tiktoken-rs) library; for every other provider (including the recommended [Venice](./providers.md#venice)) it falls back to a provider-neutral **approximation** (ASCII counted at ~4 characters per token, other scripts at ~2), within roughly 10-20% of the real count for typical text.",
     )
 }
 

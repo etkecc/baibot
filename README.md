@@ -30,7 +30,7 @@ It's influenced by [chaz](https://github.com/arcuru/chaz), but does **not** use 
 
 - 🔒 Supports [encryption](./docs/features.md#-encryption) for Matrix communication and Account-Data-stored configuration
 
-- ♻️ Supports [context-management](./docs/configuration/text-generation.md#️-context-management) handling on some models (automatically adjusting the message history length, etc.)
+- ♻️ Supports [context-management](./docs/configuration/text-generation.md#️-context-management) for every [provider](./docs/providers.md) (automatically trimming older messages on whole-turn boundaries once a conversation outgrows the context window)
 
 - 🛠️ Allows **customizing much of the bot's [configuration](./docs/configuration/README.md)** at runtime (using commands sent via chat)
 

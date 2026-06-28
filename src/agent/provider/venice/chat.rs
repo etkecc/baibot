@@ -8,7 +8,7 @@ use crate::agent::AgentPurpose;
 use crate::agent::provider::entity::{TextGenerationParams, TextGenerationResult};
 use crate::conversation::llm::{
     Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
-    MessageContent as LLMMessageContent, shorten_messages_list_to_context_size,
+    MessageContent as LLMMessageContent, TokenEstimate, shorten_messages_list_to_context_size,
 };
 use crate::strings;
 
@@ -64,7 +64,7 @@ pub async fn generate_text(
 
     if params.context_management_enabled {
         conversation_messages = shorten_messages_list_to_context_size(
-            &text_generation_config.model_id,
+            TokenEstimate::Approximate,
             &prompt_message,
             conversation_messages,
             text_generation_config.max_response_tokens,
