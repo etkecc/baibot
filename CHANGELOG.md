@@ -1,4 +1,4 @@
-# (2026-06-28) Version 1.25.0
+# (2026-06-29) Version 1.25.0
 
 - (**Feature**) [♻️ Context management](./docs/configuration/text-generation.md#️-context-management) now works with every provider, not only [OpenAI](./docs/providers.md#openai). Token counting previously went through [tiktoken-rs](https://github.com/zurawiki/tiktoken-rs), which is accurate only for OpenAI models and silently mis-counted everything else (worst of all for non-English text). OpenAI agents keep using tiktoken-rs; every other provider, including the recommended [Venice](./docs/providers.md#venice), now uses a provider-neutral approximation that needs no per-model tokenizer (ASCII counted at about four characters per token, other scripts such as Cyrillic and CJK at about two), landing within roughly 10-20% of the real count. See the [context management docs](./docs/configuration/text-generation.md#️-context-management).
 
