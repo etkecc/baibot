@@ -5,6 +5,10 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        # This is the stock Synapse sample homeserver.yaml (mostly commented-out
+        # docs). prek's stricter YAML parser (serde-saphyr, since v0.4.6) rejects
+        # its long runs of consecutive comment lines in several places.
+        exclude: '^etc/services/synapse/config/homeserver\.yaml$'
       - id: check-merge-conflict
       - id: check-added-large-files
         args: ['--maxkb=1024']
