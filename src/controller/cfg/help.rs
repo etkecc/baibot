@@ -136,7 +136,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(
+        strings::help::cfg::current_setting_show(
             command_prefix,
             "text-generation prefix-requirement-type"
         )
@@ -144,7 +144,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "text-generation set-prefix-requirement-type VALUE"
         )
@@ -152,7 +152,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
+        strings::help::cfg::current_setting_unset(
             command_prefix,
             "text-generation set-prefix-requirement-type"
         )
@@ -176,12 +176,12 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(command_prefix, "text-generation auto-usage")
+        strings::help::cfg::current_setting_show(command_prefix, "text-generation auto-usage")
     ));
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "text-generation set-auto-usage VALUE"
         )
@@ -189,10 +189,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
-            command_prefix,
-            "text-generation set-auto-usage"
-        )
+        strings::help::cfg::current_setting_unset(command_prefix, "text-generation set-auto-usage")
     ));
     message.push_str("\n\n");
 
@@ -211,7 +208,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(
+        strings::help::cfg::current_setting_show(
             command_prefix,
             "text-generation context-management-enabled"
         )
@@ -219,7 +216,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "text-generation set-context-management-enabled VALUE"
         )
@@ -227,7 +224,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
+        strings::help::cfg::current_setting_unset(
             command_prefix,
             "text-generation set-context-management-enabled"
         )
@@ -249,7 +246,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(
+        strings::help::cfg::current_setting_show(
             command_prefix,
             "text-generation thinking-notice-enabled"
         )
@@ -257,7 +254,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "text-generation set-thinking-notice-enabled VALUE"
         )
@@ -265,7 +262,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
+        strings::help::cfg::current_setting_unset(
             command_prefix,
             "text-generation set-thinking-notice-enabled"
         )
@@ -289,7 +286,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(
+        strings::help::cfg::current_setting_show(
             command_prefix,
             "text-generation sender-context-mode"
         )
@@ -297,7 +294,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "text-generation set-sender-context-mode VALUE"
         )
@@ -305,7 +302,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
+        strings::help::cfg::current_setting_unset(
             command_prefix,
             "text-generation set-sender-context-mode"
         )
@@ -323,15 +320,12 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(
-            command_prefix,
-            "text-generation prompt-override"
-        )
+        strings::help::cfg::current_setting_show(command_prefix, "text-generation prompt-override")
     ));
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "text-generation set-prompt-override VALUE"
         )
@@ -339,7 +333,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
+        strings::help::cfg::current_setting_unset(
             command_prefix,
             "text-generation set-prompt-override"
         )
@@ -357,7 +351,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(
+        strings::help::cfg::current_setting_show(
             command_prefix,
             "text-generation temperature-override"
         )
@@ -365,7 +359,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "text-generation set-temperature-override VALUE"
         )
@@ -373,7 +367,7 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
+        strings::help::cfg::current_setting_unset(
             command_prefix,
             "text-generation set-temperature-override"
         )
@@ -410,12 +404,12 @@ fn build_section_speech_to_text(command_prefix: &str) -> String {
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(command_prefix, "speech-to-text flow-type")
+        strings::help::cfg::current_setting_show(command_prefix, "speech-to-text flow-type")
     ));
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "speech-to-text set-flow-type VALUE"
         )
@@ -423,7 +417,7 @@ fn build_section_speech_to_text(command_prefix: &str) -> String {
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(command_prefix, "speech-to-text set-flow-type")
+        strings::help::cfg::current_setting_unset(command_prefix, "speech-to-text set-flow-type")
     ));
     message.push_str("\n\n");
 
@@ -444,7 +438,7 @@ fn build_section_speech_to_text(command_prefix: &str) -> String {
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(
+        strings::help::cfg::current_setting_show(
             command_prefix,
             "speech-to-text msg-type-for-non-threaded-only-transcribed-messages"
         )
@@ -452,7 +446,7 @@ fn build_section_speech_to_text(command_prefix: &str) -> String {
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "speech-to-text set-msg-type-for-non-threaded-only-transcribed-messages VALUE"
         )
@@ -460,7 +454,7 @@ fn build_section_speech_to_text(command_prefix: &str) -> String {
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
+        strings::help::cfg::current_setting_unset(
             command_prefix,
             "speech-to-text set-msg-type-for-non-threaded-only-transcribed-messages"
         )
@@ -478,12 +472,12 @@ fn build_section_speech_to_text(command_prefix: &str) -> String {
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(command_prefix, "speech-to-text language")
+        strings::help::cfg::current_setting_show(command_prefix, "speech-to-text language")
     ));
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "speech-to-text set-language VALUE"
         )
@@ -491,7 +485,7 @@ fn build_section_speech_to_text(command_prefix: &str) -> String {
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(command_prefix, "speech-to-text set-language")
+        strings::help::cfg::current_setting_unset(command_prefix, "speech-to-text set-language")
     ));
     message.push_str("\n\n");
 
@@ -526,7 +520,7 @@ fn build_section_text_to_speech(command_prefix: &str) -> String {
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(
+        strings::help::cfg::current_setting_show(
             command_prefix,
             "text-to-speech bot-msgs-flow-type"
         )
@@ -534,7 +528,7 @@ fn build_section_text_to_speech(command_prefix: &str) -> String {
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "text-to-speech set-bot-msgs-flow-type VALUE"
         )
@@ -542,7 +536,7 @@ fn build_section_text_to_speech(command_prefix: &str) -> String {
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
+        strings::help::cfg::current_setting_unset(
             command_prefix,
             "text-to-speech set-bot-msgs-flow-type"
         )
@@ -566,7 +560,7 @@ fn build_section_text_to_speech(command_prefix: &str) -> String {
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(
+        strings::help::cfg::current_setting_show(
             command_prefix,
             "text-to-speech user-msgs-flow-type"
         )
@@ -574,7 +568,7 @@ fn build_section_text_to_speech(command_prefix: &str) -> String {
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "text-to-speech set-user-msgs-flow-type VALUE"
         )
@@ -582,7 +576,7 @@ fn build_section_text_to_speech(command_prefix: &str) -> String {
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
+        strings::help::cfg::current_setting_unset(
             command_prefix,
             "text-to-speech set-user-msgs-flow-type"
         )
@@ -600,12 +594,12 @@ fn build_section_text_to_speech(command_prefix: &str) -> String {
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(command_prefix, "text-to-speech speed-override")
+        strings::help::cfg::current_setting_show(command_prefix, "text-to-speech speed-override")
     ));
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "text-to-speech set-speed-override VALUE"
         )
@@ -613,7 +607,7 @@ fn build_section_text_to_speech(command_prefix: &str) -> String {
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
+        strings::help::cfg::current_setting_unset(
             command_prefix,
             "text-to-speech set-speed-override"
         )
@@ -631,12 +625,12 @@ fn build_section_text_to_speech(command_prefix: &str) -> String {
     message.push_str("\n\n");
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_show(command_prefix, "text-to-speech voice-override")
+        strings::help::cfg::current_setting_show(command_prefix, "text-to-speech voice-override")
     ));
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_set(
+        strings::help::cfg::current_setting_set(
             command_prefix,
             "text-to-speech set-voice-override VALUE"
         )
@@ -644,7 +638,7 @@ fn build_section_text_to_speech(command_prefix: &str) -> String {
     message.push('\n');
     message.push_str(&format!(
         "- {}",
-        &strings::help::cfg::current_setting_unset(
+        strings::help::cfg::current_setting_unset(
             command_prefix,
             "text-to-speech set-voice-override"
         )

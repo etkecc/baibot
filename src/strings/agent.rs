@@ -101,13 +101,13 @@ pub fn post_creation_helpful_commands(
         for purpose in supported_purposes {
             message.push_str(&format!(
                 "\n- {}",
-                &set_as_purpose_handler_in_room(agent_identifier, purpose, command_prefix,)
+                set_as_purpose_handler_in_room(agent_identifier, purpose, command_prefix,)
             ));
 
             if !is_room_local {
                 message.push_str(&format!(
                     "\n- {}",
-                    &set_as_purpose_handler_globally(agent_identifier, purpose, command_prefix,)
+                    set_as_purpose_handler_globally(agent_identifier, purpose, command_prefix,)
                 ));
             }
         }
