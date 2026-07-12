@@ -7,8 +7,8 @@ services:
       - ALL
     read_only: true
     environment:
-      CONDUWUIT_CONFIG: /etc/continuwuity/continuwuity.toml
-      CONDUWUIT_DATABASE_PATH: /var/lib/continuwuity
+      CONTINUWUITY_CONFIG: /etc/continuwuity/continuwuity.toml
+      CONTINUWUITY_DATABASE_PATH: /var/lib/continuwuity
     ports:
       - "${SERVICE_CONTINUWUITY_BIND_PORT_CLIENT_API}:6167"
     volumes:
