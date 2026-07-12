@@ -1,6 +1,6 @@
 services:
   continuwuity:
-    image: forgejo.ellis.link/continuwuation/continuwuity:v0.5.10
+    image: forgejo.ellis.link/continuwuation/continuwuity:v26.6.1
     user: "${UID}:${GID}"
     restart: unless-stopped
     cap_drop:
