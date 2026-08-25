@@ -42,3 +42,63 @@ jobs:
 
       - name: Unit tests
         run: just test
+
+  # The prek job never builds a container image, so a bump of the Dockerfile's
+  # base image reaches main unvalidated and fails later, in Publish, after
+  # ghcr.io/etkecc/baibot:latest has already been attempted. These two jobs close
+  # that gap: decide whether a Dockerfile changed, and if so build the image the
+  # way Publish does - but without pushing anything.
+  #
+  # The build is gated rather than unconditional because it is a full Rust
+  # release build; running it on every push would turn a ~1 minute pipeline into
+  # a ~10 minute one for changes that cannot affect the image.
+  docker-gate:
+    name: Decide whether the image needs building
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.decide.outputs.build }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Look for Dockerfile changes against main
+        id: decide
+        run: |
+          if [ "${{ github.event_name }}" = 'workflow_dispatch' ]; then
+            echo 'Forced via workflow_dispatch.'
+            echo 'build=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Publish builds and pushes from main, so a main-side build here would
+          # be redundant. This gate exists for branches, before they merge.
+          if [ "${{ github.ref_name }}" = 'main' ]; then
+            echo 'On main; Publish covers this.'
+            echo 'build=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git fetch --no-tags origin main
+          if git diff --name-only origin/main HEAD -- Dockerfile Dockerfile.ci | grep -q .; then
+            echo 'A Dockerfile changed; the image will be built.'
+            echo 'build=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'No Dockerfile changed.'
+            echo 'build=false' >> "$GITHUB_OUTPUT"
+          fi
+
+  docker-build:
+    name: Build the container image (without publishing it)
+    needs: docker-gate
+    if: needs.docker-gate.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # No build cache on purpose: a bump of the base image is exactly the case
+      # where a cold build is the honest test.
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          push: false
