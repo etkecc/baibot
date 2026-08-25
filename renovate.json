@@ -25,7 +25,7 @@
 			"platformAutomerge": false
 		},
 		{
-			"description": "The release image's base (Dockerfile and Dockerfile.ci). Gated by ci.yml's docker-build job, which builds the image exactly as Publish does but with `push: false`, and which only runs when a Dockerfile actually changed.",
+			"description": "The release image's base (Dockerfile). Gated by ci.yml's docker-build job, which builds the image exactly as Publish does but with `push: false`, and which only runs when the Dockerfile actually changed.",
 			"matchManagers": [
 				"dockerfile"
 			],

@@ -80,7 +80,7 @@ jobs:
           fi
 
           git fetch --no-tags origin main
-          if git diff --name-only origin/main HEAD -- Dockerfile Dockerfile.ci | grep -q .; then
+          if git diff --name-only origin/main HEAD -- Dockerfile | grep -q .; then
             echo 'A Dockerfile changed; the image will be built.'
             echo 'build=true' >> "$GITHUB_OUTPUT"
           else
