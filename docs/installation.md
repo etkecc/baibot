@@ -57,6 +57,33 @@ CONTAINER_IMAGE_NAME=ghcr.io/etkecc/baibot:v1.0.0
   $CONTAINER_IMAGE_NAME
 ```
 
+##### Docker Compose:
+```yml
+services:
+  baibot:
+    container_name: baibot
+    image: ghcr.io/etkecc/baibot:latest
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      # see https://github.com/etkecc/baibot/blob/main/src/entity/cfg/env.rs
+      # preferably set in config.yml
+      BAIBOT_PERSISTENCE_DATA_DIR_PATH: /data
+      # BAIBOT_HOMESERVER_SERVER_NAME: example.com
+      # BAIBOT_HOMESERVER_URL: https://example.com
+      # BAIBOT_USER_NAME: baibot
+      # BAIBOT_USER_ACCESS_TOKEN: some-secret-token
+      # BAIBOT_USER_PASSWORD: some-secure-password
+    volumes:
+      - ./config.yml:/app/config.yml:ro
+      - ./data:/data
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=1024m
+    restart: "unless-stopped"
+```
+
 💡 If you've defined the `persistence.data_dir_path` setting in the `config.yml` file, you can skip the `BAIBOT_PERSISTENCE_DATA_DIR_PATH` environment variable.
 
 
