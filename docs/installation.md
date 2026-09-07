@@ -57,6 +57,34 @@ CONTAINER_IMAGE_NAME=ghcr.io/etkecc/baibot:v1.0.0
   $CONTAINER_IMAGE_NAME
 ```
 
+Alternatively, you can use [Docker Compose](https://docs.docker.com/compose/) with a `compose.yml` file like this:
+
+```yaml
+services:
+  baibot:
+    container_name: baibot
+    # Adjust the version tag to point to the latest available tagged version.
+    # If building your own container image name, adjust to something like `localhost/baibot:latest`.
+    image: ghcr.io/etkecc/baibot:v1.0.0
+    # Set `UID` and `GID` in a `.env` file next to `compose.yml` (e.g. `UID=1000`, `GID=1000`)
+    # or export them in your shell (`export UID GID="$(id -g)"`).
+    # These should match the user that owns the data directory.
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      # Other settings can also be set via environment variables.
+      # See the 🛠️ Configuration documentation (docs/configuration/README.md) for details.
+      BAIBOT_PERSISTENCE_DATA_DIR_PATH: /data
+    volumes:
+      - /path/to/config.yml:/app/config.yml:ro
+      - /path/to/data:/data
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=1024m
+    restart: unless-stopped
+```
+
 💡 If you've defined the `persistence.data_dir_path` setting in the `config.yml` file, you can skip the `BAIBOT_PERSISTENCE_DATA_DIR_PATH` environment variable.
 
 
