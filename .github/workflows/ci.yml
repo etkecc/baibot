@@ -22,7 +22,7 @@ jobs:
 
       # Toolchain version + components come from rust-toolchain.toml. rustflags is
       # cleared so plain builds don't fail on warnings; the clippy hook still does.
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
           rustflags: ''
 
