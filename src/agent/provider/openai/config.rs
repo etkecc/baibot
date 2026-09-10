@@ -187,17 +187,9 @@ impl ImageGenerationConfig {
     pub fn model_id_as_openai_image_model(
         &self,
     ) -> Result<async_openai::types::images::ImageModel, String> {
-        match self.model_id.as_str() {
-            "dall-e-2" => Ok(async_openai::types::images::ImageModel::DallE2),
-            "dall-e-3" => Ok(async_openai::types::images::ImageModel::DallE3),
-            "gpt-image-1" => Ok(async_openai::types::images::ImageModel::GptImage1),
-            "gpt-image-1.5" => Ok(async_openai::types::images::ImageModel::GptImage1dot5),
-            "gpt-image-1-mini" => Ok(async_openai::types::images::ImageModel::GptImage1Mini),
-            "gpt-image-2" => Ok(async_openai::types::images::ImageModel::GptImage2),
-            other => Ok(async_openai::types::images::ImageModel::Other(
-                other.to_owned(),
-            )),
-        }
+        // Use the SDK's model names, including its fallback for custom providers.
+        serde_json::from_value(serde_json::Value::String(self.model_id.clone()))
+            .map_err(|err| err.to_string())
     }
 }
 

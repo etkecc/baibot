@@ -33,6 +33,7 @@ pub fn convert_llm_messages_to_openai_response_input(
                     image_url: Some(image_url),
                     detail: ImageDetail::Auto,
                     file_id: None,
+                    prompt_cache_breakpoint: None,
                 })])
             }
             LLMMessageContent::File(file_details) => {
@@ -61,4 +62,43 @@ pub fn convert_llm_messages_to_openai_response_input(
     }
 
     InputParam::Items(items)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::conversation::llm::ImageDetails;
+    use mxlink::matrix_sdk::ruma::{OwnedMxcUri, events::room::message::ImageMessageEventContent};
+    use serde_json::json;
+
+    #[test]
+    fn image_input_keeps_data_url_without_enabling_prompt_cache_breakpoints() {
+        let message = LLMMessage {
+            author: LLMAuthor::User,
+            sender_id: None,
+            timestamp: chrono::Utc::now(),
+            content: LLMMessageContent::Image(ImageDetails::new(
+                ImageMessageEventContent::plain(
+                    "cat.png".to_owned(),
+                    OwnedMxcUri::from("mxc://example.com/cat"),
+                ),
+                mxlink::mime::IMAGE_PNG,
+                vec![1, 2, 3],
+            )),
+        };
+
+        let input = convert_llm_messages_to_openai_response_input(vec![message]);
+        assert_eq!(
+            serde_json::to_value(input).unwrap(),
+            json!([{
+                "type": "message",
+                "role": "user",
+                "content": [{
+                    "type": "input_image",
+                    "image_url": "data:image/png;base64,AQID",
+                    "detail": "auto",
+                }],
+            }])
+        );
+    }
 }
