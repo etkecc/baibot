@@ -1,10 +1,14 @@
-# Unreleased
+# (2026-09-10) Version 1.26.0
 
-- (**Improvement**) Default newly-created [OpenAI agents](./docs/providers.md#openai) and sample configurations to `gpt-image-2.5-sunburst`. GPT Image 2.5 Sunburst and Flare, including their dated snapshots and `xhigh` / `max` quality settings, are supported. Existing agents retain their configured model.
+- (**Improvement**) Default newly-created [OpenAI agents](./docs/providers.md#openai) and sample configurations to `gpt-image-2.5-sunburst`. Add support for GPT Image 2.5 Sunburst and Flare, including their dated snapshots and `xhigh` / `max` quality settings.
 
 - (**Bugfix**) Honor configured quality and non-square or custom sizes when editing images with GPT image models. Sticker quality downgrades now use `low` for GPT image models instead of the unsupported `standard` value.
 
-- (**Internal Improvement**) Upgrade [async-openai](https://crates.io/crates/async-openai) to 0.42.0 with compatibility fixes, superseding [#264](https://github.com/etkecc/baibot/pull/264).
+- (**Internal Improvement**) Upgrade [async-openai](https://crates.io/crates/async-openai) to 0.42.0.
+
+- (**Improvement**) Add a [Docker Compose example](./docs/installation.md) to the installation guide ([#262](https://github.com/etkecc/baibot/pull/262)).
+
+- (**Internal Improvement**) Update dependencies and the Rust toolchain to 1.98.1.
 
 
 # (2026-06-29) Version 1.25.0
