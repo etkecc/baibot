@@ -1,3 +1,12 @@
+# Unreleased
+
+- (**Improvement**) Default newly-created [OpenAI agents](./docs/providers.md#openai) and sample configurations to `gpt-image-2.5-sunburst`. GPT Image 2.5 Sunburst and Flare, including their dated snapshots and `xhigh` / `max` quality settings, are supported. Existing agents retain their configured model.
+
+- (**Bugfix**) Honor configured quality and non-square or custom sizes when editing images with GPT image models. Sticker quality downgrades now use `low` for GPT image models instead of the unsupported `standard` value.
+
+- (**Internal Improvement**) Upgrade [async-openai](https://crates.io/crates/async-openai) to 0.42.0 with compatibility fixes, superseding [#264](https://github.com/etkecc/baibot/pull/264).
+
+
 # (2026-06-29) Version 1.25.0
 
 - (**Feature**) [♻️ Context management](./docs/configuration/text-generation.md#️-context-management) now works with every provider, not only [OpenAI](./docs/providers.md#openai). Token counting previously went through [tiktoken-rs](https://github.com/zurawiki/tiktoken-rs), which is accurate only for OpenAI models and silently mis-counted everything else (worst of all for non-English text). OpenAI agents keep using tiktoken-rs; every other provider, including the recommended [Venice](./docs/providers.md#venice), now uses a provider-neutral approximation that needs no per-model tokenizer (ASCII counted at about four characters per token, other scripts such as Cyrillic and CJK at about two), landing within roughly 10-20% of the real count. See the [context management docs](./docs/configuration/text-generation.md#️-context-management).

@@ -109,8 +109,8 @@ To create a sticker, send a command like `!bai sticker A huge ramen bowl with lo
 
 The difference from [creating images](#creating-images) is that the bot will:
 
-- generate a smaller-resolution image (currently hardcoded to `256x256`) - smaller/quicker, but still good enough for a sticker
+- request a supported square size (`1024x1024` for OpenAI GPT image models, `256x256` for DALL-E 2)
 - potentially switch to a different (cheaper or otherwise more suitable) model, if available
 - post the image directly to the room (as a reply to your message), without starting a threaded conversation
 
-Some models (like [OpenAI](./providers.md#openai)'s [Dall-E-3](https://openai.com/index/dall-e-3/)) can only generate larger images (`1024x1024`, etc., for a higher charge), so we switching to a smaller/cheaper model (like [Dall-E-2](https://openai.com/index/dall-e-2/)) is a way to generate a sticker cheaply.
+For [OpenAI](./providers.md#openai) agents, stickers switch GPT image models, including GPT Image 2.5, to `gpt-image-1-mini`. An explicitly configured `high`, `xhigh`, or `max` quality is reduced to `low`. DALL-E 3 switches to DALL-E 2. These choices keep sticker generation inexpensive.

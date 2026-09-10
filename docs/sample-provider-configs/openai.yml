@@ -21,7 +21,12 @@ text_to_speech:
   speed: 1.0
   response_format: opus
 image_generation:
-  model_id: gpt-image-2
+  # Sunburst supports image generation and precise editing.
+  # Use gpt-image-2.5-flare for faster generation.
+  model_id: gpt-image-2.5-sunburst
+  # GPT image models do not use DALL-E's style parameter; describe the style in the prompt.
   style: null
+  # null lets the model choose; examples: 1024x1024, 1536x1024, 1024x1536, 2048x2048.
   size: null
+  # null uses the model default (auto). Options: low, medium, high, xhigh, max, auto.
   quality: null

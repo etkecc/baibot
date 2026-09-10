@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::OPENAI_IMAGE_MODEL_GPT_IMAGE_2;
+use super::OPENAI_IMAGE_MODEL_GPT_IMAGE_2_5_SUNBURST;
 use crate::agent::{default_prompt, provider::ConfigTrait};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -175,7 +175,7 @@ pub struct ImageGenerationConfig {
 impl Default for ImageGenerationConfig {
     fn default() -> Self {
         Self {
-            model_id: OPENAI_IMAGE_MODEL_GPT_IMAGE_2.to_owned(),
+            model_id: OPENAI_IMAGE_MODEL_GPT_IMAGE_2_5_SUNBURST.to_owned(),
             style: default_image_style(),
             size: default_image_size(),
             quality: default_image_quality(),

@@ -6,8 +6,9 @@ use async_openai::{
     types::{
         audio::{AudioInput, CreateSpeechRequestArgs, CreateTranscriptionRequestArgs},
         images::{
-            CreateImageEditRequestArgs, CreateImageRequest, CreateImageRequestArgs, Image,
-            ImageInput, ImageModel, ImageQuality, ImageResponseFormat,
+            CreateImageEditRequest, CreateImageEditRequestArgs, CreateImageRequest,
+            CreateImageRequestArgs, Image, ImageInput, ImageModel, ImageQuality,
+            ImageResponseFormat,
         },
         responses::{
             CodeInterpreterContainerAuto, CodeInterpreterTool, CodeInterpreterToolContainer,
@@ -312,56 +313,12 @@ impl ControllerTrait for Controller {
             ));
         };
 
-        if images.is_empty() {
-            return Err(anyhow::anyhow!("No image sources provided"));
-        }
-
-        let mut image_inputs: Vec<ImageInput> = Vec::new();
-        for image in images {
-            image_inputs.push(image.into());
-        }
-
-        let dalle2_size = match image_generation_config.size {
-            Some(async_openai::types::images::ImageSize::S256x256) => {
-                Some(async_openai::types::images::ImageSize::S256x256)
-            }
-            Some(async_openai::types::images::ImageSize::S512x512) => {
-                Some(async_openai::types::images::ImageSize::S512x512)
-            }
-            Some(async_openai::types::images::ImageSize::S1024x1024) => {
-                Some(async_openai::types::images::ImageSize::S1024x1024)
-            }
-            _ => None,
-        };
-
-        let model = image_generation_config
-            .model_id_as_openai_image_model()
-            .map_err(|err| anyhow::anyhow!(err))?;
-
-        let response_format = get_image_response_format(&model);
-
-        let mut request_builder = CreateImageEditRequestArgs::default();
-
-        request_builder
-            .image(image_inputs)
-            .prompt(prompt.to_owned())
-            .model(model);
-
-        if let Some(size) = dalle2_size {
-            request_builder.size(size);
-        }
-
-        if let Some(response_format) = response_format {
-            request_builder.response_format(response_format);
-        }
-
-        let request = request_builder
-            .build()
-            .map_err(|e| anyhow::anyhow!("Failed to build CreateImageEditRequest: {}", e))?;
+        let request = build_image_edit_request(image_generation_config, prompt, images)?;
 
         tracing::trace!(
             model = format!("{:?}", request.model),
             size = format!("{:?}", request.size),
+            quality = format!("{:?}", request.quality),
             response_format = format!("{:?}", request.response_format),
             "Sending OpenAI image edit API request"
         );
@@ -619,6 +576,51 @@ fn build_image_request(
     Ok(request_builder.build()?)
 }
 
+fn build_image_edit_request(
+    config: &ImageGenerationConfig,
+    prompt: &str,
+    images: Vec<ImageSource>,
+) -> anyhow::Result<CreateImageEditRequest> {
+    use async_openai::types::images::ImageSize;
+
+    if images.is_empty() {
+        return Err(anyhow::anyhow!("No image sources provided"));
+    }
+
+    let model = config
+        .model_id_as_openai_image_model()
+        .map_err(|err| anyhow::anyhow!(err))?;
+    let mut request_builder = CreateImageEditRequestArgs::default();
+
+    if is_gpt_image_model(&model) {
+        if let Some(size) = &config.size {
+            request_builder.size(size.clone());
+        }
+        if let Some(quality) = &config.quality {
+            request_builder.quality(quality.clone());
+        }
+    } else if let Some(size @ (ImageSize::S256x256 | ImageSize::S512x512 | ImageSize::S1024x1024)) =
+        &config.size
+    {
+        // Keep the existing DALL-E size restrictions for other providers.
+        request_builder.size(size.clone());
+    }
+
+    if let Some(response_format) = get_image_response_format(&model) {
+        request_builder.response_format(response_format);
+    }
+
+    let image_inputs: Vec<ImageInput> = images.into_iter().map(Into::into).collect();
+    request_builder
+        .image(image_inputs)
+        .prompt(prompt.to_owned())
+        .model(model);
+
+    request_builder
+        .build()
+        .map_err(|e| anyhow::anyhow!("Failed to build CreateImageEditRequest: {}", e))
+}
+
 fn is_gpt_image_model(model: &ImageModel) -> bool {
     match model {
         ImageModel::GptImage1
@@ -748,6 +750,95 @@ mod tests {
                 })
             );
         }
+    }
+
+    #[test]
+    fn gpt_image_2_5_edits_preserve_size_and_quality() {
+        for model_id in [
+            "gpt-image-2.5-sunburst",
+            "gpt-image-2.5-sunburst-2026-09-08",
+            "gpt-image-2.5-flare",
+            "gpt-image-2.5-flare-2026-09-08",
+        ] {
+            for size in ["auto", "1536x1024", "2048x2048"] {
+                for quality in ["xhigh", "max"] {
+                    let config: ImageGenerationConfig = serde_json::from_value(json!({
+                        "model_id": model_id,
+                        "size": size,
+                        "quality": quality,
+                    }))
+                    .unwrap();
+                    let request = build_image_edit_request(
+                        &config,
+                        "make the cat blue",
+                        vec![ImageSource::new(
+                            "cat.png".to_owned(),
+                            vec![1, 2, 3],
+                            mxlink::mime::IMAGE_PNG,
+                        )],
+                    )
+                    .unwrap();
+
+                    assert_eq!(
+                        serde_json::to_value(request.model).unwrap(),
+                        json!(model_id)
+                    );
+                    assert_eq!(serde_json::to_value(request.size).unwrap(), json!(size));
+                    assert_eq!(
+                        serde_json::to_value(request.quality).unwrap(),
+                        json!(quality)
+                    );
+                    assert_eq!(request.response_format, None);
+                    assert_eq!(request.prompt, "make the cat blue");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn dalle_and_custom_edits_keep_legacy_request_options() {
+        for model_id in ["dall-e-2", "custom/image-model"] {
+            for size in ["256x256", "512x512", "1024x1024", "1536x1024"] {
+                let config: ImageGenerationConfig = serde_json::from_value(json!({
+                    "model_id": model_id,
+                    "size": size,
+                    "quality": "standard",
+                }))
+                .unwrap();
+                let request = build_image_edit_request(
+                    &config,
+                    "make the cat blue",
+                    vec![ImageSource::new(
+                        "cat.png".to_owned(),
+                        vec![1, 2, 3],
+                        mxlink::mime::IMAGE_PNG,
+                    )],
+                )
+                .unwrap();
+
+                assert_eq!(request.response_format, Some(ImageResponseFormat::B64Json));
+                assert_eq!(request.quality, None);
+                assert_eq!(
+                    serde_json::to_value(request.size).unwrap(),
+                    if size == "1536x1024" {
+                        json!(null)
+                    } else {
+                        json!(size)
+                    }
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn image_edits_require_an_image() {
+        let error = build_image_edit_request(
+            &ImageGenerationConfig::default(),
+            "make the cat blue",
+            vec![],
+        )
+        .unwrap_err();
+        assert_eq!(error.to_string(), "No image sources provided");
     }
 
     #[test]

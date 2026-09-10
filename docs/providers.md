@@ -128,6 +128,18 @@ For services which are not fully compatible with the OpenAI API, consider using 
 
 💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/openai.yml).
 
+**Image generation and editing** use `image_generation.model_id`. New agents default to [`gpt-image-2.5-sunburst`](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst), which supports generation and precise editing. [`gpt-image-2.5-flare`](https://developers.openai.com/api/docs/models/gpt-image-2.5-flare) is also supported for faster generation. Both accept dated snapshots ending in `-2026-09-08`.
+
+The following settings apply to both image generation and editing with GPT Image 2.5:
+
+| Setting | Values |
+| --- | --- |
+| `quality` | `low`, `medium`, `high`, `xhigh`, `max`, or `auto`. `null` uses the model default, `auto`. |
+| `size` | `auto`, a standard size such as `1024x1024`, `1536x1024`, or `1024x1536`, or a custom size such as `2048x2048`. `null` lets the model choose. Custom dimensions must satisfy [OpenAI's size constraints](https://developers.openai.com/api/docs/guides/image-generation#size-and-quality-options). |
+| `style` | Leave this as `null` for GPT image models and describe the style in the prompt. This parameter is for DALL-E 3. |
+
+Existing agents keep their configured model. To switch, change `image_generation.model_id` in the agent configuration to `gpt-image-2.5-sunburst` or `gpt-image-2.5-flare`.
+
 
 ### OpenAI Compatible
 
