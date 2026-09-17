@@ -24,7 +24,7 @@ chrono = { version = "0.4.*", default-features = false, features = ["std", "now"
 matrix-sdk = { version = "0.19.0", default-features = false }
 mime_guess = "2.0.*"
 mxidwc = "1.0.*"
-mxlink = ">=1.15.0"
+mxlink = ">=1.16.0"
 etke_openai_api_rust = "0.1.*"
 quick_cache = "0.7.*"
 regex = "1.13.*"

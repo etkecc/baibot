@@ -1,3 +1,8 @@
+// Same reason as in `lib.rs`: `recursion_limit` is per-crate, and since
+// matrix-sdk 0.19.0 the binary crate trips the query-depth overflow as well
+// (when computing the layout of `Room::leave_impl()` futures).
+#![recursion_limit = "256"]
+
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 
