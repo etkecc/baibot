@@ -1,3 +1,10 @@
+# (2026-09-18) Version 1.27.0
+
+- (**Internal Improvement**) Update [matrix-sdk](https://crates.io/crates/matrix-sdk) from 0.18 to 0.19 and [mxlink](https://crates.io/crates/mxlink) to 1.16.0.
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-09-10) Version 1.26.0
 
 - (**Improvement**) Default newly-created [OpenAI agents](./docs/providers.md#openai) and sample configurations to `gpt-image-2.5-sunburst`. Add support for GPT Image 2.5 Sunburst and Flare, including their dated snapshots and `xhigh` / `max` quality settings.
