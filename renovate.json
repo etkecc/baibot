@@ -6,6 +6,13 @@
 	"labels": [
 		"dependencies"
 	],
+	"lockFileMaintenance": {
+		"description": "Refreshes Cargo.lock weekly, so transitive dependencies (which no other rule touches) do not drift. Merged like the Cargo rule below: by pushing to main once ci.yml passes on the Renovate branch.",
+		"enabled": true,
+		"automerge": true,
+		"automergeType": "branch",
+		"platformAutomerge": false
+	},
 	"packageRules": [
 		{
 			"description": "Cargo dependencies, the Rust toolchain pin, prek (via mise) and the workflows' own actions merge by pushing to main, without a pull request. ci.yml runs on `push: [\"**\"]`, so the Renovate branch itself is compiled, linted with `clippy -D warnings` and unit-tested first; a failure leaves the branch red and Renovate raises a pull request instead of merging.",
