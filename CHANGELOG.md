@@ -1,3 +1,10 @@
+# (2026-09-25) Version 1.27.1
+
+- (**Bugfix**) Fix thread context fetching on homeservers (like [Continuwuity](https://continuwuity.org/)) that reject an empty pagination token, by updating [mxlink](https://crates.io/crates/mxlink) to 1.16.1 ([#265](https://github.com/etkecc/baibot/issues/265)).
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-09-18) Version 1.27.0
 
 - (**Internal Improvement**) Update [matrix-sdk](https://crates.io/crates/matrix-sdk) from 0.18 to 0.19 and [mxlink](https://crates.io/crates/mxlink) to 1.16.0.
