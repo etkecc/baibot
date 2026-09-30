@@ -1,3 +1,12 @@
+# (2026-09-30) Version 1.28.0
+
+- (**Improvement**) The OpenAI provider accepts `text_generation.temperature: null` and omits the temperature parameter from requests. This allows models that reject the parameter to be used.
+
+- (**Improvement**) New OpenAI agents and sample configurations default to `gpt-6.1-sol` with temperature unset. Existing agents with an explicitly configured model keep it.
+
+- (**Internal Improvement**) Update `async-openai`, `prek`, the mise CI action, development service images, and locked dependencies.
+
+
 # (2026-09-25) Version 1.27.1
 
 - (**Bugfix**) Fix thread context fetching on homeservers (like [Continuwuity](https://continuwuity.org/)) that reject an empty pagination token, by updating [mxlink](https://crates.io/crates/mxlink) to 1.16.1 ([#265](https://github.com/etkecc/baibot/issues/265)).
