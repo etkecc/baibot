@@ -142,14 +142,17 @@ impl ControllerTrait for Controller {
 
         let temperature = params
             .temperature_override
-            .unwrap_or(text_generation_config.temperature);
+            .or(text_generation_config.temperature);
 
         let mut request_builder = CreateResponseArgs::default();
 
         request_builder
             .model(&text_generation_config.model_id)
-            .temperature(temperature)
             .input(input);
+
+        if let Some(temperature) = temperature {
+            request_builder.temperature(temperature);
+        }
 
         let mut tools = Vec::new();
         if text_generation_config.tools.web_search {
@@ -441,7 +444,7 @@ impl ControllerTrait for Controller {
         self.config
             .text_generation
             .as_ref()
-            .map(|config| config.temperature)
+            .and_then(|config| config.temperature)
     }
 
     fn text_to_speech_voice(&self) -> Option<String> {

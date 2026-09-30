@@ -53,8 +53,8 @@ pub struct TextGenerationConfig {
     #[serde(default)]
     pub prompt: Option<String>,
 
-    #[serde(default = "super::super::default_temperature")]
-    pub temperature: f32,
+    #[serde(default = "default_text_temperature")]
+    pub temperature: Option<f32>,
 
     #[serde(default)]
     pub max_response_tokens: Option<u32>,
@@ -74,7 +74,7 @@ impl Default for TextGenerationConfig {
         Self {
             model_id: default_text_model_id(),
             prompt: Some(default_prompt().to_owned()),
-            temperature: super::super::default_temperature(),
+            temperature: default_text_temperature(),
             max_response_tokens: None,
             max_completion_tokens: Some(128_000),
             max_context_tokens: 400_000,
@@ -85,6 +85,10 @@ impl Default for TextGenerationConfig {
 
 fn default_text_model_id() -> String {
     "gpt-5.4".to_owned()
+}
+
+fn default_text_temperature() -> Option<f32> {
+    Some(super::super::default_temperature())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -203,4 +207,26 @@ fn default_image_size() -> Option<async_openai::types::images::ImageSize> {
 
 fn default_image_quality() -> Option<async_openai::types::images::ImageQuality> {
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TextGenerationConfig;
+
+    #[test]
+    fn temperature_can_be_omitted_without_changing_existing_defaults() {
+        let defaults = TextGenerationConfig::default();
+        assert_eq!(defaults.model_id, "gpt-5.4");
+        assert_eq!(defaults.temperature, Some(1.0));
+
+        let missing: TextGenerationConfig = serde_yaml_ng::from_str("model_id: gpt-5.4\n").unwrap();
+        assert_eq!(missing.temperature, Some(1.0));
+
+        let configured: TextGenerationConfig =
+            serde_yaml_ng::from_str("temperature: 0.7\n").unwrap();
+        assert_eq!(configured.temperature, Some(0.7));
+
+        let omitted: TextGenerationConfig = serde_yaml_ng::from_str("temperature: null\n").unwrap();
+        assert_eq!(omitted.temperature, None);
+    }
 }

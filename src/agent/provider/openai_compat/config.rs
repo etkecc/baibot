@@ -91,7 +91,7 @@ impl TryInto<OpenAITextGenerationConfig> for TextGenerationConfig {
         Ok(OpenAITextGenerationConfig {
             model_id: self.model_id,
             prompt: self.prompt,
-            temperature: self.temperature,
+            temperature: Some(self.temperature),
             max_response_tokens: self.max_response_tokens,
             max_completion_tokens: None,
             max_context_tokens: self.max_context_tokens,
