@@ -53,7 +53,7 @@ pub struct TextGenerationConfig {
     #[serde(default)]
     pub prompt: Option<String>,
 
-    #[serde(default = "default_text_temperature")]
+    #[serde(default)]
     pub temperature: Option<f32>,
 
     #[serde(default)]
@@ -74,7 +74,7 @@ impl Default for TextGenerationConfig {
         Self {
             model_id: default_text_model_id(),
             prompt: Some(default_prompt().to_owned()),
-            temperature: default_text_temperature(),
+            temperature: None,
             max_response_tokens: None,
             max_completion_tokens: Some(128_000),
             max_context_tokens: 400_000,
@@ -84,11 +84,7 @@ impl Default for TextGenerationConfig {
 }
 
 fn default_text_model_id() -> String {
-    "gpt-5.4".to_owned()
-}
-
-fn default_text_temperature() -> Option<f32> {
-    Some(super::super::default_temperature())
+    "gpt-6.1-sol".to_owned()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -214,19 +210,18 @@ mod tests {
     use super::TextGenerationConfig;
 
     #[test]
-    fn temperature_can_be_omitted_without_changing_existing_defaults() {
+    fn new_agents_use_sol_without_temperature_and_explicit_values_still_load() {
         let defaults = TextGenerationConfig::default();
-        assert_eq!(defaults.model_id, "gpt-5.4");
-        assert_eq!(defaults.temperature, Some(1.0));
+        assert_eq!(defaults.model_id, "gpt-6.1-sol");
+        assert_eq!(defaults.temperature, None);
 
-        let missing: TextGenerationConfig = serde_yaml_ng::from_str("model_id: gpt-5.4\n").unwrap();
-        assert_eq!(missing.temperature, Some(1.0));
+        let missing: TextGenerationConfig = serde_yaml_ng::from_str("{}\n").unwrap();
+        assert_eq!(missing.model_id, "gpt-6.1-sol");
+        assert_eq!(missing.temperature, None);
 
-        let configured: TextGenerationConfig =
-            serde_yaml_ng::from_str("temperature: 0.7\n").unwrap();
-        assert_eq!(configured.temperature, Some(0.7));
-
-        let omitted: TextGenerationConfig = serde_yaml_ng::from_str("temperature: null\n").unwrap();
-        assert_eq!(omitted.temperature, None);
+        let existing: TextGenerationConfig =
+            serde_yaml_ng::from_str("model_id: gpt-5.4\ntemperature: 1.0\n").unwrap();
+        assert_eq!(existing.model_id, "gpt-5.4");
+        assert_eq!(existing.temperature, Some(1.0));
     }
 }

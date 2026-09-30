@@ -91,9 +91,9 @@ agents:
     #     base_url: https://api.openai.com/v1
     #     api_key: ""
     #     text_generation:
-    #       model_id: gpt-5.4
+    #       model_id: gpt-6.1-sol
     #       prompt: "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time of this conversation's start is: {{ baibot_conversation_start_time_utc }}."
-    #       temperature: 1.0
+    #       temperature: null
     #       # Reasoning models need to use `max_completion_tokens` instead of `max_response_tokens`.
     #       # If you're dealing with a non-reasoning model, specify `max_response_tokens` and unset `max_completion_tokens`.
     #       max_response_tokens: null
