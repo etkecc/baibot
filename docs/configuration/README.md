@@ -40,6 +40,8 @@ Room Settings come from 3 different levels with priority in the following order 
 - 🌐 globally (`!bai config global ..` commands)
 - 📝 as [hardcoded defaults](../../src/entity/cfg/defaults.rs)
 
+By default, any [allowed user](../access.md#-users) can change a room's settings. Setting `room.config_changes_require_privilege: true` in the [static configuration](#static-configuration) (or the `BAIBOT_ROOM_CONFIG_CHANGES_REQUIRE_PRIVILEGE` environment variable) restricts this to [administrators](../access.md#️-administrators) and [room-local agent managers](../access.md#-room-local-agent-managers). Reading settings stays open to allowed users.
+
 You can adjust the following settings per room and/or globally:
 
 - [💬 Text Generation](text-generation.md)

@@ -65,3 +65,7 @@ pub fn value_was_set_to(value: impl std::fmt::Display) -> String {
 pub fn value_was_unset() -> String {
     "This room-specific configuration value has been unset.".to_owned()
 }
+
+pub fn no_permissions_to_change_room_config() -> &'static str {
+    "You do not have permission to change the configuration of this room. Only administrators and room-local agent managers can."
+}

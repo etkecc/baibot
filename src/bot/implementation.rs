@@ -147,6 +147,10 @@ impl Bot {
         self.inner.config.room.post_join_self_introduction_enabled
     }
 
+    pub(crate) fn room_config_changes_require_privilege(&self) -> bool {
+        self.inner.config.room.config_changes_require_privilege
+    }
+
     pub(crate) fn homeserver_name(&self) -> &str {
         &self.inner.config.homeserver.server_name
     }

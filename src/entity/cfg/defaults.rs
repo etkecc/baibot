@@ -37,3 +37,7 @@ pub(super) fn persistence_db_dir_name() -> String {
 pub(super) fn logging() -> String {
     "warn,mxlink=debug,baibot=debug".to_owned()
 }
+
+pub(super) fn room_config_changes_require_privilege() -> bool {
+    false
+}

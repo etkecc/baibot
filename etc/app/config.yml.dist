@@ -51,6 +51,12 @@ room:
   # Whether the bot should send an introduction message after joining a room.
   post_join_self_introduction_enabled: true
 
+  # Whether changing a room's configuration (`!bai config room set-...`) requires being an
+  # administrator or a room-local agent manager, instead of just an allowed user.
+  # Turn this on if allowed users include people you don't fully trust, such as contacts
+  # bridged from another network (e.g. `@*:example.com` also matching a bridge's puppets).
+  config_changes_require_privilege: false
+
 access:
   # Space-separated list of MXID patterns which specify who is an admin.
   admin_patterns:

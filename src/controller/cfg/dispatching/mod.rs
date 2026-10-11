@@ -52,6 +52,21 @@ async fn dispatch_config_related_handler(
         return Ok(());
     }
 
+    if let SettingsStorageSource::Room = config_type
+        && handler.is_mutation()
+        && bot.room_config_changes_require_privilege()
+        && !message_context.sender_can_manage_room_local_agents()?
+    {
+        bot.messaging()
+            .send_error_markdown_no_fail(
+                message_context.room(),
+                strings::room_config::no_permissions_to_change_room_config(),
+                MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
+            )
+            .await;
+        return Ok(());
+    }
+
     let room_settings = match config_type {
         SettingsStorageSource::Room => &message_context.room_config().settings,
         SettingsStorageSource::Global => &message_context.global_config().fallback_room_settings,

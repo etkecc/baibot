@@ -52,6 +52,9 @@ pub fn load() -> anyhow::Result<Config> {
             cfg_env::BAIBOT_ROOM_POST_JOIN_SELF_INTRODUCTION_ENABLED => {
                 config.room.post_join_self_introduction_enabled = value.parse::<bool>()?;
             }
+            cfg_env::BAIBOT_ROOM_CONFIG_CHANGES_REQUIRE_PRIVILEGE => {
+                config.room.config_changes_require_privilege = value.parse::<bool>()?;
+            }
             cfg_env::BAIBOT_LOGGING => {
                 config.logging = value;
             }

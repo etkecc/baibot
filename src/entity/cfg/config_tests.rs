@@ -1,4 +1,4 @@
-use super::{Avatar, ConfigUser, ConfigUserAuth, ConfigUserEncryption};
+use super::{Avatar, ConfigRoom, ConfigUser, ConfigUserAuth, ConfigUserEncryption};
 use crate::entity::cfg::env;
 
 fn base_user() -> ConfigUser {
@@ -114,4 +114,30 @@ fn auth_config_treats_empty_strings_as_unset() {
         .expect_err("empty auth values should be treated as unset");
 
     assert!(err.to_string().contains("Set one authentication method"));
+}
+
+#[test]
+fn room_config_changes_do_not_require_privilege_by_default() {
+    let room: ConfigRoom = serde_yaml_ng::from_str("post_join_self_introduction_enabled: true")
+        .expect("room config without the key should parse");
+
+    assert!(!room.config_changes_require_privilege);
+    assert!(!ConfigRoom::default().config_changes_require_privilege);
+}
+
+#[test]
+fn room_config_changes_can_be_restricted() {
+    let room: ConfigRoom = serde_yaml_ng::from_str("config_changes_require_privilege: true")
+        .expect("room config with the key should parse");
+
+    assert!(room.config_changes_require_privilege);
+    assert!(room.post_join_self_introduction_enabled);
+}
+
+#[test]
+fn room_config_changes_require_privilege_env_var_name() {
+    assert_eq!(
+        env::BAIBOT_ROOM_CONFIG_CHANGES_REQUIRE_PRIVILEGE,
+        "BAIBOT_ROOM_CONFIG_CHANGES_REQUIRE_PRIVILEGE"
+    );
 }

@@ -363,6 +363,16 @@ impl PersistenceConfig {
 pub struct ConfigRoom {
     #[serde(default = "super::defaults::room_post_join_self_introduction_enabled")]
     pub post_join_self_introduction_enabled: bool,
+
+    /// Whether changing a room's configuration (`!bai config room set-...`) requires more than
+    /// being an allowed user: an administrator or a room-local agent manager.
+    ///
+    /// Off by default (any allowed user can change a room's configuration). Turn it on when allowed
+    /// users include people you don't fully trust, such as bridged contacts (e.g. `@*:example.com`
+    /// also matching the puppets of a WhatsApp bridge), who could otherwise turn on features that
+    /// cost money in their rooms.
+    #[serde(default = "super::defaults::room_config_changes_require_privilege")]
+    pub config_changes_require_privilege: bool,
 }
 
 impl ConfigRoom {
@@ -376,6 +386,8 @@ impl Default for ConfigRoom {
         Self {
             post_join_self_introduction_enabled:
                 super::defaults::room_post_join_self_introduction_enabled(),
+            config_changes_require_privilege:
+                super::defaults::room_config_changes_require_privilege(),
         }
     }
 }
