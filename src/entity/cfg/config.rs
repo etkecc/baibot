@@ -363,11 +363,25 @@ impl PersistenceConfig {
 pub struct ConfigRoom {
     #[serde(default = "super::defaults::room_post_join_self_introduction_enabled")]
     pub post_join_self_introduction_enabled: bool,
+
+    /// How far behind the newest processed event (going by `origin_server_ts`) a new event may be
+    /// and still get processed. Older events are treated as already handled and are ignored.
+    ///
+    /// This guards against re-processing old events after a state-store loss (see
+    /// `DelayedCatchUpMarkerManager`), but `origin_server_ts` is not always "now": federation can
+    /// be slow, and bridges (e.g. mautrix) set it to the remote network's timestamp, so a voice
+    /// message delivered a few minutes late carries an old timestamp and would be dropped.
+    #[serde(default = "super::defaults::room_catch_up_tolerance_seconds")]
+    pub catch_up_tolerance_seconds: u64,
 }
 
 impl ConfigRoom {
     pub fn validate(&self) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    pub fn catch_up_tolerance(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(self.catch_up_tolerance_seconds)
     }
 }
 
@@ -376,6 +390,7 @@ impl Default for ConfigRoom {
         Self {
             post_join_self_introduction_enabled:
                 super::defaults::room_post_join_self_introduction_enabled(),
+            catch_up_tolerance_seconds: super::defaults::room_catch_up_tolerance_seconds(),
         }
     }
 }

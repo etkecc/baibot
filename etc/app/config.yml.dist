@@ -51,6 +51,14 @@ room:
   # Whether the bot should send an introduction message after joining a room.
   post_join_self_introduction_enabled: true
 
+  # How far behind the newest processed message (by its `origin_server_ts`) a new message may be
+  # and still be processed. Older ones are treated as already handled (this protects against
+  # re-processing old messages if the bot's local state is lost).
+  # Raise it if messages arrive with old timestamps: slow federation, or bridges (e.g. mautrix),
+  # which stamp messages with the remote network's time, so a voice message delivered late is
+  # otherwise silently ignored. Example: 86400 (1 day).
+  catch_up_tolerance_seconds: 90
+
 access:
   # Space-separated list of MXID patterns which specify who is an admin.
   admin_patterns:
