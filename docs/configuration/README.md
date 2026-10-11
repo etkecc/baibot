@@ -30,6 +30,8 @@ The bot maintains a global catch-up marker to limit replay if its local sync sta
 
 Increase this value for slow federation or bridges (like the [mautrix](https://github.com/mautrix) ones) that use remote message timestamps. Larger values also admit more historical events and may allow more replay. Set it via YAML or `BAIBOT_ROOM_CATCH_UP_TOLERANCE_SECONDS`; changes take effect on future marker updates and do not retry previously skipped events.
 
+The persisted marker only advances: processing an older event does not move it backwards. Increasing the tolerance does not rewind an existing marker; it affects subsequent advances.
+
 
 ### Dynamic configuration
 

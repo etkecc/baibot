@@ -153,10 +153,15 @@ impl DelayedCatchUpMarkerManager {
                 // To allow for some federation delay (specified in federation_delay_tolerance),
                 // we adjust the value we'll actually persist with that delay duration.
                 // For more information, see the documentation for `Self`.
-                let caught_up_until_event_origin_server_ts_millis = caught_up_until(
+                let Some(caught_up_until_event_origin_server_ts_millis) = next_catch_up_marker(
+                    marker.caught_up_until_event_origin_server_ts_millis,
                     *next_catch_up_marker_event_origin_server_ts_millis_guard,
                     federation_delay_tolerance,
-                );
+                ) else {
+                    tracing::trace!("Scheduled update would not advance the catch-up marker");
+                    *next_catch_up_marker_event_origin_server_ts_millis_guard = 0;
+                    continue;
+                };
 
                 marker.caught_up_until_event_origin_server_ts_millis =
                     caught_up_until_event_origin_server_ts_millis;
@@ -188,9 +193,19 @@ pub(crate) fn caught_up_until(newest_processed_ts_millis: i64, tolerance: Durati
     newest_processed_ts_millis.saturating_sub(tolerance_millis)
 }
 
+/// Returns an update only when the batch would advance the persisted marker.
+fn next_catch_up_marker(
+    persisted_marker_ts_millis: i64,
+    newest_processed_ts_millis: i64,
+    tolerance: Duration,
+) -> Option<i64> {
+    let next = caught_up_until(newest_processed_ts_millis, tolerance);
+    (next > persisted_marker_ts_millis).then_some(next)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::caught_up_until;
+    use super::{caught_up_until, next_catch_up_marker};
     use tokio::time::Duration;
 
     const NOW: i64 = 1_760_000_000_000;
@@ -224,5 +239,68 @@ mod tests {
         // Duration::MAX does not fit in i64 milliseconds: clamp instead of panicking.
         assert_eq!(caught_up_until(NOW, Duration::MAX), NOW - i64::MAX);
         assert_eq!(caught_up_until(i64::MIN, Duration::from_secs(1)), i64::MIN);
+    }
+
+    #[test]
+    fn late_batch_does_not_rewind_marker() {
+        let tolerance = Duration::from_secs(300);
+        let marker = next_catch_up_marker(0, NOW, tolerance).unwrap();
+        let late_event_ts = NOW - 120_000;
+        let old_event_ts = NOW - 360_000;
+
+        assert!(late_event_ts > marker, "late event is still eligible");
+        assert!(old_event_ts <= marker, "older event is already excluded");
+        assert_eq!(next_catch_up_marker(marker, late_event_ts, tolerance), None);
+    }
+
+    #[test]
+    fn newer_batch_advances_marker_after_late_batches() {
+        let tolerance = Duration::from_secs(300);
+        let initial_marker = next_catch_up_marker(0, NOW, tolerance).unwrap();
+        let mut marker = initial_marker;
+
+        for event_ts in [NOW - 120_000, NOW - 60_000, NOW + 60_000] {
+            if let Some(next) = next_catch_up_marker(marker, event_ts, tolerance) {
+                marker = next;
+            }
+            assert!(marker >= initial_marker, "marker must not move backwards");
+        }
+
+        assert_eq!(marker, NOW + 60_000 - 300_000);
+    }
+
+    #[test]
+    fn unchanged_marker_does_not_need_an_update() {
+        let tolerance = Duration::from_secs(300);
+        let marker = next_catch_up_marker(0, NOW, tolerance).unwrap();
+
+        assert_eq!(next_catch_up_marker(marker, NOW, tolerance), None);
+    }
+
+    #[test]
+    fn increasing_tolerance_does_not_rewind_existing_marker() {
+        let old_marker = caught_up_until(NOW, Duration::from_secs(90));
+        let tolerance = Duration::from_secs(300);
+
+        assert_eq!(next_catch_up_marker(old_marker, NOW, tolerance), None);
+        assert_eq!(
+            next_catch_up_marker(old_marker, NOW + 300_000, tolerance),
+            Some(NOW)
+        );
+    }
+
+    #[test]
+    fn zero_tolerance_advances_only_for_newer_timestamps() {
+        assert_eq!(next_catch_up_marker(NOW, NOW - 1, Duration::ZERO), None);
+        assert_eq!(next_catch_up_marker(NOW, NOW, Duration::ZERO), None);
+        assert_eq!(
+            next_catch_up_marker(NOW, NOW + 1, Duration::ZERO),
+            Some(NOW + 1)
+        );
+    }
+
+    #[test]
+    fn huge_tolerance_does_not_rewind_existing_marker() {
+        assert_eq!(next_catch_up_marker(0, NOW, Duration::MAX), None);
     }
 }
