@@ -201,7 +201,7 @@ mod tests {
     }
 
     #[test]
-    fn late_bridged_event_is_dropped_with_default_tolerance() {
+    fn late_bridged_event_is_dropped_with_90_second_tolerance() {
         // A bridge delivers a voice message 2 minutes late, stamped with the remote
         // network's timestamp, after a newer message was already processed.
         let late_event_ts = NOW - 120_000;
@@ -213,9 +213,9 @@ mod tests {
     }
 
     #[test]
-    fn late_bridged_event_is_processed_with_larger_tolerance() {
+    fn late_bridged_event_is_processed_with_default_tolerance() {
         let late_event_ts = NOW - 120_000;
-        let marker = caught_up_until(NOW, Duration::from_secs(3600));
+        let marker = caught_up_until(NOW, Duration::from_secs(300));
         assert!(marker < late_event_ts, "still considered new (processed)");
     }
 

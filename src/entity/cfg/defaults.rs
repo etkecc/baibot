@@ -23,7 +23,7 @@ pub(super) fn room_post_join_self_introduction_enabled() -> bool {
 }
 
 pub(super) fn room_catch_up_tolerance_seconds() -> u64 {
-    90
+    300
 }
 
 pub(super) fn persistence_data_dir_path() -> Option<String> {

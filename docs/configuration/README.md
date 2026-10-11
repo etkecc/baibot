@@ -26,7 +26,7 @@ For Matrix-account authentication setup, see [🔐 Authentication](./authenticat
 
 #### ⏱️ Catch-up tolerance
 
-The bot maintains a global catch-up marker to limit replay if its local sync state is lost. Events whose `origin_server_ts` is at or before the persisted marker are ignored across all rooms. When updating the marker, the bot subtracts `room.catch_up_tolerance_seconds` (default: `90`) from processed event timestamps to allow for delayed delivery.
+The bot maintains a global catch-up marker to limit replay if its local sync state is lost. Events whose `origin_server_ts` is at or before the persisted marker are ignored across all rooms. When updating the marker, the bot subtracts `room.catch_up_tolerance_seconds` (default: `300`, or five minutes) from processed event timestamps to allow for delayed delivery.
 
 Increase this value for slow federation or bridges (like the [mautrix](https://github.com/mautrix) ones) that use remote message timestamps. Larger values also admit more historical events and may allow more replay. Set it via YAML or `BAIBOT_ROOM_CATCH_UP_TOLERANCE_SECONDS`; changes take effect on future marker updates and do not retry previously skipped events.
 

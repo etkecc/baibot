@@ -53,7 +53,7 @@ room:
 
   # Seconds subtracted from processed event timestamps when updating the catch-up marker for all rooms.
   # Increase for delayed federation or bridged messages; larger values permit more history and replay.
-  catch_up_tolerance_seconds: 90
+  catch_up_tolerance_seconds: 300
 
 access:
   # Space-separated list of MXID patterns which specify who is an admin.
