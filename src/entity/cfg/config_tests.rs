@@ -1,4 +1,4 @@
-use super::{Avatar, ConfigUser, ConfigUserAuth, ConfigUserEncryption};
+use super::{Avatar, ConfigRoom, ConfigUser, ConfigUserAuth, ConfigUserEncryption};
 use crate::entity::cfg::env;
 
 fn base_user() -> ConfigUser {
@@ -114,4 +114,37 @@ fn auth_config_treats_empty_strings_as_unset() {
         .expect_err("empty auth values should be treated as unset");
 
     assert!(err.to_string().contains("Set one authentication method"));
+}
+
+#[test]
+fn room_catch_up_tolerance_defaults_to_90_seconds() {
+    let room: ConfigRoom = serde_yaml_ng::from_str("post_join_self_introduction_enabled: true")
+        .expect("room config without the key should parse");
+
+    assert_eq!(room.catch_up_tolerance_seconds, 90);
+    assert_eq!(
+        room.catch_up_tolerance(),
+        std::time::Duration::from_secs(90)
+    );
+    assert_eq!(ConfigRoom::default().catch_up_tolerance_seconds, 90);
+}
+
+#[test]
+fn room_catch_up_tolerance_can_be_configured() {
+    let room: ConfigRoom = serde_yaml_ng::from_str("catch_up_tolerance_seconds: 86400")
+        .expect("room config with the key should parse");
+
+    assert_eq!(
+        room.catch_up_tolerance(),
+        std::time::Duration::from_secs(86_400)
+    );
+    assert!(room.post_join_self_introduction_enabled);
+}
+
+#[test]
+fn room_catch_up_tolerance_env_var_name() {
+    assert_eq!(
+        env::BAIBOT_ROOM_CATCH_UP_TOLERANCE_SECONDS,
+        "BAIBOT_ROOM_CATCH_UP_TOLERANCE_SECONDS"
+    );
 }

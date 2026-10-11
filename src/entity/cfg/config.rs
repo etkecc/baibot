@@ -363,11 +363,20 @@ impl PersistenceConfig {
 pub struct ConfigRoom {
     #[serde(default = "super::defaults::room_post_join_self_introduction_enabled")]
     pub post_join_self_introduction_enabled: bool,
+
+    /// Seconds subtracted from processed event timestamps when updating the global catch-up marker.
+    /// Larger values tolerate older incoming events but permit more history and replay.
+    #[serde(default = "super::defaults::room_catch_up_tolerance_seconds")]
+    pub catch_up_tolerance_seconds: u64,
 }
 
 impl ConfigRoom {
     pub fn validate(&self) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    pub fn catch_up_tolerance(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(self.catch_up_tolerance_seconds)
     }
 }
 
@@ -376,6 +385,7 @@ impl Default for ConfigRoom {
         Self {
             post_join_self_introduction_enabled:
                 super::defaults::room_post_join_self_introduction_enabled(),
+            catch_up_tolerance_seconds: super::defaults::room_catch_up_tolerance_seconds(),
         }
     }
 }

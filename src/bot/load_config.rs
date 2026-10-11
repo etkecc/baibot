@@ -52,6 +52,9 @@ pub fn load() -> anyhow::Result<Config> {
             cfg_env::BAIBOT_ROOM_POST_JOIN_SELF_INTRODUCTION_ENABLED => {
                 config.room.post_join_self_introduction_enabled = value.parse::<bool>()?;
             }
+            cfg_env::BAIBOT_ROOM_CATCH_UP_TOLERANCE_SECONDS => {
+                config.room.catch_up_tolerance_seconds = value.parse::<u64>()?;
+            }
             cfg_env::BAIBOT_LOGGING => {
                 config.logging = value;
             }
