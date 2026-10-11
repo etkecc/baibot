@@ -26,9 +26,9 @@ For Matrix-account authentication setup, see [🔐 Authentication](./authenticat
 
 #### ⏱️ Catch-up tolerance
 
-The bot ignores messages whose `origin_server_ts` is more than `room.catch_up_tolerance_seconds` (default: `90`) older than the newest message it has already processed, so it doesn't re-process old messages if its local state is ever lost.
+The bot maintains a global catch-up marker to limit replay if its local sync state is lost. Events whose `origin_server_ts` is at or before the persisted marker are ignored across all rooms. When updating the marker, the bot subtracts `room.catch_up_tolerance_seconds` (default: `90`) from processed event timestamps to allow for delayed delivery.
 
-Messages don't always arrive in timestamp order, though: federation can be slow, and bridges (like the [mautrix](https://github.com/mautrix) ones) stamp messages with the remote network's timestamp. A bridged voice message that gets delivered a few minutes late would then be silently ignored. If you use the bot with bridges, consider raising this value (e.g. `86400` for a day) via the YAML configuration or the `BAIBOT_ROOM_CATCH_UP_TOLERANCE_SECONDS` environment variable.
+Increase this value for slow federation or bridges (like the [mautrix](https://github.com/mautrix) ones) that use remote message timestamps. Larger values also admit more historical events and may allow more replay. Set it via YAML or `BAIBOT_ROOM_CATCH_UP_TOLERANCE_SECONDS`; changes take effect on future marker updates and do not retry previously skipped events.
 
 
 ### Dynamic configuration

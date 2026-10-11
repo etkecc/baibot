@@ -88,8 +88,6 @@ impl Bot {
         let delayed_catch_up_marker_manager = DelayedCatchUpMarkerManager::new(
             catch_up_marker_manager,
             DELAYED_CATCH_UP_MARKER_MANAGER_PERSIST_INTERVAL_DURATION,
-            // How far behind the newest processed event we still accept events
-            // (configurable via `room.catch_up_tolerance_seconds`).
             config.room.catch_up_tolerance(),
         );
 

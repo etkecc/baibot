@@ -181,8 +181,8 @@ impl DelayedCatchUpMarkerManager {
     }
 }
 
-/// Computes the catch-up marker to persist: the newest processed event's `origin_server_ts`,
-/// minus the tolerance. Events at or before the returned timestamp are considered handled.
+/// Computes a catch-up marker from a processed event's `origin_server_ts` minus the tolerance.
+/// Events at or before the persisted marker are considered handled.
 pub(crate) fn caught_up_until(newest_processed_ts_millis: i64, tolerance: Duration) -> i64 {
     let tolerance_millis = i64::try_from(tolerance.as_millis()).unwrap_or(i64::MAX);
     newest_processed_ts_millis.saturating_sub(tolerance_millis)
