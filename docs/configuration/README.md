@@ -24,6 +24,12 @@ You can see the list of supported environment variables in the [🦀 src/entity/
 
 For Matrix-account authentication setup, see [🔐 Authentication](./authentication.md).
 
+#### ⏱️ Catch-up tolerance
+
+The bot ignores messages whose `origin_server_ts` is more than `room.catch_up_tolerance_seconds` (default: `90`) older than the newest message it has already processed, so it doesn't re-process old messages if its local state is ever lost.
+
+Messages don't always arrive in timestamp order, though: federation can be slow, and bridges (like the [mautrix](https://github.com/mautrix) ones) stamp messages with the remote network's timestamp. A bridged voice message that gets delivered a few minutes late would then be silently ignored. If you use the bot with bridges, consider raising this value (e.g. `86400` for a day) via the YAML configuration or the `BAIBOT_ROOM_CATCH_UP_TOLERANCE_SECONDS` environment variable.
+
 
 ### Dynamic configuration
 

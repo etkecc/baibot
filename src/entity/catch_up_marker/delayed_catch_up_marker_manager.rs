@@ -153,9 +153,10 @@ impl DelayedCatchUpMarkerManager {
                 // To allow for some federation delay (specified in federation_delay_tolerance),
                 // we adjust the value we'll actually persist with that delay duration.
                 // For more information, see the documentation for `Self`.
-                let caught_up_until_event_origin_server_ts_millis =
-                    *next_catch_up_marker_event_origin_server_ts_millis_guard
-                        - (federation_delay_tolerance.as_millis() as i64);
+                let caught_up_until_event_origin_server_ts_millis = caught_up_until(
+                    *next_catch_up_marker_event_origin_server_ts_millis_guard,
+                    federation_delay_tolerance,
+                );
 
                 marker.caught_up_until_event_origin_server_ts_millis =
                     caught_up_until_event_origin_server_ts_millis;
@@ -177,5 +178,51 @@ impl DelayedCatchUpMarkerManager {
                 *next_catch_up_marker_event_origin_server_ts_millis_guard = 0;
             }
         });
+    }
+}
+
+/// Computes the catch-up marker to persist: the newest processed event's `origin_server_ts`,
+/// minus the tolerance. Events at or before the returned timestamp are considered handled.
+pub(crate) fn caught_up_until(newest_processed_ts_millis: i64, tolerance: Duration) -> i64 {
+    let tolerance_millis = i64::try_from(tolerance.as_millis()).unwrap_or(i64::MAX);
+    newest_processed_ts_millis.saturating_sub(tolerance_millis)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::caught_up_until;
+    use tokio::time::Duration;
+
+    const NOW: i64 = 1_760_000_000_000;
+
+    #[test]
+    fn marker_is_newest_timestamp_minus_tolerance() {
+        assert_eq!(caught_up_until(NOW, Duration::from_secs(90)), NOW - 90_000);
+    }
+
+    #[test]
+    fn late_bridged_event_is_dropped_with_default_tolerance() {
+        // A bridge delivers a voice message 2 minutes late, stamped with the remote
+        // network's timestamp, after a newer message was already processed.
+        let late_event_ts = NOW - 120_000;
+        let marker = caught_up_until(NOW, Duration::from_secs(90));
+        assert!(
+            marker >= late_event_ts,
+            "considered already handled (dropped)"
+        );
+    }
+
+    #[test]
+    fn late_bridged_event_is_processed_with_larger_tolerance() {
+        let late_event_ts = NOW - 120_000;
+        let marker = caught_up_until(NOW, Duration::from_secs(3600));
+        assert!(marker < late_event_ts, "still considered new (processed)");
+    }
+
+    #[test]
+    fn huge_tolerance_does_not_overflow() {
+        // Duration::MAX does not fit in i64 milliseconds: clamp instead of panicking.
+        assert_eq!(caught_up_until(NOW, Duration::MAX), NOW - i64::MAX);
+        assert_eq!(caught_up_until(i64::MIN, Duration::from_secs(1)), i64::MIN);
     }
 }
