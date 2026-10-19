@@ -1,3 +1,12 @@
+# (2026-10-19) Version 1.29.0
+
+- (**Improvement**) The catch-up marker tolerance is now configurable via `room.catch_up_tolerance_seconds` (or the `BAIBOT_ROOM_CATCH_UP_TOLERANCE_SECONDS` environment variable), and its default is raised from 90 seconds to 5 minutes. Increase it for slow federation or for bridges (like the [mautrix](https://github.com/mautrix) ones) that use remote message timestamps. See [Catch-up tolerance](./docs/configuration/README.md#️-catch-up-tolerance). Thanks to [@Sdr-cai](https://github.com/Sdr-cai) for the contribution in [#268](https://github.com/etkecc/baibot/pull/268)!
+
+- (**Bugfix**) The catch-up marker no longer moves backwards when an older event is processed after a newer one.
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-09-30) Version 1.28.0
 
 - (**Improvement**) The OpenAI provider accepts `text_generation.temperature: null` and omits the temperature parameter from requests. This allows models that reject the parameter to be used.
