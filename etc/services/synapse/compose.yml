@@ -14,7 +14,7 @@ services:
     - /etc/passwd:/etc/passwd:ro
 
   synapse:
-    image: ghcr.io/element-hq/synapse:v1.163.2
+    image: ghcr.io/element-hq/synapse:v1.164.0
     user: "${UID}:${GID}"
     restart: unless-stopped
     entrypoint: python
