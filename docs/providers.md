@@ -48,7 +48,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
 
 - 🆔 Identifier: `anthropic`
 - 🔗 Links: [🏠 Home page](https://www.anthropic.com/), [🌐 Wiki](https://en.wikipedia.org/wiki/Anthropic), [👤 Sign up](https://console.anthropic.com/), [📋 Models list](https://docs.anthropic.com/en/docs/about-claude/models)
-- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation) (incl. vision, no tools)
+- 🌟 Capabilities: [💬 text-generation](./features.md#-text-generation) (incl. vision, incl. [🛠️ tools](./features.md#️-built-in-tools))
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local anthropic my-anthropic-agent`
   - create a global agent: `!bai agent create-global anthropic my-anthropic-agent`
@@ -121,7 +121,7 @@ For services which are not fully compatible with the OpenAI API, consider using 
 
 - 🆔 Identifier: `openai`
 - 🔗 Links: [🏠 Home page](https://openai.com/), [🌐 Wiki](https://en.wikipedia.org/wiki/OpenAI), [👤 Sign up](https://platform.openai.com/signup), [📋 Models list](https://platform.openai.com/docs/models)
-- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation), [💬 text-generation](./features.md#-text-generation) (incl. vision, incl. [🛠️ tools](./features.md#️-built-in-tools-openai-only)), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
+- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation), [💬 text-generation](./features.md#-text-generation) (incl. vision, incl. [🛠️ tools](./features.md#️-built-in-tools)), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local openai my-openai-agent`
   - create a global agent: `!bai agent create-global openai my-openai-agent`
