@@ -156,9 +156,9 @@ dependencies = [
 
 [[package]]
 name = "async-openai"
-version = "0.42.2"
+version = "0.42.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "174e979f1e2ffe94b88d584740c11fd071f6d829c29120b1ba88bcaeb3374063"
+checksum = "04382e9f293268e235ef0ef51a18e7c988e70a52e3a5c893d497c67ec613a9a6"
 dependencies = [
  "async-openai-macros",
  "base64 0.22.1",
