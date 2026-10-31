@@ -42,7 +42,7 @@ You may also wish to see:
 - [📖 Usage / 💬 Text Generation](./usage.md#-text-generation) section for more details on how to use the bot for Text Generation in a room
 
 
-#### 🛠️ Built-in Tools (OpenAI only)
+#### 🛠️ Built-in Tools
 
 
 
@@ -52,11 +52,17 @@ The [OpenAI provider](./providers.md#openai) supports built-in tools that extend
 
 - [💻 Code Interpreter](https://platform.openai.com/docs/guides/tools-code-interpreter) (`code_interpreter`): allows the model to write and execute Python code in a sandbox
 
-These tools are **disabled by default** and need to be explicitly enabled in the agent's `text_generation.tools` configuration. See the [OpenAI sample configuration](https://github.com/etkecc/baibot/blob/c70387b0c38d8d0f30bba2179a2a21a3710dbeaf/docs/sample-provider-configs/openai.yml#L12-L15) for reference.
+The [Anthropic provider](./providers.md#anthropic) supports these built-in tools:
+
+- [🔍 Web Search](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool) (`web_search`): allows the model to search the web for up-to-date information
+
+- [🌐 Web Fetch](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool) (`web_fetch`): allows the model to read web pages and PDFs from links that users post in the room or that web search finds
+
+These tools are **disabled by default** and need to be explicitly enabled in the agent's `text_generation.tools` configuration. See the [OpenAI sample configuration](https://github.com/etkecc/baibot/blob/c70387b0c38d8d0f30bba2179a2a21a3710dbeaf/docs/sample-provider-configs/openai.yml#L12-L15) and the [Anthropic sample configuration](./sample-provider-configs/anthropic.yml) for reference.
 
 To enable tools on an existing dynamically-created agent, you need to [update the agent](./agents.md#updating-agents) to re-create it with the `text_generation.tools` section added and enable the tools you need
 
-💡 **Note**: These tools run on OpenAI's infrastructure and may incur additional costs. Web search results include citations that are incorporated into the response.
+💡 **Note**: These tools run on the provider's infrastructure and may incur additional costs. Web search results include citations that are incorporated into the response (for Anthropic, as a list of sources at the end).
 
 
 #### On-demand involvement

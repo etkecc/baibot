@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use anthropic::client::{Client, ClientBuilder};
-use anthropic::types::ContentBlock;
+use anthropic::types::{Message, Role, StopReason};
 
 use super::super::ControllerTrait;
 use crate::agent::AgentPurpose;
@@ -20,6 +20,9 @@ use crate::conversation::llm::{
 use crate::strings;
 
 use super::config::Config;
+
+/// How many times a paused turn (`pause_turn`) is continued before replying with what we have.
+const MAX_PAUSE_TURN_CONTINUATIONS: usize = 4;
 
 struct ControllerInner {
     client: Client,
@@ -158,6 +161,17 @@ impl ControllerTrait for Controller {
         request.temperature = Some(temperature as f64);
         request.max_tokens = text_generation_config.max_response_tokens as usize;
 
+        let mut tools = vec![];
+        if text_generation_config.tools.web_search {
+            tools.push(serde_json::json!({"type": "web_search_20250305", "name": "web_search"}));
+        }
+        if text_generation_config.tools.web_fetch {
+            tools.push(serde_json::json!({"type": "web_fetch_20250910", "name": "web_fetch"}));
+        }
+        if !tools.is_empty() {
+            request.tools = Some(tools);
+        }
+
         if let Ok(request_as_json) = serde_json::to_string(&request) {
             tracing::trace!(
                 model = format!("{:?}", request.model),
@@ -167,32 +181,35 @@ impl ControllerTrait for Controller {
             );
         }
 
-        let response = self.inner.client.messages(request).await?;
+        let mut content = vec![];
+        for _ in 0..=MAX_PAUSE_TURN_CONTINUATIONS {
+            let response = self.inner.client.messages(request.clone()).await?;
 
-        tracing::trace!(?response, "Got response from Anthropic create message API");
+            tracing::trace!(?response, "Got response from Anthropic create message API");
 
-        // response.content usually contains a single element, but we support handling multiple to account for all possibilities
-        let mut text_parts = vec![];
-        for content in response.content {
-            match content {
-                ContentBlock::Text { text } => {
-                    text_parts.push(text);
-                }
-                ContentBlock::Image { .. } => {
-                    text_parts.push("The model responded with an image".to_string());
-                }
+            content.extend_from_slice(&response.content);
+
+            if response.stop_reason != Some(StopReason::PauseTurn) {
+                break;
             }
+
+            // Server tools (e.g. many web searches) hit the API's per-request limit.
+            // Sending the partial turn back as-is lets the model continue it.
+            request.messages.push(Message {
+                role: Role::Assistant,
+                content: response.content,
+            });
         }
 
-        if text_parts.is_empty() {
+        let text = super::utils::response_content_to_text(&content);
+
+        if text.is_empty() {
             return Err(anyhow::anyhow!(
                 "No text content in response from the Anthropic create message API"
             ));
         }
 
-        Ok(TextGenerationResult {
-            text: text_parts.join("\n\n"),
-        })
+        Ok(TextGenerationResult { text })
     }
 
     async fn speech_to_text(
