@@ -72,7 +72,7 @@ impl Default for TextGenerationConfig {
 }
 
 fn default_text_model_id() -> String {
-    "claude-3-7-sonnet-20250219".to_owned()
+    "claude-sonnet-5-5".to_owned()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
