@@ -11,6 +11,7 @@ use crate::conversation::llm::{
     MessageContent as LLMMessageContent, TokenEstimate, shorten_messages_list_to_context_size,
 };
 use crate::strings;
+use crate::utils::text::render_sources_list;
 
 use super::config::{Config, WebSearchMode};
 use super::utils::convert_llm_messages_to_venice;
@@ -274,34 +275,17 @@ pub(super) fn append_reasoning(
 /// Rewrites Venice's inline `^n^` citation superscripts into readable `[n]` references and appends
 /// a `Sources:` list of markdown links, one per citation in order. Returns the content unchanged
 /// when web search returned no citations, so non-search replies are never touched.
-///
-/// Citation `title` and `url` come from scraped web pages, so they are attacker-influenced. The
-/// title is escaped so it cannot break out of the markdown link label, and the URL is used as a
-/// link target only when it is a clean `http(s)` URL with no markdown-breaking characters;
-/// otherwise the citation renders as plain text. This stops a hostile page title or URL from
-/// injecting a spoofed clickable link into the room.
 pub(super) fn render_with_citations(content: String, citations: &[WebSearchCitation]) -> String {
     if citations.is_empty() {
         return content;
     }
 
     let mut text = rewrite_citation_superscripts(&content);
-
-    let mut sources = String::from("\n\nSources:");
-    for (index, citation) in citations.iter().enumerate() {
-        let n = index + 1;
-        let title = escape_markdown_link_text(&citation.title);
-        match sanitize_link_url(&citation.url) {
-            // A citation that arrived with no title still renders as a usable link by showing the
-            // URL as the link text, rather than an empty `[]( )` label.
-            Some(url) if title.is_empty() => sources.push_str(&format!("\n[{n}] [{url}]({url})")),
-            Some(url) => sources.push_str(&format!("\n[{n}] [{title}]({url})")),
-            None if !title.is_empty() => sources.push_str(&format!("\n[{n}] {title}")),
-            None => sources.push_str(&format!("\n[{n}] (source unavailable)")),
-        }
-    }
-
-    text.push_str(&sources);
+    text.push_str(&render_sources_list(
+        citations
+            .iter()
+            .map(|citation| (citation.title.as_str(), citation.url.as_str())),
+    ));
     text
 }
 
@@ -324,28 +308,4 @@ fn rewrite_citation_superscripts(content: &str) -> String {
             .collect::<String>()
     })
     .into_owned()
-}
-
-/// Escapes the characters that would let citation title text break out of a markdown link label,
-/// and folds newlines to spaces so a multi-line title cannot inject extra markdown structure.
-fn escape_markdown_link_text(text: &str) -> String {
-    text.replace('\\', "\\\\")
-        .replace('[', "\\[")
-        .replace(']', "\\]")
-        .replace(['\r', '\n'], " ")
-}
-
-/// Returns the URL as a markdown link target only when it is a clean `http(s)` URL with no
-/// characters that would break the `(...)` destination or smuggle a different scheme. Anything else
-/// returns `None`, so the caller renders the citation as plain text instead of a link.
-fn sanitize_link_url(url: &str) -> Option<String> {
-    let url = url.trim();
-    let is_http = url.starts_with("https://") || url.starts_with("http://");
-    let is_clean = !url.contains(['(', ')', '<', '>', ' ', '\t', '\r', '\n']);
-
-    if is_http && is_clean {
-        Some(url.to_owned())
-    } else {
-        None
-    }
 }

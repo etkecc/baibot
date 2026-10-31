@@ -73,7 +73,7 @@ impl AgentProvider {
                 models_list_url: Some("https://docs.anthropic.com/en/docs/about-claude/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: true,
-                text_generation_supports_tools: false,
+                text_generation_supports_tools: true,
             },
             Self::Groq => AgentProviderInfo {
                 id: Self::Groq.to_static_str(),

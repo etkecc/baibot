@@ -5,3 +5,7 @@ text_generation:
   prompt: "You are a brief, but helpful bot called {{ baibot_name }} powered by the {{ baibot_model_id }} model. The date/time of this conversation's start is: {{ baibot_conversation_start_time_utc }}."
   max_response_tokens: 16384
   max_context_tokens: 204800
+  # Built-in tools
+  tools:
+    web_search: false
+    web_fetch: false

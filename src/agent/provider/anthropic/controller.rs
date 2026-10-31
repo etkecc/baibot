@@ -17,13 +17,18 @@ use crate::conversation::llm::{
 use crate::strings;
 
 use super::config::Config;
-use super::wire::{API_VERSION, MessagesRequest, MessagesResponse};
+use super::wire::{
+    API_VERSION, ContentBlock, Message, MessagesRequest, MessagesResponse, Role, Tool,
+};
 
 /// How many times a rate-limited (429) or overloaded (529) request is retried.
 const MAX_RETRIES: u32 = 3;
 
 /// The longest we wait before a retry, even if `retry-after` asks for more.
 const MAX_RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(60);
+
+/// How many times a paused turn (`pause_turn`) is continued before replying with what we have.
+const MAX_PAUSE_TURN_CONTINUATIONS: usize = 4;
 
 struct ControllerInner {
     http: reqwest::Client,
@@ -199,11 +204,29 @@ impl ControllerTrait for Controller {
             _ => None,
         });
 
-        let request = MessagesRequest {
+        // The `_20260209` versions filter results with code execution before they reach the
+        // context. They need Claude Opus 4.6 / Sonnet 4.6 or later.
+        let mut tools = vec![];
+        if text_generation_config.tools.web_search {
+            tools.push(Tool {
+                kind: "web_search_20260209",
+                name: "web_search",
+            });
+        }
+        if text_generation_config.tools.web_fetch {
+            tools.push(Tool {
+                kind: "web_fetch_20260209",
+                name: "web_fetch",
+            });
+        }
+
+        let mut request = MessagesRequest {
             model: text_generation_config.model_id.clone(),
             max_tokens: text_generation_config.max_response_tokens,
             messages: super::utils::create_anthropic_messages(conversation_messages),
             system,
+            tools,
+            container: None,
         };
 
         if let Ok(request_as_json) = serde_json::to_string(&request) {
@@ -215,12 +238,42 @@ impl ControllerTrait for Controller {
             );
         }
 
-        let response = self.create_message(&request).await?;
+        let mut content = vec![];
+        let mut stop_reason;
+        let mut continuation = 0;
+        loop {
+            let response = self.create_message(&request).await?;
 
-        tracing::trace!(?response, "Got response from Anthropic create message API");
+            tracing::trace!(?response, "Got response from Anthropic create message API");
+
+            content.extend(response.content);
+            stop_reason = response.stop_reason;
+
+            if stop_reason.as_deref() != Some("pause_turn")
+                || continuation == MAX_PAUSE_TURN_CONTINUATIONS
+            {
+                break;
+            }
+            continuation += 1;
+
+            // Server tools (e.g. many web searches) hit the API's per-request limit. Sending the
+            // partial turn back as-is lets the model continue it, in the same container.
+            if let Some(container) = response.container {
+                request.container = Some(container.id);
+            }
+            if continuation > 1 {
+                request.messages.pop();
+            }
+            request.messages.push(Message {
+                role: Role::Assistant,
+                content: content.iter().cloned().map(ContentBlock::Raw).collect(),
+            });
+
+            tracing::debug!(continuation, "Continuing a paused Anthropic turn");
+        }
 
         Ok(TextGenerationResult {
-            text: super::utils::response_text(response)?,
+            text: super::utils::response_text(&content, stop_reason.as_deref())?,
         })
     }
 
