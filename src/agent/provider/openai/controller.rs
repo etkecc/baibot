@@ -270,7 +270,6 @@ impl ControllerTrait for Controller {
             ?prompt,
             model = format!("{:?}", request.model),
             size = format!("{:?}", request.size),
-            style = format!("{:?}", request.style),
             quality = format!("{:?}", request.quality),
             "Sending OpenAI image generation API request"
         );
@@ -322,7 +321,6 @@ impl ControllerTrait for Controller {
             model = format!("{:?}", request.model),
             size = format!("{:?}", request.size),
             quality = format!("{:?}", request.quality),
-            response_format = format!("{:?}", request.response_format),
             "Sending OpenAI image edit API request"
         );
 
@@ -513,12 +511,9 @@ fn build_image_request(
         .model_id_as_openai_image_model()
         .map_err(|err| anyhow::anyhow!(err))?;
 
-    let model = if params.cheaper_model_switching_allowed {
-        if is_gpt_image_model(&original_model) {
-            ImageModel::GptImage1Mini
-        } else {
-            ImageModel::DallE2
-        }
+    // Only GPT image models have a known cheaper sibling. Other providers keep their model.
+    let model = if params.cheaper_model_switching_allowed && is_gpt_image_model(&original_model) {
+        ImageModel::GptImage1Mini
     } else {
         original_model
     };
@@ -535,8 +530,6 @@ fn build_image_request(
                     | ImageQuality::Max => ImageQuality::Low,
                     other => other.clone(),
                 }
-            } else if matches!(model, ImageModel::DallE2 | ImageModel::DallE3) {
-                ImageQuality::Standard
             } else {
                 // Preserve the existing quality policy for custom providers.
                 match quality {
@@ -553,22 +546,27 @@ fn build_image_request(
     };
 
     let size = if params.smallest_size_possible {
-        Some(get_sticker_size(&model))
+        Some(async_openai::types::images::ImageSize::S1024x1024)
     } else {
         config.size.clone()
     };
 
     let mut request_builder = CreateImageRequestArgs::default();
 
-    if let Some(response_format) = get_image_response_format(&model) {
-        request_builder.response_format(response_format);
+    if !is_gpt_image_model(&model) {
+        // OpenAI retired these options with its pre-GPT image models,
+        // but OpenAI-compatible providers (e.g. LocalAI) still use them.
+        #[allow(deprecated)]
+        {
+            request_builder.response_format(ImageResponseFormat::B64Json);
+            if let Some(style) = &config.style {
+                request_builder.style(style.clone());
+            }
+        }
     }
 
     request_builder.model(model).prompt(prompt.to_owned());
 
-    if let Some(style) = &config.style {
-        request_builder.style(style.clone());
-    }
     if let Some(quality) = quality {
         request_builder.quality(quality);
     }
@@ -602,15 +600,16 @@ fn build_image_edit_request(
         if let Some(quality) = &config.quality {
             request_builder.quality(quality.clone());
         }
-    } else if let Some(size @ (ImageSize::S256x256 | ImageSize::S512x512 | ImageSize::S1024x1024)) =
-        &config.size
-    {
-        // Keep the existing DALL-E size restrictions for other providers.
-        request_builder.size(size.clone());
-    }
-
-    if let Some(response_format) = get_image_response_format(&model) {
-        request_builder.response_format(response_format);
+    } else {
+        // OpenAI-compatible providers follow the classic edit API: square sizes and an explicit
+        // base64 response format (deprecated upstream along with OpenAI's pre-GPT image models).
+        if let Some(size @ (ImageSize::S256x256 | ImageSize::S512x512 | ImageSize::S1024x1024)) =
+            &config.size
+        {
+            request_builder.size(size.clone());
+        }
+        #[allow(deprecated)]
+        request_builder.response_format(ImageResponseFormat::B64Json);
     }
 
     let image_inputs: Vec<ImageInput> = images.into_iter().map(Into::into).collect();
@@ -626,8 +625,7 @@ fn build_image_edit_request(
 
 fn is_gpt_image_model(model: &ImageModel) -> bool {
     match model {
-        ImageModel::GptImage1
-        | ImageModel::GptImage1Mini
+        ImageModel::GptImage1Mini
         | ImageModel::GptImage1dot5
         | ImageModel::GptImage2
         | ImageModel::GptImage2_2026_04_21
@@ -636,26 +634,7 @@ fn is_gpt_image_model(model: &ImageModel) -> bool {
         | ImageModel::GptImage2_5Flare
         | ImageModel::GptImage2_5Flare2026_09_08
         | ImageModel::ChatGptImageLatest => true,
-        ImageModel::DallE2 | ImageModel::DallE3 | ImageModel::Other(_) => false,
-    }
-}
-
-fn get_image_response_format(model: &ImageModel) -> Option<ImageResponseFormat> {
-    // GPT image models always return base64 and reject an explicit response format.
-    if is_gpt_image_model(model) {
-        None
-    } else {
-        Some(ImageResponseFormat::B64Json)
-    }
-}
-
-/// Returns a supported square size for stickers based on the image model.
-fn get_sticker_size(model: &ImageModel) -> async_openai::types::images::ImageSize {
-    use async_openai::types::images::ImageSize;
-
-    match model {
-        ImageModel::DallE2 => ImageSize::S256x256,
-        _ => ImageSize::S1024x1024,
+        ImageModel::Other(_) => false,
     }
 }
 
@@ -665,7 +644,6 @@ mod tests {
     use serde_json::json;
 
     const GPT_IMAGE_MODELS: &[&str] = &[
-        "gpt-image-1",
         "gpt-image-1-mini",
         "gpt-image-1.5",
         "gpt-image-2",
@@ -791,7 +769,9 @@ mod tests {
                         serde_json::to_value(request.quality).unwrap(),
                         json!(quality)
                     );
-                    assert_eq!(request.response_format, None);
+                    #[allow(deprecated)]
+                    let response_format = request.response_format;
+                    assert_eq!(response_format, None);
                     assert_eq!(request.prompt, "make the cat blue");
                 }
             }
@@ -799,8 +779,8 @@ mod tests {
     }
 
     #[test]
-    fn dalle_and_custom_edits_keep_legacy_request_options() {
-        for model_id in ["dall-e-2", "custom/image-model"] {
+    fn custom_edits_keep_legacy_request_options() {
+        for model_id in ["stablediffusion", "custom/image-model"] {
             for size in ["256x256", "512x512", "1024x1024", "1536x1024"] {
                 let config: ImageGenerationConfig = serde_json::from_value(json!({
                     "model_id": model_id,
@@ -819,7 +799,9 @@ mod tests {
                 )
                 .unwrap();
 
-                assert_eq!(request.response_format, Some(ImageResponseFormat::B64Json));
+                #[allow(deprecated)]
+                let response_format = request.response_format;
+                assert_eq!(response_format, Some(ImageResponseFormat::B64Json));
                 assert_eq!(request.quality, None);
                 assert_eq!(
                     serde_json::to_value(request.size).unwrap(),
@@ -830,6 +812,27 @@ mod tests {
                     }
                 );
             }
+        }
+    }
+
+    #[test]
+    fn style_is_only_sent_to_custom_models() {
+        for (model_id, expected_style) in [
+            ("gpt-image-2.5-sunburst", json!(null)),
+            ("stablediffusion", json!("vivid")),
+        ] {
+            let config: ImageGenerationConfig = serde_json::from_value(json!({
+                "model_id": model_id,
+                "style": "vivid",
+            }))
+            .unwrap();
+            let request =
+                build_image_request(&config, "a cat", ImageGenerationParams::default()).unwrap();
+            assert_eq!(
+                serde_json::to_value(request).unwrap()["style"],
+                expected_style,
+                "{model_id}"
+            );
         }
     }
 
@@ -845,8 +848,8 @@ mod tests {
     }
 
     #[test]
-    fn dalle_and_custom_models_keep_base64_responses_and_sticker_fallback() {
-        for model_id in ["dall-e-2", "dall-e-3", "custom/image-model"] {
+    fn custom_models_keep_their_model_and_base64_responses_for_stickers() {
+        for model_id in ["stablediffusion", "custom/image-model"] {
             let config = ImageGenerationConfig {
                 model_id: model_id.to_owned(),
                 ..Default::default()
@@ -870,11 +873,11 @@ mod tests {
             assert_eq!(
                 serde_json::to_value(request).unwrap(),
                 json!({
-                    "model": "dall-e-2",
+                    "model": model_id,
                     "prompt": "a cat",
                     "response_format": "b64_json",
                     "quality": "standard",
-                    "size": "256x256",
+                    "size": "1024x1024",
                 })
             );
         }

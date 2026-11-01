@@ -136,7 +136,7 @@ The following settings apply to both image generation and editing with GPT Image
 | --- | --- |
 | `quality` | `low`, `medium`, `high`, `xhigh`, `max`, or `auto`. `null` uses the model default, `auto`. |
 | `size` | `auto`, a standard size such as `1024x1024`, `1536x1024`, or `1024x1536`, or a custom size such as `2048x2048`. `null` lets the model choose. Custom dimensions must satisfy [OpenAI's size constraints](https://developers.openai.com/api/docs/guides/image-generation#size-and-quality-options). |
-| `style` | Leave this as `null` for GPT image models and describe the style in the prompt. This parameter is for DALL-E 3. |
+| `style` | Leave this as `null` for GPT image models and describe the style in the prompt. It is only sent to non-GPT image models (OpenAI-compatible providers such as LocalAI). |
 
 Existing agents keep their configured model. To switch, change `image_generation.model_id` in the agent configuration to `gpt-image-2.5-sunburst` or `gpt-image-2.5-flare`.
 

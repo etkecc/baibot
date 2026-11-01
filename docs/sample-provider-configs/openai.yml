@@ -14,7 +14,7 @@ text_generation:
     web_search: false
     code_interpreter: false
 speech_to_text:
-  model_id: whisper-1
+  model_id: gpt-transcribe
 text_to_speech:
   model_id: tts-1-hd
   voice: onyx

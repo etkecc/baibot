@@ -111,7 +111,8 @@ impl Default for SpeechToTextConfig {
 }
 
 fn default_speech_to_text_model_id() -> String {
-    "whisper-1".to_owned()
+    // OpenAI shuts down whisper-1 on 2027-02-26.
+    "gpt-transcribe".to_owned()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -140,6 +141,9 @@ impl Default for TextToSpeechConfig {
     }
 }
 
+// OpenAI shuts down all of its speech-endpoint models (this one included) on 2027-01-06,
+// with Realtime as the successor. Until baibot supports that, this remains the default.
+#[allow(deprecated)]
 fn default_text_to_speech_model_id() -> async_openai::types::audio::SpeechModel {
     async_openai::types::audio::SpeechModel::Tts1Hd
 }
