@@ -1,3 +1,22 @@
+# (2026-11-01) Version 1.30.0
+
+- (**Bugfix**) Fix the Anthropic provider failing with `unknown variant 'thinking'` on current Claude models. baibot now talks to the Anthropic API directly instead of through the unmaintained [anthropic-rs](https://github.com/etkecc/anthropic-rs) library, and skips response blocks it does not show (like thinking).
+
+- (**Improvement**) The Anthropic provider uses API version `2026-10-21`. This version does not accept a temperature, so `text_generation.temperature` is no longer used for Anthropic agents (existing configs that set it still load) and the room temperature override does not apply to them.
+
+- (**Improvement**) New Anthropic agents default to `claude-sonnet-5-5` (`claude-3-7-sonnet-20250219` was retired) and 16384 max response tokens (thinking counts against this limit).
+
+- (**Improvement**) Update the default models of new Groq, OpenRouter and Together AI agents to `openai/gpt-oss-120b`, and of Ollama agents to `gemma3:1b`. The previous ones were removed by their providers.
+
+- (**Improvement**) The default OpenAI speech-to-text model is now `gpt-transcribe`, as OpenAI shuts down `whisper-1` on 2027-02-26.
+
+- (**Bugfix**) Stickers on non-GPT image models (like LocalAI) now use the agent's configured model, instead of `dall-e-2`.
+
+- (**Internal Improvement**) The `style` and `response_format` image options are only sent to non-GPT image models. DALL-E and `gpt-image-1` handling is removed, as OpenAI retired them.
+
+- (**Internal Improvement**) Dependency updates.
+
+
 # (2026-10-25) Version 1.29.1
 
 - (**Internal Improvement**) Dependency updates.
