@@ -12,9 +12,9 @@ pub fn default_config() -> Config {
     };
 
     if let Some(ref mut config) = config.text_generation.as_mut() {
-        config.model_id = "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo".to_owned();
-        config.max_context_tokens = 8192;
-        config.max_response_tokens = Some(2048);
+        config.model_id = "openai/gpt-oss-120b".to_owned();
+        config.max_context_tokens = 131_072;
+        config.max_response_tokens = Some(4096);
     }
 
     config

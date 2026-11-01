@@ -61,7 +61,7 @@ In any case, you will need [🐋 Docker](https://www.docker.com/) as [dependency
 	- When ready, you'll be able to reach LocalAI's web interface at http://localai.127.0.0.1.nip.io:42027/ (not that you really need it)
   - for [Ollama](#ollama):
     - Start services: `just ollama-start`
-    - (Only the first time around) Pull the model configured in `agents.static_definitions` in the configuration file: `just ollama-pull-model gemma2:2b`
+    - (Only the first time around) Pull the model configured in `agents.static_definitions` in the configuration file: `just ollama-pull-model gemma3:1b`
 7. Start the bot: `just run-locally`
 8. Go to http://element.127.0.0.1.nip.io:42025/ and login with `admin` / `admin`
 9. Create a new room and invite `@baibot:continuwuity.127.0.0.1.nip.io` (or `@baibot:synapse.127.0.0.1.nip.io` if using Synapse)
@@ -88,7 +88,7 @@ You can avoid having a [Rust](https://www.rust-lang.org/) toolchain installed lo
 	- When ready, you'll be able to reach LocalAI's web interface at http://localai.127.0.0.1.nip.io:42027/ (not that you really need it)
   - for [Ollama](#ollama):
     - Start services: `just ollama-start`
-    - (Only the first time around) Pull the model configured in `agents.static_definitions` in the configuration file: `just ollama-pull-model gemma2:2b`
+    - (Only the first time around) Pull the model configured in `agents.static_definitions` in the configuration file: `just ollama-pull-model gemma3:1b`
 7. Start the bot: `just run-in-container`
 8. Go to http://element.127.0.0.1.nip.io:42025/ and login with `admin` / `admin`
 9. Create a new room and invite `@baibot:continuwuity.127.0.0.1.nip.io` (or `@baibot:synapse.127.0.0.1.nip.io` if using Synapse)
@@ -145,7 +145,7 @@ If you decided to go with [Ollama](./providers.md#ollama):
 - enable the `ollama` entry in the `agents.static_definitions` list in the configuration file
 - adjust the `initial_global_config.handler.catch_all` setting in the configuration file (`null` -> `static/ollama`)
 
-The [gemma2:2b](https://ollama.com/library/gemma2:2b) model was chosen as a default, because it's smallest/lightest and should run well under [Ollama](./providers.md#ollama) on most machines.
+The [gemma3:1b](https://ollama.com/library/gemma3:1b) model was chosen as a default, because it's smallest/lightest and should run well under [Ollama](./providers.md#ollama) on most machines.
 
 ###### OpenAI
 

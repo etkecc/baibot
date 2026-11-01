@@ -15,8 +15,8 @@ pub fn default_config() -> Config {
     };
 
     if let Some(ref mut config) = config.text_generation.as_mut() {
-        config.model_id = "gemma2:2b".to_owned();
-        config.max_context_tokens = 128_000;
+        config.model_id = "gemma3:1b".to_owned();
+        config.max_context_tokens = 32_768;
         config.max_response_tokens = Some(4096);
     }
 
