@@ -30,6 +30,10 @@ const MAX_RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(60);
 /// How many times a paused turn (`pause_turn`) is continued before replying with what we have.
 const MAX_PAUSE_TURN_CONTINUATIONS: usize = 4;
 
+/// How many times each server tool may be used per request, which keeps the cost of a single reply
+/// bounded (a paused turn continues in a new request, with its own allowance).
+const SERVER_TOOL_MAX_USES: u32 = 5;
+
 struct ControllerInner {
     http: reqwest::Client,
 }
@@ -211,12 +215,14 @@ impl ControllerTrait for Controller {
             tools.push(Tool {
                 kind: "web_search_20260209",
                 name: "web_search",
+                max_uses: SERVER_TOOL_MAX_USES,
             });
         }
         if text_generation_config.tools.web_fetch {
             tools.push(Tool {
                 kind: "web_fetch_20260209",
                 name: "web_fetch",
+                max_uses: SERVER_TOOL_MAX_USES,
             });
         }
 

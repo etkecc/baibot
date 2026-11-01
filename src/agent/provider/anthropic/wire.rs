@@ -41,6 +41,9 @@ pub struct Tool {
     pub kind: &'static str,
 
     pub name: &'static str,
+
+    /// The most times the model may use this tool in one request.
+    pub max_uses: u32,
 }
 
 #[derive(Debug, Serialize)]

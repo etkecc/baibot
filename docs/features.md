@@ -64,7 +64,9 @@ To enable tools on an existing dynamically-created agent, you need to [update th
 
 💡 **Note**: These tools run on the provider's infrastructure and may incur additional costs. Web search results include citations that are incorporated into the response (for Anthropic, as a list of sources at the end).
 
-💡 **Note**: The Anthropic tools need Claude Opus 4.6 / Sonnet 4.6 or a later model. They filter search and page results with code execution before the model reads them, but a single reply that searches or fetches several pages can still use tens of thousands of input tokens.
+💡 **Note**: The Anthropic tools need Claude Opus 4.6 / Sonnet 4.6 or a later model. They filter search and page results with code execution before the model reads them, but a single reply that searches or fetches several pages can still use tens of thousands of input tokens. Each tool may be used up to 5 times per request.
+
+⚠️ **Warning**: With web fetch enabled, anyone who can talk to the bot can make it fetch URLs posted in the room, and text on a fetched page could steer the model into fetching further URLs that carry data from the conversation. Only enable it for agents used in rooms whose members you trust.
 
 
 #### On-demand involvement
