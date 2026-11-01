@@ -1,20 +1,16 @@
-// The openai_compat provider aims to support a wider ranger of OpenAI-compatible providers.
+// The openai_compat provider aims to support a wider range of OpenAI-compatible providers.
 //
 // The `openai` provider is based on `async-openai`, which only aims to support the OpenAI API spec. See:
 // - https://github.com/64bit/async-openai/issues/266
 // - https://github.com/64bit/async-openai/blob/05d5a1b4fa6476829dd1a34447b80279cf89d4f8/async-openai/README.md#contributing
 //
-// This module uses its own configuration, which avoids using strict types tied to OpenAI,
-// and thus allows for more flexibility.
-//
-// Communication with the OpenAI-compatible API is handled by the `openai_api_rust` crate.
-// Since this crate is not async-aware, we need to use tokio's `spawn_blocking` to invoke it.
-//
-// Certain features (e.g. text-to-speech) are not supported by `openai_api_rust` yet, so we may try to delegate them to the `openai` provider.
+// This module uses its own configuration and wire types (see `wire.rs`) with plain strings
+// instead of OpenAI's enums, which allows for more flexibility, and talks to the API with reqwest.
 
 mod config;
 mod controller;
 mod utils;
+mod wire;
 
 pub use config::Config;
 pub use controller::Controller;

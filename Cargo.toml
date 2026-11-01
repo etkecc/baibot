@@ -24,16 +24,15 @@ matrix-sdk = { version = "0.19.1", default-features = false }
 mime_guess = "2.0.*"
 mxidwc = "1.0.*"
 mxlink = ">=1.16.1"
-etke_openai_api_rust = "0.1.*"
 quick_cache = "0.7.*"
 regex = "1.13.*"
-# HTTP client for the native `venice` provider. rustls only (no extra TLS stack), matching the
+# HTTP client for the providers that talk to their APIs directly (anthropic, openai_compat,
+# venice). rustls only (no extra TLS stack), matching the
 # reqwest copy async-openai/matrix-sdk/mxlink already use.
 reqwest = { version = "0.13.*", default-features = false, features = ["json", "multipart", "rustls"] }
 serde = { version = "1.0.*", features = ["derive"], default-features = false }
 serde_json = "1.0.*"
 serde_yaml_ng = "0.10.*"
-tempfile = "3.27.*"
 tiktoken-rs = { version = "0.12.*", default-features = false }
 tokio = { version = "1.54.*", features = ["rt", "rt-multi-thread", "macros"] }
 tracing = "0.1.*"

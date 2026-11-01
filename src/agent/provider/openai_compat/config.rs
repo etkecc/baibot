@@ -1,16 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::agent::default_prompt;
-use crate::agent::provider::openai::{
-    ImageGenerationConfig as OpenAIImageGenerationConfig,
-    SpeechToTextConfig as OpenAISpeechToTextConfig,
-    TextGenerationConfig as OpenAITextGenerationConfig,
-    TextToSpeechConfig as OpenAITextToSpeechConfig,
-};
-
 use crate::agent::provider::ConfigTrait;
-
-use super::utils::convert_string_to_enum;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -84,22 +75,6 @@ impl Default for TextGenerationConfig {
     }
 }
 
-impl TryInto<OpenAITextGenerationConfig> for TextGenerationConfig {
-    type Error = anyhow::Error;
-
-    fn try_into(self) -> Result<OpenAITextGenerationConfig, Self::Error> {
-        Ok(OpenAITextGenerationConfig {
-            model_id: self.model_id,
-            prompt: self.prompt,
-            temperature: Some(self.temperature),
-            max_response_tokens: self.max_response_tokens,
-            max_completion_tokens: None,
-            max_context_tokens: self.max_context_tokens,
-            tools: Default::default(),
-        })
-    }
-}
-
 fn default_text_model_id() -> String {
     "some-model".to_owned()
 }
@@ -115,16 +90,6 @@ impl Default for SpeechToTextConfig {
         Self {
             model_id: default_speech_to_text_model_id(),
         }
-    }
-}
-
-impl TryInto<OpenAISpeechToTextConfig> for SpeechToTextConfig {
-    type Error = anyhow::Error;
-
-    fn try_into(self) -> Result<OpenAISpeechToTextConfig, Self::Error> {
-        Ok(OpenAISpeechToTextConfig {
-            model_id: self.model_id,
-        })
     }
 }
 
@@ -155,28 +120,6 @@ impl Default for TextToSpeechConfig {
             speed: default_text_to_speech_speed(),
             response_format: default_text_to_speech_response_format(),
         }
-    }
-}
-
-impl TryInto<OpenAITextToSpeechConfig> for TextToSpeechConfig {
-    type Error = String;
-
-    fn try_into(self) -> Result<OpenAITextToSpeechConfig, Self::Error> {
-        let model_id =
-            convert_string_to_enum::<async_openai::types::audio::SpeechModel>(&self.model_id)?;
-
-        let voice = convert_string_to_enum::<async_openai::types::audio::Voice>(&self.voice)?;
-
-        let response_format = convert_string_to_enum::<
-            async_openai::types::audio::SpeechResponseFormat,
-        >(&self.response_format)?;
-
-        Ok(OpenAITextToSpeechConfig {
-            model_id,
-            voice,
-            speed: self.speed,
-            response_format,
-        })
     }
 }
 
@@ -218,43 +161,6 @@ impl Default for ImageGenerationConfig {
             size: default_image_size(),
             quality: default_image_quality(),
         }
-    }
-}
-
-impl TryInto<OpenAIImageGenerationConfig> for ImageGenerationConfig {
-    type Error = String;
-
-    fn try_into(self) -> Result<OpenAIImageGenerationConfig, Self::Error> {
-        let size = if let Some(size) = &self.size {
-            Some(convert_string_to_enum::<
-                async_openai::types::images::ImageSize,
-            >(size)?)
-        } else {
-            None
-        };
-
-        let style = if let Some(style) = &self.style {
-            Some(convert_string_to_enum::<
-                async_openai::types::images::ImageStyle,
-            >(style)?)
-        } else {
-            None
-        };
-
-        let quality = if let Some(quality) = &self.quality {
-            Some(convert_string_to_enum::<
-                async_openai::types::images::ImageQuality,
-            >(quality)?)
-        } else {
-            None
-        };
-
-        Ok(OpenAIImageGenerationConfig {
-            model_id: self.model_id,
-            style,
-            size,
-            quality,
-        })
     }
 }
 

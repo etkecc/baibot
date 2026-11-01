@@ -313,16 +313,6 @@ pub fn no_configuration_for_purpose_so_cannot_be_used(purpose: &AgentPurpose) ->
     )
 }
 
-pub fn no_configuration_for_purpose_after_conversion_so_cannot_be_used(
-    purpose: &AgentPurpose,
-) -> String {
-    format!(
-        "This agent's configuration was converted to the OpenAI format, but conversion failed. There is no configuration for {} {}, so it cannot be used for that.",
-        purpose.emoji(),
-        purpose
-    )
-}
-
 pub fn create_support_badges_text(controller: &impl ControllerTrait) -> String {
     let mut support_badges = vec![];
 

@@ -5,12 +5,6 @@ mod utils;
 pub use config::Config;
 pub use controller::Controller;
 
-// openai_compat needs these, so it can convert from its own config types to these
-pub(super) use config::ImageGenerationConfig;
-pub(super) use config::SpeechToTextConfig;
-pub(super) use config::TextGenerationConfig;
-pub(super) use config::TextToSpeechConfig;
-
 use super::super::AgentInstantiationError;
 use super::super::AgentInstantiationResult;
 use super::ConfigTrait;
