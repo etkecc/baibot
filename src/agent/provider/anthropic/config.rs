@@ -45,9 +45,6 @@ pub struct TextGenerationConfig {
     #[serde(default)]
     pub prompt: Option<String>,
 
-    #[serde(default = "super::super::default_temperature")]
-    pub temperature: f32,
-
     #[serde(default)]
     pub max_response_tokens: u32,
 
@@ -60,13 +57,27 @@ impl Default for TextGenerationConfig {
         Self {
             model_id: default_text_model_id(),
             prompt: Some(default_prompt().to_owned()),
-            temperature: super::super::default_temperature(),
-            max_response_tokens: 8192,
+            max_response_tokens: 16_384,
             max_context_tokens: 204_800,
         }
     }
 }
 
 fn default_text_model_id() -> String {
-    "claude-3-7-sonnet-20250219".to_owned()
+    "claude-sonnet-5-5".to_owned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TextGenerationConfig;
+
+    #[test]
+    fn new_agents_use_sonnet_and_a_configured_temperature_is_ignored() {
+        let defaults = TextGenerationConfig::default();
+        assert_eq!(defaults.model_id, "claude-sonnet-5-5");
+
+        let existing: TextGenerationConfig =
+            serde_yaml_ng::from_str("model_id: claude-sonnet-4-5\ntemperature: 1.0\n").unwrap();
+        assert_eq!(existing.model_id, "claude-sonnet-4-5");
+    }
 }

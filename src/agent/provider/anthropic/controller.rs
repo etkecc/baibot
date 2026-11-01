@@ -70,7 +70,7 @@ impl Controller {
                 .inner
                 .http
                 .post(&url)
-                .header("x-api-key", &self.config.api_key)
+                .bearer_auth(&self.config.api_key)
                 .header("anthropic-version", API_VERSION)
                 .json(request)
                 .send()
@@ -189,9 +189,10 @@ impl ControllerTrait for Controller {
 
         let messages_count = conversation_messages.len();
 
-        let temperature = params
-            .temperature_override
-            .unwrap_or(text_generation_config.temperature);
+        // The Messages API no longer accepts a temperature, so a room's override can't apply.
+        if params.temperature_override.is_some() {
+            tracing::debug!("Ignoring the temperature override, which Anthropic does not support");
+        }
 
         let system = prompt_message.and_then(|message| match message.content {
             LLMMessageContent::Text(text) => Some(text),
@@ -203,7 +204,6 @@ impl ControllerTrait for Controller {
             max_tokens: text_generation_config.max_response_tokens,
             messages: super::utils::create_anthropic_messages(conversation_messages),
             system,
-            temperature: Some(temperature),
         };
 
         if let Ok(request_as_json) = serde_json::to_string(&request) {
@@ -283,10 +283,7 @@ impl ControllerTrait for Controller {
     }
 
     fn text_generation_temperature(&self) -> Option<f32> {
-        self.config
-            .text_generation
-            .as_ref()
-            .map(|config| config.temperature)
+        None
     }
 
     fn text_to_speech_voice(&self) -> Option<String> {

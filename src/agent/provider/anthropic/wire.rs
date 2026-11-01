@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 
 /// The API version sent in the `anthropic-version` header.
 ///
-/// `2026-10-21` rejects `temperature` on every model, so moving to it is a separate change.
-pub const API_VERSION: &str = "2023-06-01";
+/// This version rejects `temperature`, `top_p` and `top_k` on every model, so none are sent.
+pub const API_VERSION: &str = "2026-10-21";
 
 #[derive(Debug, Serialize)]
 pub struct MessagesRequest {
@@ -23,9 +23,6 @@ pub struct MessagesRequest {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub temperature: Option<f32>,
 }
 
 #[derive(Debug, Serialize)]

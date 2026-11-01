@@ -122,3 +122,5 @@ Here's a prompt that combines some of the above variables:
 You can override the [temperature](https://blogs.novita.ai/what-are-large-language-model-settings-temperature-top-p-and-max-tokens/#what-is-llm-temperature) (randomness / creativity) parameter configured at the [🤖 agent](../agents.md) level.
 
 Example: `!bai config room text-generation set-temperature-override 3.5` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings))
+
+The [Anthropic](../providers.md#anthropic) provider ignores this setting, because the Anthropic API no longer accepts a temperature.
