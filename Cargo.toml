@@ -15,7 +15,6 @@ name = "baibot"
 path = "src/lib.rs"
 
 [dependencies]
-anthropic = { git = "https://github.com/etkecc/anthropic-rs.git", branch = "fix-content-block-image" }
 anyhow = "1.0.*"
 async-openai = { version = "0.43.0", features = ["audio", "chat-completion", "image", "responses"] }
 base64 = "0.23.*"

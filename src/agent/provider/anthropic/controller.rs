@@ -1,9 +1,6 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use anthropic::client::{Client, ClientBuilder};
-use anthropic::types::ContentBlock;
-
 use super::super::ControllerTrait;
 use crate::agent::AgentPurpose;
 use crate::agent::provider::entity::{
@@ -20,9 +17,16 @@ use crate::conversation::llm::{
 use crate::strings;
 
 use super::config::Config;
+use super::wire::{API_VERSION, MessagesRequest, MessagesResponse};
+
+/// How many times a rate-limited (429) or overloaded (529) request is retried.
+const MAX_RETRIES: u32 = 3;
+
+/// The longest we wait before a retry, even if `retry-after` asks for more.
+const MAX_RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(60);
 
 struct ControllerInner {
-    client: Client,
+    http: reqwest::Client,
 }
 
 #[derive(Clone)]
@@ -41,25 +45,68 @@ impl Debug for Controller {
 
 impl Controller {
     pub fn new(config: Config) -> anyhow::Result<Self> {
-        // The previous library that we used expected a base URL that ends with "/v1"
-        // (e.g. "https://api.anthropic.com/v1"), while the new one doesn't.
-        //
-        // To keep backward compatibility, we don't ask people to change their configuration
-        // and rather adapt by removing the "/v1" from the base URL.
         if !config.base_url.ends_with("/v1") {
             return Err(anyhow::anyhow!("base_url must end with '/v1'"));
         }
 
-        let base_url = &config.base_url[..config.base_url.len() - 3];
-        let client = ClientBuilder::default()
-            .api_base(base_url.to_string())
-            .api_key(config.api_key.clone())
+        // Responses with thinking can take a while, so use a generous timeout instead of
+        // reqwest's default (none).
+        let http = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(600))
             .build()?;
 
         Ok(Self {
             config,
-            inner: Arc::new(ControllerInner { client }),
+            inner: Arc::new(ControllerInner { http }),
         })
+    }
+
+    async fn create_message(&self, request: &MessagesRequest) -> anyhow::Result<MessagesResponse> {
+        let url = format!("{}/messages", self.config.base_url);
+
+        let mut attempt = 0;
+        loop {
+            let response = self
+                .inner
+                .http
+                .post(&url)
+                .header("x-api-key", &self.config.api_key)
+                .header("anthropic-version", API_VERSION)
+                .json(request)
+                .send()
+                .await?;
+
+            let status = response.status();
+            if status.is_success() {
+                return Ok(response.json().await?);
+            }
+
+            let retry_after = response
+                .headers()
+                .get(reqwest::header::RETRY_AFTER)
+                .and_then(|value| value.to_str().ok())
+                .and_then(|value| value.parse::<u64>().ok())
+                .map(std::time::Duration::from_secs);
+
+            let body = response.text().await.unwrap_or_default();
+            tracing::warn!(%status, body, "Anthropic create message request failed");
+
+            let retryable =
+                status == reqwest::StatusCode::TOO_MANY_REQUESTS || status.as_u16() == 529;
+            if retryable && attempt < MAX_RETRIES {
+                attempt += 1;
+
+                let delay = retry_after
+                    .unwrap_or(std::time::Duration::from_secs(2u64.pow(attempt)))
+                    .min(MAX_RETRY_DELAY);
+
+                tracing::info!(?delay, attempt, "Retrying Anthropic create message request");
+                tokio::time::sleep(delay).await;
+                continue;
+            }
+
+            return Err(anyhow::anyhow!(super::utils::error_message(status, &body)));
+        }
     }
 }
 
@@ -142,21 +189,22 @@ impl ControllerTrait for Controller {
 
         let messages_count = conversation_messages.len();
 
-        let mut request = super::utils::create_anthropic_message_request(conversation_messages);
-
         let temperature = params
             .temperature_override
             .unwrap_or(text_generation_config.temperature);
 
-        if let Some(prompt_message) = prompt_message
-            && let LLMMessageContent::Text(text) = &prompt_message.content
-        {
-            request.system = text.clone();
-        }
+        let system = prompt_message.and_then(|message| match message.content {
+            LLMMessageContent::Text(text) => Some(text),
+            _ => None,
+        });
 
-        request.model = text_generation_config.model_id.clone();
-        request.temperature = Some(temperature as f64);
-        request.max_tokens = text_generation_config.max_response_tokens as usize;
+        let request = MessagesRequest {
+            model: text_generation_config.model_id.clone(),
+            max_tokens: text_generation_config.max_response_tokens,
+            messages: super::utils::create_anthropic_messages(conversation_messages),
+            system,
+            temperature: Some(temperature),
+        };
 
         if let Ok(request_as_json) = serde_json::to_string(&request) {
             tracing::trace!(
@@ -167,31 +215,12 @@ impl ControllerTrait for Controller {
             );
         }
 
-        let response = self.inner.client.messages(request).await?;
+        let response = self.create_message(&request).await?;
 
         tracing::trace!(?response, "Got response from Anthropic create message API");
 
-        // response.content usually contains a single element, but we support handling multiple to account for all possibilities
-        let mut text_parts = vec![];
-        for content in response.content {
-            match content {
-                ContentBlock::Text { text } => {
-                    text_parts.push(text);
-                }
-                ContentBlock::Image { .. } => {
-                    text_parts.push("The model responded with an image".to_string());
-                }
-            }
-        }
-
-        if text_parts.is_empty() {
-            return Err(anyhow::anyhow!(
-                "No text content in response from the Anthropic create message API"
-            ));
-        }
-
         Ok(TextGenerationResult {
-            text: text_parts.join("\n\n"),
+            text: super::utils::response_text(response)?,
         })
     }
 

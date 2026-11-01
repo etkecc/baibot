@@ -1,6 +1,7 @@
 mod config;
 mod controller;
 mod utils;
+mod wire;
 
 pub use config::Config;
 pub use controller::Controller;
