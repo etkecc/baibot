@@ -251,6 +251,8 @@ impl ControllerTrait for Controller {
         })
     }
 
+    // Keep legacy image options for OpenAI-compatible providers.
+    #[allow(deprecated)]
     async fn generate_image(
         &self,
         prompt: &str,
@@ -302,6 +304,8 @@ impl ControllerTrait for Controller {
         ))
     }
 
+    // Keep legacy image options for OpenAI-compatible providers.
+    #[allow(deprecated)]
     async fn create_image_edit(
         &self,
         prompt: &str,
@@ -504,6 +508,8 @@ fn audio_mime_type_to_file_name(mime_type: &mxlink::mime::Mime) -> Option<String
     Some(format!("audio.{}", file_extension))
 }
 
+// Keep legacy image options for OpenAI-compatible providers.
+#[allow(deprecated)]
 fn build_image_request(
     config: &ImageGenerationConfig,
     prompt: &str,
@@ -517,7 +523,7 @@ fn build_image_request(
         if is_gpt_image_model(&original_model) {
             ImageModel::GptImage1Mini
         } else {
-            ImageModel::DallE2
+            ImageModel::Other("dall-e-2".to_owned())
         }
     } else {
         original_model
@@ -535,7 +541,7 @@ fn build_image_request(
                     | ImageQuality::Max => ImageQuality::Low,
                     other => other.clone(),
                 }
-            } else if matches!(model, ImageModel::DallE2 | ImageModel::DallE3) {
+            } else if matches!(&model, ImageModel::Other(id) if id == "dall-e-2" || id == "dall-e-3") {
                 ImageQuality::Standard
             } else {
                 // Preserve the existing quality policy for custom providers.
@@ -579,6 +585,8 @@ fn build_image_request(
     Ok(request_builder.build()?)
 }
 
+// Keep legacy image options for OpenAI-compatible providers.
+#[allow(deprecated)]
 fn build_image_edit_request(
     config: &ImageGenerationConfig,
     prompt: &str,
@@ -626,8 +634,7 @@ fn build_image_edit_request(
 
 fn is_gpt_image_model(model: &ImageModel) -> bool {
     match model {
-        ImageModel::GptImage1
-        | ImageModel::GptImage1Mini
+        ImageModel::GptImage1Mini
         | ImageModel::GptImage1dot5
         | ImageModel::GptImage2
         | ImageModel::GptImage2_2026_04_21
@@ -636,7 +643,8 @@ fn is_gpt_image_model(model: &ImageModel) -> bool {
         | ImageModel::GptImage2_5Flare
         | ImageModel::GptImage2_5Flare2026_09_08
         | ImageModel::ChatGptImageLatest => true,
-        ImageModel::DallE2 | ImageModel::DallE3 | ImageModel::Other(_) => false,
+        // Removed upstream variants still occur in configurations for compatible providers.
+        ImageModel::Other(id) => id == "gpt-image-1",
     }
 }
 
@@ -654,12 +662,13 @@ fn get_sticker_size(model: &ImageModel) -> async_openai::types::images::ImageSiz
     use async_openai::types::images::ImageSize;
 
     match model {
-        ImageModel::DallE2 => ImageSize::S256x256,
+        ImageModel::Other(id) if id == "dall-e-2" => ImageSize::S256x256,
         _ => ImageSize::S1024x1024,
     }
 }
 
 #[cfg(test)]
+#[allow(deprecated)] // Verify legacy options remain available to compatible providers.
 mod tests {
     use super::*;
     use serde_json::json;
@@ -830,6 +839,34 @@ mod tests {
                     }
                 );
             }
+        }
+    }
+
+    #[test]
+    fn legacy_dalle_models_preserve_style_and_quality_policy() {
+        for model_id in ["dall-e-2", "dall-e-3"] {
+            let config: ImageGenerationConfig = serde_json::from_value(json!({
+                "model_id": model_id,
+                "style": "vivid",
+                "quality": "hd",
+            }))
+            .unwrap();
+            let params = ImageGenerationParams::default()
+                .with_cheaper_quality_switching_allowed(true)
+                .with_smallest_size_possible(true);
+            let request = build_image_request(&config, "a cat", params).unwrap();
+
+            assert_eq!(
+                serde_json::to_value(request).unwrap(),
+                json!({
+                    "model": model_id,
+                    "prompt": "a cat",
+                    "style": "vivid",
+                    "quality": "standard",
+                    "size": if model_id == "dall-e-2" { "256x256" } else { "1024x1024" },
+                    "response_format": "b64_json",
+                })
+            );
         }
     }
 

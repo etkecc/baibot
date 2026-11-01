@@ -140,6 +140,8 @@ impl Default for TextToSpeechConfig {
     }
 }
 
+// Preserve the configured speech default, including for compatible providers.
+#[allow(deprecated)]
 fn default_text_to_speech_model_id() -> async_openai::types::audio::SpeechModel {
     async_openai::types::audio::SpeechModel::Tts1Hd
 }
