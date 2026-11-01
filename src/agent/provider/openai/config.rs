@@ -166,9 +166,6 @@ fn default_text_to_speech_response_format() -> async_openai::types::audio::Speec
 pub struct ImageGenerationConfig {
     pub model_id: String,
 
-    #[serde(default = "default_image_style")]
-    pub style: Option<async_openai::types::images::ImageStyle>,
-
     #[serde(default = "default_image_size")]
     pub size: Option<async_openai::types::images::ImageSize>,
 
@@ -180,7 +177,6 @@ impl Default for ImageGenerationConfig {
     fn default() -> Self {
         Self {
             model_id: OPENAI_IMAGE_MODEL_GPT_IMAGE_2_5_SUNBURST.to_owned(),
-            style: default_image_style(),
             size: default_image_size(),
             quality: default_image_quality(),
         }
@@ -197,10 +193,6 @@ impl ImageGenerationConfig {
     }
 }
 
-fn default_image_style() -> Option<async_openai::types::images::ImageStyle> {
-    None
-}
-
 fn default_image_size() -> Option<async_openai::types::images::ImageSize> {
     None
 }
@@ -211,7 +203,7 @@ fn default_image_quality() -> Option<async_openai::types::images::ImageQuality> 
 
 #[cfg(test)]
 mod tests {
-    use super::TextGenerationConfig;
+    use super::{ImageGenerationConfig, TextGenerationConfig};
 
     #[test]
     fn new_agents_use_sol_without_temperature_and_explicit_values_still_load() {
@@ -227,5 +219,12 @@ mod tests {
             serde_yaml_ng::from_str("model_id: gpt-5.4\ntemperature: 1.0\n").unwrap();
         assert_eq!(existing.model_id, "gpt-5.4");
         assert_eq!(existing.temperature, Some(1.0));
+    }
+
+    #[test]
+    fn image_configs_with_the_removed_style_still_load() {
+        let existing: ImageGenerationConfig =
+            serde_yaml_ng::from_str("model_id: gpt-image-2.5-sunburst\nstyle: vivid\n").unwrap();
+        assert_eq!(existing.model_id, "gpt-image-2.5-sunburst");
     }
 }

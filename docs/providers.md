@@ -116,8 +116,7 @@ You don't need to choose just one though. The bot supports [mixing & matching mo
 
 [OpenAI](https://openai.com/) is an American AI company providing powerful language models.
 
-Use this provider either with the OpenAI API or with other OpenAI-compatible API services which **fully** adhere to the [OpenAI API spec](https://github.com/openai/openai-openapi/).
-For services which are not fully compatible with the OpenAI API, consider using the [OpenAI Compatible](#openai-compatible) provider.
+Use this provider with the OpenAI API. For other OpenAI-compatible services (e.g. LocalAI), use the [OpenAI Compatible](#openai-compatible) provider or the dedicated provider for that service.
 
 - 🆔 Identifier: `openai`
 - 🔗 Links: [🏠 Home page](https://openai.com/), [🌐 Wiki](https://en.wikipedia.org/wiki/OpenAI), [👤 Sign up](https://platform.openai.com/signup), [📋 Models list](https://platform.openai.com/docs/models)
@@ -136,7 +135,6 @@ The following settings apply to both image generation and editing with GPT Image
 | --- | --- |
 | `quality` | `low`, `medium`, `high`, `xhigh`, `max`, or `auto`. `null` uses the model default, `auto`. |
 | `size` | `auto`, a standard size such as `1024x1024`, `1536x1024`, or `1024x1536`, or a custom size such as `2048x2048`. `null` lets the model choose. Custom dimensions must satisfy [OpenAI's size constraints](https://developers.openai.com/api/docs/guides/image-generation#size-and-quality-options). |
-| `style` | Leave this as `null` for GPT image models and describe the style in the prompt. It is only sent to non-GPT image models (OpenAI-compatible providers such as LocalAI). |
 
 Existing agents keep their configured model. To switch, change `image_generation.model_id` in the agent configuration to `gpt-image-2.5-sunburst` or `gpt-image-2.5-flare`.
 

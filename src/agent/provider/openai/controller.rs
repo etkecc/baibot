@@ -8,7 +8,6 @@ use async_openai::{
         images::{
             CreateImageEditRequest, CreateImageEditRequestArgs, CreateImageRequest,
             CreateImageRequestArgs, Image, ImageInput, ImageModel, ImageQuality,
-            ImageResponseFormat,
         },
         responses::{
             CodeInterpreterContainerAuto, CodeInterpreterTool, CodeInterpreterToolContainer,
@@ -511,7 +510,7 @@ fn build_image_request(
         .model_id_as_openai_image_model()
         .map_err(|err| anyhow::anyhow!(err))?;
 
-    // Only GPT image models have a known cheaper sibling. Other providers keep their model.
+    // Only GPT image models have a known cheaper sibling. Other models keep their model.
     let model = if params.cheaper_model_switching_allowed && is_gpt_image_model(&original_model) {
         ImageModel::GptImage1Mini
     } else {
@@ -520,25 +519,14 @@ fn build_image_request(
 
     let quality = if params.cheaper_quality_switching_allowed {
         config.quality.as_ref().map(|quality| {
-            if is_gpt_image_model(&model) {
-                // GPT image models do not accept DALL-E's `standard` quality.
-                match quality {
-                    ImageQuality::Standard
-                    | ImageQuality::HD
-                    | ImageQuality::High
-                    | ImageQuality::XHigh
-                    | ImageQuality::Max => ImageQuality::Low,
-                    other => other.clone(),
-                }
-            } else {
-                // Preserve the existing quality policy for custom providers.
-                match quality {
-                    ImageQuality::HD
-                    | ImageQuality::High
-                    | ImageQuality::XHigh
-                    | ImageQuality::Max => ImageQuality::Standard,
-                    other => other.clone(),
-                }
+            // GPT image models do not accept DALL-E's `standard` quality.
+            match quality {
+                ImageQuality::Standard
+                | ImageQuality::HD
+                | ImageQuality::High
+                | ImageQuality::XHigh
+                | ImageQuality::Max => ImageQuality::Low,
+                other => other.clone(),
             }
         })
     } else {
@@ -552,18 +540,6 @@ fn build_image_request(
     };
 
     let mut request_builder = CreateImageRequestArgs::default();
-
-    if !is_gpt_image_model(&model) {
-        // OpenAI retired these options with its pre-GPT image models,
-        // but OpenAI-compatible providers (e.g. LocalAI) still use them.
-        #[allow(deprecated)]
-        {
-            request_builder.response_format(ImageResponseFormat::B64Json);
-            if let Some(style) = &config.style {
-                request_builder.style(style.clone());
-            }
-        }
-    }
 
     request_builder.model(model).prompt(prompt.to_owned());
 
@@ -582,8 +558,6 @@ fn build_image_edit_request(
     prompt: &str,
     images: Vec<ImageSource>,
 ) -> anyhow::Result<CreateImageEditRequest> {
-    use async_openai::types::images::ImageSize;
-
     if images.is_empty() {
         return Err(anyhow::anyhow!("No image sources provided"));
     }
@@ -593,23 +567,11 @@ fn build_image_edit_request(
         .map_err(|err| anyhow::anyhow!(err))?;
     let mut request_builder = CreateImageEditRequestArgs::default();
 
-    if is_gpt_image_model(&model) {
-        if let Some(size) = &config.size {
-            request_builder.size(size.clone());
-        }
-        if let Some(quality) = &config.quality {
-            request_builder.quality(quality.clone());
-        }
-    } else {
-        // OpenAI-compatible providers follow the classic edit API: square sizes and an explicit
-        // base64 response format (deprecated upstream along with OpenAI's pre-GPT image models).
-        if let Some(size @ (ImageSize::S256x256 | ImageSize::S512x512 | ImageSize::S1024x1024)) =
-            &config.size
-        {
-            request_builder.size(size.clone());
-        }
-        #[allow(deprecated)]
-        request_builder.response_format(ImageResponseFormat::B64Json);
+    if let Some(size) = &config.size {
+        request_builder.size(size.clone());
+    }
+    if let Some(quality) = &config.quality {
+        request_builder.quality(quality.clone());
     }
 
     let image_inputs: Vec<ImageInput> = images.into_iter().map(Into::into).collect();
@@ -769,70 +731,9 @@ mod tests {
                         serde_json::to_value(request.quality).unwrap(),
                         json!(quality)
                     );
-                    #[allow(deprecated)]
-                    let response_format = request.response_format;
-                    assert_eq!(response_format, None);
                     assert_eq!(request.prompt, "make the cat blue");
                 }
             }
-        }
-    }
-
-    #[test]
-    fn custom_edits_keep_legacy_request_options() {
-        for model_id in ["stablediffusion", "custom/image-model"] {
-            for size in ["256x256", "512x512", "1024x1024", "1536x1024"] {
-                let config: ImageGenerationConfig = serde_json::from_value(json!({
-                    "model_id": model_id,
-                    "size": size,
-                    "quality": "standard",
-                }))
-                .unwrap();
-                let request = build_image_edit_request(
-                    &config,
-                    "make the cat blue",
-                    vec![ImageSource::new(
-                        "cat.png".to_owned(),
-                        vec![1, 2, 3],
-                        mxlink::mime::IMAGE_PNG,
-                    )],
-                )
-                .unwrap();
-
-                #[allow(deprecated)]
-                let response_format = request.response_format;
-                assert_eq!(response_format, Some(ImageResponseFormat::B64Json));
-                assert_eq!(request.quality, None);
-                assert_eq!(
-                    serde_json::to_value(request.size).unwrap(),
-                    if size == "1536x1024" {
-                        json!(null)
-                    } else {
-                        json!(size)
-                    }
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn style_is_only_sent_to_custom_models() {
-        for (model_id, expected_style) in [
-            ("gpt-image-2.5-sunburst", json!(null)),
-            ("stablediffusion", json!("vivid")),
-        ] {
-            let config: ImageGenerationConfig = serde_json::from_value(json!({
-                "model_id": model_id,
-                "style": "vivid",
-            }))
-            .unwrap();
-            let request =
-                build_image_request(&config, "a cat", ImageGenerationParams::default()).unwrap();
-            assert_eq!(
-                serde_json::to_value(request).unwrap()["style"],
-                expected_style,
-                "{model_id}"
-            );
         }
     }
 
@@ -848,8 +749,8 @@ mod tests {
     }
 
     #[test]
-    fn custom_models_keep_their_model_and_base64_responses_for_stickers() {
-        for model_id in ["stablediffusion", "custom/image-model"] {
+    fn other_models_keep_their_model_for_stickers() {
+        for model_id in ["gpt-image-3", "custom/image-model"] {
             let config = ImageGenerationConfig {
                 model_id: model_id.to_owned(),
                 ..Default::default()
@@ -858,7 +759,7 @@ mod tests {
                 build_image_request(&config, "a cat", ImageGenerationParams::default()).unwrap();
             assert_eq!(
                 serde_json::to_value(request).unwrap(),
-                json!({ "model": model_id, "prompt": "a cat", "response_format": "b64_json" })
+                json!({ "model": model_id, "prompt": "a cat" })
             );
 
             let config = ImageGenerationConfig {
@@ -875,8 +776,7 @@ mod tests {
                 json!({
                     "model": model_id,
                     "prompt": "a cat",
-                    "response_format": "b64_json",
-                    "quality": "standard",
+                    "quality": "low",
                     "size": "1024x1024",
                 })
             );
