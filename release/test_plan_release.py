@@ -98,13 +98,24 @@ class BranchMayLand(unittest.TestCase):
         self.assertFalse(plan.branch_may_land(False, "success"))
 
 
+class CiRuns(unittest.TestCase):
+    def test_results_and_push_times(self):
+        ci = {"conclusion": None, "status": "in_progress", "created_at": "2026-10-22T10:00:00Z"}
+        self.assertEqual(plan.ci_result(ci), "in_progress")
+        self.assertEqual(plan.ci_result({**ci, "conclusion": "success"}), "success")
+        self.assertEqual(plan.ci_result(None), "missing")
+        self.assertEqual(plan.pushed_at(ci), datetime.datetime(2026, 10, 22, 10, tzinfo=datetime.UTC))
+
+
 class Decide(unittest.TestCase):
     def decide(self, **overrides):
-        return plan.decide(**{"forced": False, "changed": True, "ci": "success", "age": 20 * MINUTE, "landing": [], **overrides})[0]
+        return plan.decide(**{"forced": False, "changed": True, "ci": "success", "age": 40 * MINUTE, "landing": [], **overrides})[0]
 
-    def test_releases_a_green_change_right_away(self):
+    def test_releases_a_green_change_once_main_is_quiet(self):
         self.assertTrue(self.decide())
-        self.assertTrue(self.decide(age=MINUTE))
+        self.assertTrue(self.decide(age=30 * MINUTE))
+        self.assertFalse(self.decide(age=29 * MINUTE))
+        self.assertFalse(self.decide(age=MINUTE))
 
     def test_never_releases_unchanged_images(self):
         self.assertFalse(self.decide(changed=False))

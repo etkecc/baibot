@@ -5,9 +5,9 @@
 """Decide whether the main commit this workflow run is for should be released now.
 
 Releases are CalVer tags (vYYYY.MM.DD.N, UTC date, N counting from 0 per day) cut without a human choosing a version.
-To fold a burst of Renovate merges into 1 release, an unforced run waits while another Renovate update to the image may still land
-(an open PR, or a branch that Renovate merges itself once its CI passes),
-but never longer than QUIET_CAP after the last commit.
+To fold a burst of commits into 1 release, an unforced run waits until main's head was pushed at least QUIET_PERIOD ago,
+and while another Renovate update to the image may still land (an open PR, or a branch that Renovate merges itself
+once its CI passes) until the head was pushed QUIET_CAP ago.
 The image's paths come from the Dockerfile's COPY sources; Renovate updates elsewhere never hold a release back.
 Writes `release`, `version`, `previous` (the previous release tag, or "none") and `reason` to $GITHUB_OUTPUT.
 """
@@ -22,6 +22,7 @@ import sys
 
 # The workflow whose push runs must pass, on main and on Renovate's branches.
 CI_WORKFLOW = "ci.yml"
+QUIET_PERIOD = datetime.timedelta(minutes=30)
 QUIET_CAP = datetime.timedelta(minutes=90)
 CALVER = re.compile(r"v?([0-9]{4})\.([0-9]{2})\.([0-9]{2})\.([0-9]+)")
 FAILED = {"FAILURE", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR"}
@@ -109,19 +110,33 @@ def decide(*, forced, changed, ci, age, landing):
         return True, "manually requested"
     if age >= QUIET_CAP:
         return True, f"main has been quiet for {minutes(age)} (cap reached)"
+    if age < QUIET_PERIOD:
+        return False, f"main changed {minutes(age)} ago; waiting until it has been quiet for {minutes(QUIET_PERIOD)}"
     if landing:
         return False, "waiting for Renovate update(s) that may land soon: " + ", ".join(landing)
-    return True, "CI passed and no Renovate PR is about to land"
+    return True, f"CI passed, main has been quiet for {minutes(age)} and no Renovate update to the image is about to land"
 
 
 def run(*command):
     return subprocess.run(command, check=True, capture_output=True, text=True).stdout.strip()
 
 
-def ci_result(repository, sha):
-    """The latest push run of CI_WORKFLOW for a commit: its conclusion, its status while running, or "missing"."""
-    runs = json.loads(run("gh", "api", f"repos/{repository}/actions/workflows/{CI_WORKFLOW}/runs?head_sha={sha}&event=push&per_page=1"))["workflow_runs"]
-    return (runs[0]["conclusion"] or runs[0]["status"]) if runs else "missing"
+def ci_run(repository, sha, branch=None):
+    """The latest push run of CI_WORKFLOW for a commit (on `branch`, if given), or None."""
+    query = f"head_sha={sha}&event=push&per_page=1" + (f"&branch={branch}" if branch else "")
+    runs = json.loads(run("gh", "api", f"repos/{repository}/actions/workflows/{CI_WORKFLOW}/runs?{query}"))["workflow_runs"]
+    return runs[0] if runs else None
+
+
+def ci_result(ci):
+    """A CI run's conclusion, its status while running, or "missing"."""
+    return (ci["conclusion"] or ci["status"]) if ci else "missing"
+
+
+def pushed_at(ci):
+    """When the commit reached main: its push started the CI run (re-runs keep the run's creation time).
+    A commit's own timestamp would make an old commit pushed just now look quiet already."""
+    return datetime.datetime.fromisoformat(ci["created_at"].replace("Z", "+00:00"))
 
 
 def main():
@@ -139,9 +154,10 @@ def main():
         previous = described.stdout.strip() if described.returncode == 0 else "none"
         paths = image_paths(run("git", "show", f"{sha}:Dockerfile"))
         changed = previous == "none" or subprocess.run(["git", "diff", "--quiet", previous, sha, "--", *paths]).returncode != 0
-        committed = datetime.datetime.fromtimestamp(int(run("git", "log", "-1", "--format=%ct", sha)), datetime.UTC)
-        age = datetime.datetime.now(datetime.UTC) - committed
-        ci = ci_result(repository, sha)
+        main_ci = ci_run(repository, sha, "main")
+        ci = ci_result(main_ci)
+        # Without a CI run nothing is released, so the age does not matter then.
+        age = datetime.datetime.now(datetime.UTC) - pushed_at(main_ci) if main_ci else datetime.timedelta(0)
         prs = json.loads(run("gh", "pr", "list", "--repo", repository, "--base", "main", "--author", "app/renovate",
                              "--json", "number,headRefName,headRefOid,isDraft,mergeable,reviewDecision,statusCheckRollup"))
 
@@ -155,7 +171,7 @@ def main():
                        "--jq", '.[] | select(.name | startswith("renovate/")) | .name + " " + .commit.sha').splitlines()
         for name, tip in sorted(branch.split() for branch in branches):
             if name not in {pr["headRefName"] for pr in prs}:
-                if branch_may_land(update_changes_image(tip), ci_result(repository, tip)):
+                if branch_may_land(update_changes_image(tip), ci_result(ci_run(repository, tip))):
                     landing.append(name)
         release, reason = decide(forced=forced, changed=changed, ci=ci, age=age, landing=landing)
         reason += f" (previous release {previous})"

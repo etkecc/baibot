@@ -2,8 +2,8 @@ name: Release
 
 # Cuts CalVer releases (vYYYY.MM.DD.N) from main without a human picking a version.
 # release/plan-release.py decides when:
-# unforced runs wait for green CI and for Renovate PRs that may still land, so a burst of merges becomes 1 release.
-# Manual runs release main right away if the image changed since the last release and CI passed.
+# unforced runs wait for green CI, for main to be quiet for 30 minutes and for Renovate updates to the image that may still land,
+# so a burst of commits becomes 1 release. Manual runs release main right away if the image changed and CI passed.
 # The tag is pushed by this workflow (GITHUB_TOKEN tags trigger no other workflows),
 # so it validates and publishes the release itself, then creates its GitHub Release.
 on:
