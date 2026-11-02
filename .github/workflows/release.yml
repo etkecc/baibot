@@ -2,8 +2,9 @@ name: Release
 
 # Cuts CalVer releases (vYYYY.MM.DD.N) from main without a human picking a version.
 # release/plan-release.py decides when:
-# unforced runs wait for green CI, for main to be quiet for 30 minutes and for Renovate updates to the image that may still land,
-# so a burst of commits becomes 1 release. Manual runs release main right away if the image changed and CI passed.
+# unforced runs wait for green CI, for main to be quiet for 30 minutes (waiting within the run: scheduled runs are unreliable)
+# and for Renovate updates to the image that may still land, so a burst of commits becomes 1 release.
+# Manual runs release main right away if the image changed and CI passed; a waiting run steps aside for them.
 # The tag is pushed by this workflow (GITHUB_TOKEN tags trigger no other workflows),
 # so it validates and publishes the release itself, then creates its GitHub Release.
 on:
@@ -26,7 +27,8 @@ concurrency:
 jobs:
   plan:
     runs-on: ubuntu-26.04
-    timeout-minutes: 5
+    # The planner may wait out the 30-minute quiet period within the run.
+    timeout-minutes: 40
     permissions:
       contents: read
       actions: read

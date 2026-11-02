@@ -5,7 +5,8 @@
 """Decide whether the main commit this workflow run is for should be released now.
 
 Releases are CalVer tags (vYYYY.MM.DD.N, UTC date, N counting from 0 per day) cut without a human choosing a version.
-To fold a burst of commits into 1 release, an unforced run waits until main's head was pushed at least QUIET_PERIOD ago,
+To fold a burst of commits into 1 release, an unforced run waits until main's head was pushed at least QUIET_PERIOD ago
+(sleeping in the run, since GitHub delays or drops the scheduled runs that would retry),
 and while another Renovate update to the image may still land (an open PR, or a branch that Renovate merges itself
 once its CI passes) until the head was pushed QUIET_CAP ago.
 The image's paths come from the Dockerfile's COPY sources; Renovate updates elsewhere never hold a release back.
@@ -19,6 +20,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 
 # The workflow whose push runs must pass, on main and on Renovate's branches.
 CI_WORKFLOW = "ci.yml"
@@ -101,20 +103,22 @@ def minutes(age):
 
 
 def decide(*, forced, changed, ci, age, landing):
+    """Returns (release, reason, wait): `wait` is how long until the quiet period alone stops blocking, else None."""
     if not changed:
-        return False, "nothing in the image changed since the last release"
+        return False, "nothing in the image changed since the last release", None
     if ci != "success":
-        return False, f"CI for this commit is {ci}"
+        return False, f"CI for this commit is {ci}", None
     # A manual run skips only the waiting, never CI.
     if forced:
-        return True, "manually requested"
+        return True, "manually requested", None
     if age >= QUIET_CAP:
-        return True, f"main has been quiet for {minutes(age)} (cap reached)"
+        return True, f"main has been quiet for {minutes(age)} (cap reached)", None
     if age < QUIET_PERIOD:
-        return False, f"main changed {minutes(age)} ago; waiting until it has been quiet for {minutes(QUIET_PERIOD)}"
+        return (False, f"main changed {minutes(age)} ago; waiting until it has been quiet for {minutes(QUIET_PERIOD)}",
+                QUIET_PERIOD - age)
     if landing:
-        return False, "waiting for Renovate update(s) that may land soon: " + ", ".join(landing)
-    return True, f"CI passed, main has been quiet for {minutes(age)} and no Renovate update to the image is about to land"
+        return False, "waiting for Renovate update(s) that may land soon: " + ", ".join(landing), None
+    return True, f"CI passed, main has been quiet for {minutes(age)} and no Renovate update to the image is about to land", None
 
 
 def run(*command):
@@ -139,42 +143,77 @@ def pushed_at(ci):
     return datetime.datetime.fromisoformat(ci["created_at"].replace("Z", "+00:00"))
 
 
+def main_head(repository):
+    return json.loads(run("gh", "api", f"repos/{repository}/git/ref/heads/main"))["object"]["sha"]
+
+
+def manual_run_waiting(repository):
+    """Whether a manual Release run is queued behind this one (the workflow lets 1 run plan at a time)."""
+    return any(json.loads(run("gh", "api", f"repos/{repository}/actions/workflows/release.yml/runs"
+                                         f"?event=workflow_dispatch&branch=main&status={status}&per_page=1"))["total_count"] > 0
+               for status in ("pending", "queued"))
+
+
+def wait_quietly(repository, sha, wait):
+    """Waits out the quiet period in this run: the cron that would otherwise retry is delayed or dropped by GitHub.
+    Returns why it stopped early (main moved on, or a manual run should go first), or None after the full wait."""
+    deadline = time.monotonic() + wait.total_seconds()
+    while (left := deadline - time.monotonic()) > 0:
+        time.sleep(min(60, left))
+        if (head := main_head(repository)) != sha:
+            return f"main has moved on to {head}; a later run decides for it"
+        if manual_run_waiting(repository):
+            return "a manual Release run is waiting; it decides instead"
+    return None
+
+
+def plan(repository, sha, forced):
+    """Returns (release, reason, previous release, wait), `wait` as decide() returns it."""
+    head = main_head(repository)
+    if head != sha:
+        return False, f"main has moved on to {head}; a later run decides for it", "none", None
+    described = subprocess.run(["git", "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*", sha],
+                               capture_output=True, text=True)
+    # Before the first release, everything in the image counts as changed.
+    previous = described.stdout.strip() if described.returncode == 0 else "none"
+    paths = image_paths(run("git", "show", f"{sha}:Dockerfile"))
+    changed = previous == "none" or subprocess.run(["git", "diff", "--quiet", previous, sha, "--", *paths]).returncode != 0
+    main_ci = ci_run(repository, sha, "main")
+    ci = ci_result(main_ci)
+    # Without a CI run nothing is released, so the age does not matter then.
+    age = datetime.datetime.now(datetime.UTC) - pushed_at(main_ci) if main_ci else datetime.timedelta(0)
+    prs = json.loads(run("gh", "pr", "list", "--repo", repository, "--base", "main", "--author", "app/renovate",
+                         "--json", "number,headRefName,headRefOid,isDraft,mergeable,reviewDecision,statusCheckRollup"))
+
+    def update_changes_image(tip):
+        return changes_image(json.loads(run("gh", "api", f"repos/{repository}/compare/{sha}...{tip}")), paths)
+
+    landing = [f"#{pr['number']}" for pr in sorted(prs, key=lambda pr: pr["number"])
+               if may_land_soon(pr) and update_changes_image(pr["headRefOid"])]
+    # Branches with a PR are judged by the PR above.
+    branches = run("gh", "api", "--paginate", f"repos/{repository}/branches?per_page=100",
+                   "--jq", '.[] | select(.name | startswith("renovate/")) | .name + " " + .commit.sha').splitlines()
+    for name, tip in sorted(branch.split() for branch in branches):
+        if name not in {pr["headRefName"] for pr in prs}:
+            if branch_may_land(update_changes_image(tip), ci_result(ci_run(repository, tip))):
+                landing.append(name)
+    release, reason, wait = decide(forced=forced, changed=changed, ci=ci, age=age, landing=landing)
+    return release, f"{reason} (previous release {previous})", previous, wait
+
+
 def main():
     repository, sha, forced = os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_SHA"], os.environ.get("FORCE") == "true"
     if os.environ["GITHUB_REF"] != "refs/heads/main":
         sys.exit("Releases are only cut from main")
-    head = json.loads(run("gh", "api", f"repos/{repository}/git/ref/heads/main"))["object"]["sha"]
-    previous = "none"
-    if head != sha:
-        release, reason = False, f"main has moved on to {head}; a later run decides for it"
-    else:
-        described = subprocess.run(["git", "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*", sha],
-                                   capture_output=True, text=True)
-        # Before the first release, everything in the image counts as changed.
-        previous = described.stdout.strip() if described.returncode == 0 else "none"
-        paths = image_paths(run("git", "show", f"{sha}:Dockerfile"))
-        changed = previous == "none" or subprocess.run(["git", "diff", "--quiet", previous, sha, "--", *paths]).returncode != 0
-        main_ci = ci_run(repository, sha, "main")
-        ci = ci_result(main_ci)
-        # Without a CI run nothing is released, so the age does not matter then.
-        age = datetime.datetime.now(datetime.UTC) - pushed_at(main_ci) if main_ci else datetime.timedelta(0)
-        prs = json.loads(run("gh", "pr", "list", "--repo", repository, "--base", "main", "--author", "app/renovate",
-                             "--json", "number,headRefName,headRefOid,isDraft,mergeable,reviewDecision,statusCheckRollup"))
-
-        def update_changes_image(tip):
-            return changes_image(json.loads(run("gh", "api", f"repos/{repository}/compare/{sha}...{tip}")), paths)
-
-        landing = [f"#{pr['number']}" for pr in sorted(prs, key=lambda pr: pr["number"])
-                   if may_land_soon(pr) and update_changes_image(pr["headRefOid"])]
-        # Branches with a PR are judged by the PR above.
-        branches = run("gh", "api", "--paginate", f"repos/{repository}/branches?per_page=100",
-                       "--jq", '.[] | select(.name | startswith("renovate/")) | .name + " " + .commit.sha').splitlines()
-        for name, tip in sorted(branch.split() for branch in branches):
-            if name not in {pr["headRefName"] for pr in prs}:
-                if branch_may_land(update_changes_image(tip), ci_result(ci_run(repository, tip))):
-                    landing.append(name)
-        release, reason = decide(forced=forced, changed=changed, ci=ci, age=age, landing=landing)
-        reason += f" (previous release {previous})"
+    release, reason, previous, wait = plan(repository, sha, forced)
+    if wait:
+        print(f"Waiting: {reason}", flush=True)
+        stopped = wait_quietly(repository, sha, wait)
+        if stopped:
+            release, reason = False, stopped
+        else:
+            # Plan afresh: CI, Renovate updates and the image may have changed meanwhile.
+            release, reason, previous, _ = plan(repository, sha, forced)
     version = next_version(run("git", "tag", "--list", "v*").splitlines(), datetime.datetime.now(datetime.UTC).date()) if release else ""
     print(f"{'Releasing ' + version if release else 'Not releasing'}: {reason}")
     with open(os.environ["GITHUB_OUTPUT"], "a") as output:

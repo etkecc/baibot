@@ -6,6 +6,7 @@ import datetime
 import importlib.util
 import pathlib
 import unittest
+import unittest.mock
 
 spec = importlib.util.spec_from_file_location("plan", pathlib.Path(__file__).with_name("plan-release.py"))
 plan = importlib.util.module_from_spec(spec)
@@ -107,6 +108,28 @@ class CiRuns(unittest.TestCase):
         self.assertEqual(plan.pushed_at(ci), datetime.datetime(2026, 10, 22, 10, tzinfo=datetime.UTC))
 
 
+class WaitQuietly(unittest.TestCase):
+    def wait(self, heads, manual=lambda: False, minutes=3):
+        clock = [0.0]
+        heads = iter(heads)
+        with unittest.mock.patch.object(plan.time, "monotonic", lambda: clock[0]), \
+                unittest.mock.patch.object(plan.time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds)), \
+                unittest.mock.patch.object(plan, "main_head", lambda repository: next(heads)), \
+                unittest.mock.patch.object(plan, "manual_run_waiting", lambda repository: manual()):
+            return plan.wait_quietly("o/r", "abc", minutes * MINUTE), clock[0]
+
+    def test_waits_the_whole_period_while_nothing_happens(self):
+        self.assertEqual(self.wait(["abc"] * 3), (None, 180))
+
+    def test_stops_when_main_moves_on_or_a_manual_run_waits(self):
+        stopped, slept = self.wait(["abc", "def"])
+        self.assertIn("moved on to def", stopped)
+        self.assertEqual(slept, 120)
+        stopped, slept = self.wait(["abc"] * 3, manual=lambda: True)
+        self.assertIn("manual", stopped)
+        self.assertEqual(slept, 60)
+
+
 class Decide(unittest.TestCase):
     def decide(self, **overrides):
         return plan.decide(**{"forced": False, "changed": True, "ci": "success", "age": 40 * MINUTE, "landing": [], **overrides})[0]
@@ -116,6 +139,15 @@ class Decide(unittest.TestCase):
         self.assertTrue(self.decide(age=30 * MINUTE))
         self.assertFalse(self.decide(age=29 * MINUTE))
         self.assertFalse(self.decide(age=MINUTE))
+
+    def test_only_the_quiet_period_asks_to_wait(self):
+        wait = lambda **overrides: plan.decide(**{"forced": False, "changed": True, "ci": "success", "age": 10 * MINUTE,
+                                                  "landing": [], **overrides})[2]
+        self.assertEqual(wait(), 20 * MINUTE)
+        self.assertEqual(wait(landing=["#36"]), 20 * MINUTE)
+        for overrides in [{"age": 30 * MINUTE}, {"forced": True}, {"ci": "in_progress"}, {"changed": False}]:
+            with self.subTest(**overrides):
+                self.assertIsNone(wait(**overrides))
 
     def test_never_releases_unchanged_images(self):
         self.assertFalse(self.decide(changed=False))
