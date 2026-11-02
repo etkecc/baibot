@@ -65,20 +65,35 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: write
+    outputs:
+      tagged: ${{ steps.tag.outputs.tagged }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Tag the tested commit
+        id: tag
+        # bash (not the default `bash -e`) adds pipefail, so a failing ls-remote fails the job.
+        shell: bash
         env:
           TAG: v${{ needs.plan.outputs.version }}
         run: |
+          # If main moved on while the checks ran, a later run releases the newer head.
+          # (With GITHUB_TOKEN, tagging an older workflow revision can also be rejected without workflows permission.)
+          head=$(git ls-remote --exit-code origin refs/heads/main | cut -f1)
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::notice::Not releasing $GITHUB_SHA: main has moved on to $head; a later run decides for it"
+            echo "tagged=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git tag --annotate --message "baibot $TAG" "$TAG" "$GITHUB_SHA"
           # Fails rather than moves the tag if it already exists.
           git push origin "refs/tags/$TAG"
+          echo "tagged=true" >> "$GITHUB_OUTPUT"
 
   publish:
     needs: [plan, tag]
+    if: needs.tag.outputs.tagged == 'true'
     uses: ./.github/workflows/publish-images.yml
     permissions:
       contents: read
