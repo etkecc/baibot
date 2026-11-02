@@ -63,7 +63,7 @@ In any case, you will need [🐋 Docker](https://www.docker.com/) as [dependency
     - Start services: `just ollama-start`
     - (Only the first time around) Pull the model configured in `agents.static_definitions` in the configuration file: `just ollama-pull-model gemma3:1b`
 7. Start the bot: `just run-locally`
-8. Go to http://element.127.0.0.1.nip.io:42025/ and login with `admin` / `admin`
+8. Go to http://localhost:42025/ and login with `admin` / `admin` (Element Web needs `localhost` or HTTPS: it fails to start on other plain-HTTP addresses)
 9. Create a new room and invite `@baibot:continuwuity.127.0.0.1.nip.io` (or `@baibot:synapse.127.0.0.1.nip.io` if using Synapse)
 10. When done, stop the bot (`Ctrl` + `C`)
 11. Stop the services: `just services-stop`
@@ -90,7 +90,7 @@ You can avoid having a [Rust](https://www.rust-lang.org/) toolchain installed lo
     - Start services: `just ollama-start`
     - (Only the first time around) Pull the model configured in `agents.static_definitions` in the configuration file: `just ollama-pull-model gemma3:1b`
 7. Start the bot: `just run-in-container`
-8. Go to http://element.127.0.0.1.nip.io:42025/ and login with `admin` / `admin`
+8. Go to http://localhost:42025/ and login with `admin` / `admin` (Element Web needs `localhost` or HTTPS: it fails to start on other plain-HTTP addresses)
 9. Create a new room and invite `@baibot:continuwuity.127.0.0.1.nip.io` (or `@baibot:synapse.127.0.0.1.nip.io` if using Synapse)
 10. When done, stop the bot (`Ctrl` + `C`)
 11. Stop the services: `just services-stop`
