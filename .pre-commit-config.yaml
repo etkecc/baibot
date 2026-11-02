@@ -43,5 +43,5 @@ repos:
         name: Release Script Tests
         entry: just release-test
         language: system
-        files: '^release/'
+        files: '^(release/|Dockerfile$)'
         pass_filenames: false

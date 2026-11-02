@@ -14,7 +14,7 @@ ENV CARGO_TARGET_DIR=/target
 WORKDIR /app
 
 # Only the build's inputs, so that nothing else (docs, CI, etc.) changes the image.
-# release/plan-release.py's IMAGE_PATHS lists the same paths.
+# The release scripts (release/) read the image's paths from these COPY lines: keep each on 1 line, without JSON syntax.
 COPY Cargo.toml Cargo.lock rust-toolchain.toml /app/
 COPY src /app/src
 COPY etc/assets/baibot-torso-768.png /app/etc/assets/baibot-torso-768.png

@@ -15,6 +15,29 @@ TODAY = datetime.date(2026, 10, 22)
 MINUTE = datetime.timedelta(minutes=1)
 
 
+class ImagePaths(unittest.TestCase):
+    def test_reads_this_repositorys_dockerfile(self):
+        """Fails when a Dockerfile change makes the planner choke, or names paths that do not exist."""
+        root = pathlib.Path(__file__).resolve().parent.parent
+        paths = plan.image_paths((root / "Dockerfile").read_text())
+        self.assertIn("src", paths)
+        for path in paths:
+            with self.subTest(path=path):
+                self.assertTrue((root / path).exists())
+
+    def test_uses_build_context_sources_only(self):
+        dockerfile = "\n".join(["FROM rust AS build", "COPY --chown=1:1 a b/ /app/", "COPY ./c/ ./c/  # comment",
+                                "copy d /d", "COPY --from=build /x /y", "RUN cp a b \\", "  && true", "COPY . /app",
+                                "COPY ././e//f/ /e"])
+        self.assertEqual(plan.image_paths(dockerfile), [".", ".dockerignore", "Dockerfile", "a", "b", "c", "d", "e/f"])
+
+    def test_refuses_forms_it_cannot_read(self):
+        for dockerfile in ["COPY a \\\n  /app/", 'COPY ["a", "/app/"]', "COPY /etc/x /x", "COPY ../x /x",
+                           "ADD https://example.com/x /x", "COPY /app/", "FROM rust\nRUN true"]:
+            with self.subTest(dockerfile=dockerfile), self.assertRaises(ValueError):
+                plan.image_paths(dockerfile)
+
+
 def pr(**fields):
     return {"isDraft": False, "mergeable": "MERGEABLE", "reviewDecision": "", "statusCheckRollup": [], **fields}
 

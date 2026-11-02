@@ -159,7 +159,8 @@ def main():
     url = f"{os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/{os.environ['GITHUB_REPOSITORY']}"
     span = sha if previous == "none" else f"{previous}..{sha}"
     commits = [read(sha) for sha in git("rev-list", "--no-merges", "--topo-order", "--reverse", span).split()]
-    image_commits = set(git("log", "--no-merges", "--format=%H", span, "--", *plan.IMAGE_PATHS).split())
+    paths = plan.image_paths(git("show", f"{sha}:Dockerfile"))
+    image_commits = set(git("log", "--no-merges", "--format=%H", span, "--", *paths).split())
     sys.stdout.write(render(commits, image_commits, url=url, previous=previous, tag=tag))
 
 

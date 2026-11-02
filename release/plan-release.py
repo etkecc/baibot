@@ -8,18 +8,18 @@ Releases are CalVer tags (vYYYY.MM.DD.N, UTC date, N counting from 0 per day) cu
 To fold a burst of Renovate merges into 1 release, an unforced run waits while another Renovate update may still land
 (an open PR, or a branch that Renovate merges itself once its CI passes),
 but never longer than QUIET_CAP after the last commit.
+The image's paths come from the Dockerfile's COPY sources.
 Writes `release`, `version`, `previous` (the previous release tag, or "none") and `reason` to $GITHUB_OUTPUT.
 """
 import datetime
 import json
 import os
+import posixpath
 import re
+import shlex
 import subprocess
 import sys
 
-# Paths that end up in the published image (mirrors the Dockerfile's COPY lines).
-IMAGE_PATHS = ["Dockerfile", ".dockerignore", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "src",
-               "etc/assets/baibot-torso-768.png"]
 # The workflow whose push runs must pass, on main and on Renovate's branches.
 CI_WORKFLOW = "ci.yml"
 QUIET_CAP = datetime.timedelta(minutes=90)
@@ -39,6 +39,33 @@ def next_version(tags, today):
         raise ValueError("a release tag is dated after today; refusing to go backward")
     counters = [version[3] for version in released if version[:3] == date]
     return f"{today:%Y.%m.%d}.{max(counters) + 1 if counters else 0}"
+
+
+def image_paths(dockerfile):
+    """The paths that end up in the published image: the build-context sources of the Dockerfile's COPY/ADD
+    instructions (not those copied from another stage or image), plus the Dockerfile and .dockerignore.
+    Raises ValueError for COPY/ADD forms it cannot read reliably, rather than guessing."""
+    paths = {"Dockerfile", ".dockerignore"}
+    found = False
+    for line in dockerfile.splitlines():
+        if line.upper().split()[:1] not in (["COPY"], ["ADD"]):
+            continue
+        if line.rstrip().endswith("\\") or "[" in line:
+            raise ValueError(f"unsupported COPY/ADD form (keep it on 1 line, without JSON syntax): {line}")
+        words = shlex.split(line, comments=True)[1:]
+        if any(word.startswith("--from=") for word in words):
+            continue
+        sources = [word for word in words if not word.startswith("--")][:-1]
+        if not sources:
+            raise ValueError(f"COPY/ADD without a source: {line}")
+        for source in sources:
+            if "://" in source or source.startswith("/") or ".." in source.split("/"):
+                raise ValueError(f"COPY/ADD source outside the build context: {line}")
+            paths.add(posixpath.normpath(source))
+            found = True
+    if not found:
+        raise ValueError("the Dockerfile copies nothing from the build context")
+    return sorted(paths)
 
 
 def may_land_soon(pr):
@@ -96,7 +123,8 @@ def main():
                                    capture_output=True, text=True)
         # Before the first release, everything in the image counts as changed.
         previous = described.stdout.strip() if described.returncode == 0 else "none"
-        changed = previous == "none" or subprocess.run(["git", "diff", "--quiet", previous, sha, "--", *IMAGE_PATHS]).returncode != 0
+        paths = image_paths(run("git", "show", f"{sha}:Dockerfile"))
+        changed = previous == "none" or subprocess.run(["git", "diff", "--quiet", previous, sha, "--", *paths]).returncode != 0
         committed = datetime.datetime.fromtimestamp(int(run("git", "log", "-1", "--format=%ct", sha)), datetime.UTC)
         age = datetime.datetime.now(datetime.UTC) - committed
         ci = ci_result(repository, sha)
