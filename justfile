@@ -55,6 +55,10 @@ run-in-container *extra_args: app-container-prepare build-container-image-debug
 test *extra_args:
 	RUST_BACKTRACE=1 cargo test {{ extra_args }}
 
+# Tests the release scripts (release/)
+release-test:
+	python3 -m unittest discover -s release -p 'test_*.py'
+
 # Formats the code
 fmt:
 	RUST_BACKTRACE=1 cargo fmt --all

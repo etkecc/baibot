@@ -38,3 +38,10 @@ repos:
         files: '\.rs$'
         pass_filenames: false
         priority: 100
+
+      - id: test-release
+        name: Release Script Tests
+        entry: just release-test
+        language: system
+        files: '^release/'
+        pass_filenames: false
