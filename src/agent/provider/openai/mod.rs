@@ -1,5 +1,6 @@
 mod config;
 mod controller;
+mod realtime_tts;
 mod utils;
 
 pub use config::Config;

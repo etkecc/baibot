@@ -4,7 +4,10 @@ use async_openai::{
     Client as OpenAIClient,
     config::OpenAIConfig,
     types::{
-        audio::{AudioInput, CreateSpeechRequestArgs, CreateTranscriptionRequestArgs},
+        audio::{
+            AudioInput, CreateSpeechRequestArgs, CreateTranscriptionRequestArgs, SpeechModel,
+            SpeechResponseFormat,
+        },
         images::{
             CreateImageEditRequest, CreateImageEditRequestArgs, CreateImageRequest,
             CreateImageRequestArgs, Image, ImageInput, ImageModel, ImageQuality,
@@ -17,6 +20,7 @@ use async_openai::{
 };
 
 use super::super::ControllerTrait;
+use super::realtime_tts;
 use crate::{
     agent::provider::{
         ImageEditParams, ImageGenerationParams, SpeechToTextParams, SpeechToTextResult,
@@ -56,6 +60,52 @@ impl Controller {
         let client = OpenAIClient::with_config(openai_config);
 
         Self { config, client }
+    }
+
+    async fn text_to_speech_realtime(
+        &self,
+        model_id: &str,
+        voice: &async_openai::types::audio::Voice,
+        speed: f32,
+        response_format: SpeechResponseFormat,
+        input: &str,
+    ) -> anyhow::Result<TextToSpeechResult> {
+        // Realtime returns raw PCM16, so we encode it ourselves (rejecting the rest early).
+        if !matches!(
+            response_format,
+            SpeechResponseFormat::Opus | SpeechResponseFormat::Wav
+        ) {
+            return Err(anyhow::anyhow!(
+                "Realtime text-to-speech models support the `opus` and `wav` response formats only, not {:?}.",
+                response_format
+            ));
+        }
+
+        let samples = realtime_tts::generate(realtime_tts::Request {
+            base_url: &self.config.base_url,
+            api_key: &self.config.api_key,
+            model_id,
+            // A voice name, or a custom voice object (`{"id": "voice_..."}`).
+            voice: serde_json::to_value(voice)?,
+            speed,
+            text: input,
+        })
+        .await?;
+
+        let bytes = match response_format {
+            SpeechResponseFormat::Wav => {
+                crate::utils::audio::encode_pcm16_mono_to_wav(&samples, realtime_tts::SAMPLE_RATE)
+            }
+            _ => crate::utils::audio::encode_pcm16_mono_to_ogg_opus(
+                &samples,
+                realtime_tts::SAMPLE_RATE,
+            )?,
+        };
+
+        let mime_type = response_format_to_mime_type(&response_format)
+            .ok_or_else(|| anyhow::anyhow!("Failed determining the audio MIME type"))?;
+
+        Ok(TextToSpeechResult { bytes, mime_type })
     }
 }
 
@@ -363,26 +413,37 @@ impl ControllerTrait for Controller {
 
         let speed = params.speed_override.unwrap_or(text_to_speech_config.speed);
 
-        let voice = if let Some(voice_string) = params.voice_override {
-            // This is a hacky way to construct a Voice enum from the string we have.
-            let voice: serde_json::Result<async_openai::types::audio::Voice> =
-                serde_json::from_str(&format!("\"{}\"", voice_string));
-            match voice {
-                Ok(voice) => voice,
-                Err(err) => {
-                    tracing::debug!(?voice_string, ?err, "Failed to parse voice");
+        let voice = match params.voice_override {
+            // Unknown names become `Voice::Other`, so this only fails on unexpected input.
+            Some(voice_string) => {
+                match serde_json::from_value(serde_json::Value::String(voice_string.clone())) {
+                    Ok(voice) => voice,
+                    Err(err) => {
+                        tracing::debug!(?voice_string, ?err, "Failed to parse voice");
 
-                    return Err(anyhow::anyhow!(
-                        "The configured voice ({}) is not supported.",
-                        voice_string
-                    ));
+                        return Err(anyhow::anyhow!(
+                            "The configured voice ({}) is not supported.",
+                            voice_string
+                        ));
+                    }
                 }
             }
-        } else {
-            text_to_speech_config.voice.clone()
+            None => text_to_speech_config.effective_voice(),
         };
 
         let response_format = text_to_speech_config.response_format;
+
+        if realtime_tts::is_realtime_model(&text_to_speech_config.model_id) {
+            return self
+                .text_to_speech_realtime(
+                    &text_to_speech_config.model_id,
+                    &voice,
+                    speed,
+                    response_format,
+                    input,
+                )
+                .await;
+        }
 
         let mime_type = response_format_to_mime_type(&response_format).unwrap_or(
             "audio/mp3"
@@ -391,7 +452,7 @@ impl ControllerTrait for Controller {
         );
 
         let request = CreateSpeechRequestArgs::default()
-            .model(text_to_speech_config.model_id.clone())
+            .model(SpeechModel::Other(text_to_speech_config.model_id.clone()))
             .voice(voice)
             .speed(speed)
             .response_format(response_format)
@@ -445,13 +506,13 @@ impl ControllerTrait for Controller {
     }
 
     fn text_to_speech_voice(&self) -> Option<String> {
-        let Some(text_to_speech_config) = &self.config.text_to_speech else {
-            return None;
-        };
+        let voice = self.config.text_to_speech.as_ref()?.effective_voice();
 
-        // A hacky way to turn this enum to a string
-        let voice_as_string = serde_json::to_string(&text_to_speech_config.voice).ok()?;
-        Some(voice_as_string.replace("\"", ""))
+        // Voice names serialize as strings, custom voices as objects.
+        match serde_json::to_value(voice).ok()? {
+            serde_json::Value::String(name) => Some(name),
+            other => Some(other.to_string()),
+        }
     }
 
     fn text_to_speech_speed(&self) -> Option<f32> {

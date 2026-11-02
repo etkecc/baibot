@@ -1,3 +1,4 @@
+pub(crate) mod audio;
 pub(crate) mod base64;
 pub(crate) mod mime;
 pub mod status;

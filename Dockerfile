@@ -6,7 +6,7 @@
 
 FROM docker.io/rust:1.99.1-slim-trixie AS build
 
-RUN apt-get update && apt-get install -y build-essential pkg-config libssl-dev libsqlite3-dev
+RUN apt-get update && apt-get install -y build-essential cmake pkg-config libssl-dev libsqlite3-dev
 
 ENV CARGO_HOME=/cargo
 ENV CARGO_TARGET_DIR=/target

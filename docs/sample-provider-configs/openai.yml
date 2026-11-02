@@ -16,8 +16,8 @@ text_generation:
 speech_to_text:
   model_id: gpt-transcribe
 text_to_speech:
-  model_id: tts-1-hd
-  voice: onyx
+  model_id: gpt-realtime-2.1-mini
+  voice: cedar
   speed: 1.0
   response_format: opus
 image_generation:

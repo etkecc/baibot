@@ -138,6 +138,16 @@ The following settings apply to both image generation and editing with GPT Image
 
 Existing agents keep their configured model. To switch, change `image_generation.model_id` in the agent configuration to `gpt-image-2.5-sunburst` or `gpt-image-2.5-flare`.
 
+**Text-to-speech** uses `text_to_speech.model_id`. New agents default to the [`gpt-realtime-2.1-mini`](https://developers.openai.com/api/docs/models/gpt-realtime-2.1-mini) Realtime model with the `cedar` voice. OpenAI shuts down its older speech models (`tts-1`, `tts-1-hd`, `gpt-4o-mini-tts`) on 2027-01-06. Agents using them keep working until then; to switch, set `model_id: gpt-realtime-2.1-mini` and a [Realtime voice](https://developers.openai.com/api/docs/guides/realtime-conversations#voice-options) (e.g. `cedar` or `marin`, as `onyx`, `nova` and `fable` are not available).
+
+| Setting | Values |
+| --- | --- |
+| `voice` | A voice supported by the model, e.g. `cedar` or `marin` for Realtime models. When unset: `cedar` for Realtime models, `onyx` for the older speech models. |
+| `speed` | `1.0` is normal speed. Realtime models accept `0.25`–`1.5`. |
+| `response_format` | Realtime models support `opus` (recommended, smaller) and `wav`. |
+
+Realtime models are language models that are instructed to read the text aloud as written. They may occasionally deviate from it.
+
 
 ### OpenAI Compatible
 

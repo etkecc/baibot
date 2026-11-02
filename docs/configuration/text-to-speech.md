@@ -56,8 +56,8 @@ Example: `!bai config room text-to-speech set-speed-override 1.5` (this can also
 
 ### 👫 Voice override
 
-The voice override setting lets you change the voice being used by the text-to-speech model configured at the [🤖 agent](../agents.md) level (e.g. `onyx` when using [OpenAI](../providers.md#openai), or `af_sky` when using [Venice](../providers.md#venice)).
+The voice override setting lets you change the voice being used by the text-to-speech model configured at the [🤖 agent](../agents.md) level (e.g. `cedar` when using [OpenAI](../providers.md#openai), or `af_sky` when using [Venice](../providers.md#venice)).
 
-Possible values (e.g. `onyx`) depend on the model you're using. For example, for [OpenAI](../providers.md#openai)'s Whisper model, [these voices](https://platform.openai.com/docs/guides/text-to-speech/voice-options) are available.
+Possible values (e.g. `cedar`) depend on the model you're using. For example, [OpenAI](../providers.md#openai)'s Realtime models support [these voices](https://developers.openai.com/api/docs/guides/realtime-conversations#voice-options), while its older speech models support [these](https://developers.openai.com/api/docs/guides/text-to-speech#voice-options).
 
-Example: `!bai config room text-to-speech set-voice-override nova` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings))
+Example: `!bai config room text-to-speech set-voice-override marin` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings))

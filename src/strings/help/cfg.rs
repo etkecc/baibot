@@ -299,7 +299,7 @@ pub fn text_to_speech_voice_override_intro() -> String {
     format!(
         "{}\n\n{}",
         "Lets you change the default voice configured in the agent configuration.",
-        "Possible values (e.g. `onyx`) depend on the model you're using. For example, for OpenAI's Whisper model, [these voices](https://platform.openai.com/docs/guides/text-to-speech/voice-options) are available.",
+        "Possible values (e.g. `cedar`) depend on the model you're using. For example, OpenAI's Realtime models support [these voices](https://developers.openai.com/api/docs/guides/realtime-conversations#voice-options), while its older speech models support [these](https://developers.openai.com/api/docs/guides/text-to-speech#voice-options).",
     )
 }
 

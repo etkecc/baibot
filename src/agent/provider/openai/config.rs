@@ -117,15 +117,19 @@ fn default_speech_to_text_model_id() -> String {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TextToSpeechConfig {
+    /// A Realtime model (e.g. `gpt-realtime-2.1-mini`) or a speech-endpoint model (e.g. `tts-1-hd`).
+    /// OpenAI shuts down all speech-endpoint models on 2027-01-06.
     #[serde(default = "default_text_to_speech_model_id")]
-    pub model_id: async_openai::types::audio::SpeechModel,
+    pub model_id: String,
 
-    #[serde(default = "default_text_to_speech_voice")]
-    pub voice: async_openai::types::audio::Voice,
+    /// When unset, a voice that the model supports: `cedar` for Realtime models, `onyx` otherwise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub voice: Option<async_openai::types::audio::Voice>,
 
     #[serde(default = "default_text_to_speech_speed")]
     pub speed: f32,
 
+    /// For Realtime models, baibot encodes the audio itself and supports `opus` and `wav` only.
     #[serde(default = "default_text_to_speech_response_format")]
     pub response_format: async_openai::types::audio::SpeechResponseFormat,
 }
@@ -134,22 +138,29 @@ impl Default for TextToSpeechConfig {
     fn default() -> Self {
         Self {
             model_id: default_text_to_speech_model_id(),
-            voice: default_text_to_speech_voice(),
+            voice: Some(async_openai::types::audio::Voice::Cedar),
             speed: default_text_to_speech_speed(),
             response_format: default_text_to_speech_response_format(),
         }
     }
 }
 
-// OpenAI shuts down all of its speech-endpoint models (this one included) on 2027-01-06,
-// with Realtime as the successor. Until baibot supports that, this remains the default.
-#[allow(deprecated)]
-fn default_text_to_speech_model_id() -> async_openai::types::audio::SpeechModel {
-    async_openai::types::audio::SpeechModel::Tts1Hd
+impl TextToSpeechConfig {
+    pub fn effective_voice(&self) -> async_openai::types::audio::Voice {
+        if let Some(voice) = &self.voice {
+            return voice.clone();
+        }
+
+        if super::realtime_tts::is_realtime_model(&self.model_id) {
+            async_openai::types::audio::Voice::Cedar
+        } else {
+            async_openai::types::audio::Voice::Onyx
+        }
+    }
 }
 
-fn default_text_to_speech_voice() -> async_openai::types::audio::Voice {
-    async_openai::types::audio::Voice::Onyx
+fn default_text_to_speech_model_id() -> String {
+    "gpt-realtime-2.1-mini".to_owned()
 }
 
 fn default_text_to_speech_speed() -> f32 {
@@ -203,7 +214,9 @@ fn default_image_quality() -> Option<async_openai::types::images::ImageQuality> 
 
 #[cfg(test)]
 mod tests {
-    use super::{ImageGenerationConfig, TextGenerationConfig};
+    use async_openai::types::audio::Voice;
+
+    use super::{ImageGenerationConfig, TextGenerationConfig, TextToSpeechConfig};
 
     #[test]
     fn new_agents_use_sol_without_temperature_and_explicit_values_still_load() {
@@ -226,5 +239,40 @@ mod tests {
         let existing: ImageGenerationConfig =
             serde_yaml_ng::from_str("model_id: gpt-image-2.5-sunburst\nstyle: vivid\n").unwrap();
         assert_eq!(existing.model_id, "gpt-image-2.5-sunburst");
+    }
+
+    fn parse(yaml: &str) -> TextToSpeechConfig {
+        serde_yaml_ng::from_str(yaml).unwrap()
+    }
+
+    #[test]
+    fn text_to_speech_defaults_to_realtime() {
+        let config = parse("{}");
+        assert_eq!(config.model_id, "gpt-realtime-2.1-mini");
+        assert_eq!(config.effective_voice(), Voice::Cedar);
+    }
+
+    #[test]
+    fn legacy_text_to_speech_configs_keep_a_supported_voice() {
+        let config = parse("model_id: tts-1-hd");
+        assert_eq!(config.effective_voice(), Voice::Onyx);
+
+        let config = parse("model_id: tts-1-hd\nvoice: nova");
+        assert_eq!(config.effective_voice(), Voice::Nova);
+    }
+
+    #[test]
+    fn text_to_speech_voice_accepts_names_and_custom_voices() {
+        let config = parse("voice: some-new-voice");
+        assert_eq!(
+            config.effective_voice(),
+            Voice::Other("some-new-voice".to_owned())
+        );
+
+        let config = parse("voice:\n  id: voice_1234");
+        assert_eq!(
+            serde_json::to_value(config.effective_voice()).unwrap(),
+            serde_json::json!({"id": "voice_1234"})
+        );
     }
 }
