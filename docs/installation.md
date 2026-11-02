@@ -101,8 +101,6 @@ You can build a binary from the current project's source code:
 
 💡 Unless you're [🧑‍💻 developing](./development.md), you probably wish to build in release mode, as that provides a much smaller and more optimized binary.
 
-📦 You can also install from the [baibot](https://crates.io/crates/baibot) crate published to [crates.io](https://crates.io) with the help of the [cargo](https://doc.rust-lang.org/cargo/) package manager by running: `cargo install baibot`.
-
 
 ### 🖥️ Running a binary
 

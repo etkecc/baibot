@@ -8,8 +8,19 @@ use tracing_subscriber::fmt::format::FmtSpan;
 
 use baibot::{Bot, Config, load_config};
 
+/// Release builds receive their CalVer version at compile time; Cargo cannot represent it.
+const VERSION: &str = match option_env!("BAIBOT_VERSION") {
+    Some(version) if !version.is_empty() => version,
+    _ => "dev",
+};
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    if std::env::args().nth(1).as_deref() == Some("--version") {
+        println!("baibot {VERSION}");
+        return Ok(());
+    }
+
     match load_config() {
         Ok(config) => run_with_config(config).await,
         Err(err) => Err(anyhow::anyhow!("Failed loading configuration: {}", err)),
@@ -27,6 +38,8 @@ async fn run_with_config(config: Config) -> anyhow::Result<()> {
         .finish();
 
     tracing::subscriber::set_global_default(subscriber).expect("Failed setting global subscriber");
+
+    tracing::info!("Starting baibot {VERSION}");
 
     let bot = Bot::new(config).await?;
 

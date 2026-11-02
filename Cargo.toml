@@ -6,8 +6,10 @@ repository = "https://github.com/etkecc/baibot"
 license = "AGPL-3.0-or-later"
 readme = "README.md"
 keywords = ["matrix", "chat", "bot", "AI", "LLM"]
-include = ["/etc/assets/baibot-torso-768.png", "/src", "/README.md", "/CHANGELOG.md", "/LICENSE"]
-version = "1.30.0"
+# Releases are CalVer (vYYYY.MM.DD.N), which Cargo cannot represent: their builds embed it via BAIBOT_VERSION.
+version = "0.0.0"
+# baibot ships as a container image, not as a crate.
+publish = false
 edition = "2024"
 
 [lib]
