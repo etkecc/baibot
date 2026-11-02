@@ -13,16 +13,22 @@ ENV CARGO_TARGET_DIR=/target
 
 WORKDIR /app
 
-COPY . /app
+# Only the build's inputs, so that nothing else (docs, CI, etc.) changes the image.
+# release/plan-release.py's IMAGE_PATHS lists the same paths.
+COPY Cargo.toml Cargo.lock rust-toolchain.toml /app/
+COPY src /app/src
+COPY etc/assets/baibot-torso-768.png /app/etc/assets/baibot-torso-768.png
 
 ARG RELEASE_BUILD=true
+# The release version (vYYYY.MM.DD.N without the "v") that release builds embed; "dev" when empty.
+ARG BAIBOT_VERSION=
 
 RUN --mount=type=cache,target=/cargo,sharing=locked \
 	--mount=type=cache,target=/target,sharing=locked \
 	if [ "$RELEASE_BUILD" = "true" ]; then \
-		cargo build --release; \
+		cargo build --locked --release; \
 	else \
-		cargo build; \
+		cargo build --locked; \
 	fi
 
 # Move it out of the mounted cache, so we can copy it in the next stage.
