@@ -5,10 +5,10 @@
 """Decide whether the main commit this workflow run is for should be released now.
 
 Releases are CalVer tags (vYYYY.MM.DD.N, UTC date, N counting from 0 per day) cut without a human choosing a version.
-To fold a burst of Renovate merges into 1 release, an unforced run waits while another Renovate update may still land
+To fold a burst of Renovate merges into 1 release, an unforced run waits while another Renovate update to the image may still land
 (an open PR, or a branch that Renovate merges itself once its CI passes),
 but never longer than QUIET_CAP after the last commit.
-The image's paths come from the Dockerfile's COPY sources.
+The image's paths come from the Dockerfile's COPY sources; Renovate updates elsewhere never hold a release back.
 Writes `release`, `version`, `previous` (the previous release tag, or "none") and `reason` to $GITHUB_OUTPUT.
 """
 import datetime
@@ -25,6 +25,8 @@ CI_WORKFLOW = "ci.yml"
 QUIET_CAP = datetime.timedelta(minutes=90)
 CALVER = re.compile(r"v?([0-9]{4})\.([0-9]{2})\.([0-9]{2})\.([0-9]+)")
 FAILED = {"FAILURE", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR"}
+# GitHub lists at most this many files in a comparison; a list this long may be cut short.
+COMPARE_FILES_LIMIT = 300
 
 
 def parse(version):
@@ -68,6 +70,18 @@ def image_paths(dockerfile):
     return sorted(paths)
 
 
+def changes_image(comparison, paths):
+    """Whether a Renovate update changes the image. `comparison` is GitHub's comparison of main with its head:
+    a file list GitHub may have cut short counts as changing it, and a rename counts by its old name too."""
+    if comparison["ahead_by"] == 0:
+        return False
+    files = comparison.get("files") or []
+    if len(files) >= COMPARE_FILES_LIMIT:
+        return True
+    changed = [file[key] for file in files for key in ("filename", "previous_filename") if file.get(key)]
+    return any(path == "." or name == path or name.startswith(path + "/") for name in changed for path in paths)
+
+
 def may_land_soon(pr):
     """A Renovate PR that could still be merged (not draft, conflicted, rejected or red)."""
     if pr.get("isDraft") or pr.get("mergeable") == "CONFLICTING" or pr.get("reviewDecision") == "CHANGES_REQUESTED":
@@ -76,9 +90,9 @@ def may_land_soon(pr):
                    for check in pr.get("statusCheckRollup") or [])
 
 
-def branch_may_land(ahead, ci):
-    """A Renovate branch with commits main lacks, which Renovate merges itself once its CI passes (unless it failed)."""
-    return ahead and ci.upper() not in FAILED
+def branch_may_land(changes, ci):
+    """A Renovate branch changing the image, which Renovate merges itself once its CI passes (unless it failed)."""
+    return changes and ci.upper() not in FAILED
 
 
 def minutes(age):
@@ -129,15 +143,19 @@ def main():
         age = datetime.datetime.now(datetime.UTC) - committed
         ci = ci_result(repository, sha)
         prs = json.loads(run("gh", "pr", "list", "--repo", repository, "--base", "main", "--author", "app/renovate",
-                             "--json", "number,headRefName,isDraft,mergeable,reviewDecision,statusCheckRollup"))
-        landing = [f"#{pr['number']}" for pr in sorted(prs, key=lambda pr: pr["number"]) if may_land_soon(pr)]
+                             "--json", "number,headRefName,headRefOid,isDraft,mergeable,reviewDecision,statusCheckRollup"))
+
+        def update_changes_image(tip):
+            return changes_image(json.loads(run("gh", "api", f"repos/{repository}/compare/{sha}...{tip}")), paths)
+
+        landing = [f"#{pr['number']}" for pr in sorted(prs, key=lambda pr: pr["number"])
+                   if may_land_soon(pr) and update_changes_image(pr["headRefOid"])]
         # Branches with a PR are judged by the PR above.
         branches = run("gh", "api", "--paginate", f"repos/{repository}/branches?per_page=100",
                        "--jq", '.[] | select(.name | startswith("renovate/")) | .name + " " + .commit.sha').splitlines()
         for name, tip in sorted(branch.split() for branch in branches):
             if name not in {pr["headRefName"] for pr in prs}:
-                ahead = json.loads(run("gh", "api", f"repos/{repository}/compare/{sha}...{tip}"))["ahead_by"] > 0
-                if branch_may_land(ahead, ci_result(repository, tip)):
+                if branch_may_land(update_changes_image(tip), ci_result(repository, tip)):
                     landing.append(name)
         release, reason = decide(forced=forced, changed=changed, ci=ci, age=age, landing=landing)
         reason += f" (previous release {previous})"

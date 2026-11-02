@@ -15,6 +15,10 @@ TODAY = datetime.date(2026, 10, 22)
 MINUTE = datetime.timedelta(minutes=1)
 
 
+def comparison(*filenames, ahead_by=1, **file_fields):
+    return {"ahead_by": ahead_by, "files": [{"filename": name, **file_fields} for name in filenames]}
+
+
 class ImagePaths(unittest.TestCase):
     def test_reads_this_repositorys_dockerfile(self):
         """Fails when a Dockerfile change makes the planner choke, or names paths that do not exist."""
@@ -36,6 +40,21 @@ class ImagePaths(unittest.TestCase):
                            "ADD https://example.com/x /x", "COPY /app/", "FROM rust\nRUN true"]:
             with self.subTest(dockerfile=dockerfile), self.assertRaises(ValueError):
                 plan.image_paths(dockerfile)
+
+
+class ChangesImage(unittest.TestCase):
+    PATHS = ["Cargo.lock", "Dockerfile", "src"]
+
+    def test_changes_under_image_paths(self):
+        self.assertTrue(plan.changes_image(comparison("docs/x.md", "src/main.rs"), self.PATHS))
+        self.assertTrue(plan.changes_image(comparison("Cargo.lock"), self.PATHS))
+        self.assertFalse(plan.changes_image(comparison("docs/x.md", "srcx/main.rs", ".github/renovate.json"), self.PATHS))
+        self.assertFalse(plan.changes_image(comparison("src/main.rs", ahead_by=0), self.PATHS))
+        self.assertTrue(plan.changes_image(comparison("docs/x.md"), ["."]))
+
+    def test_renames_and_truncated_lists_count(self):
+        self.assertTrue(plan.changes_image(comparison("docs/x.rs", previous_filename="src/x.rs"), self.PATHS))
+        self.assertTrue(plan.changes_image(comparison(*["docs/x.md"] * plan.COMPARE_FILES_LIMIT), self.PATHS))
 
 
 def pr(**fields):
