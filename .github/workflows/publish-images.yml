@@ -1,0 +1,221 @@
+name: Publish tested images
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        required: true
+        type: string
+      version:
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+# Edge and stable publications share this lock, including their platform uploads.
+# Callers must not cancel a running publication when newer validation starts.
+concurrency:
+  group: baibot-image-publishing
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    outputs:
+      eligible: ${{ steps.prepare.outputs.eligible }}
+      base: ${{ steps.prepare.outputs.base }}
+      aliases: ${{ steps.prepare.outputs.aliases }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Guard the requested publication
+        id: prepare
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANNEL: ${{ inputs.channel }}
+          VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os, re, subprocess
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', path], text=True))
+          repository = os.environ['GITHUB_REPOSITORY']
+          assert os.environ['GITHUB_REF'] == 'refs/heads/main', 'Only main commits are published'
+          if os.environ['CHANNEL'] == 'edge':
+              assert os.environ['EVENT_NAME'] == 'push', 'Only explicit pushes can publish edge'
+              head = api(f'repos/{repository}/git/ref/heads/main')['object']['sha']
+              eligible = head == os.environ['GITHUB_SHA']
+              base, aliases = 'edge-' + os.environ['GITHUB_SHA'], ['edge']
+              if not eligible:
+                  print('Skipping obsolete main build; a newer commit now owns edge.')
+          else:
+              assert os.environ['CHANNEL'] == 'stable', 'Unknown publication channel'
+              version = os.environ['VERSION']
+              calver = r'([0-9]{4})\.([0-9]{2})\.([0-9]{2})\.([0-9]+)'
+              selected = tuple(map(int, re.fullmatch(calver, version).groups()))
+              # The release workflow tags the tested commit before publishing it.
+              target = api(f'repos/{repository}/git/ref/tags/v{version}')['object']
+              if target['type'] == 'tag':
+                  target = api(f'repos/{repository}/git/tags/{target["sha"]}')['object']
+              assert target['sha'] == os.environ['GITHUB_SHA'], f'v{version} does not point at the tested commit'
+              refs = subprocess.check_output(['gh', 'api', '--paginate', f'repos/{repository}/git/matching-refs/tags/v', '--jq', '.[].ref'], text=True).splitlines()
+              for ref in refs:
+                  match = re.fullmatch('refs/tags/v' + calver, ref)
+                  assert not match or tuple(map(int, match.groups())) <= selected, 'A newer release tag exists; refusing to move latest backward'
+              eligible = True
+              # Image tags match the Git tags, like other projects' images (e.g. v1.2.3).
+              base, aliases = f'v{version}', ['latest']
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'eligible={str(eligible).lower()}\nbase={base}\naliases={" ".join(aliases)}\n')
+          PYTHON
+
+  publish-platform:
+    needs: prepare
+    if: needs.prepare.outputs.eligible == 'true'
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: image-${{ matrix.arch }}
+          path: ${{ runner.temp }}/image
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish or reuse the exact tested platform image
+        env:
+          ARCH: ${{ matrix.arch }}
+          BASE: ${{ needs.prepare.outputs.base }}
+          IMAGE: ghcr.io/etkecc/baibot
+          ARCHIVE: ${{ runner.temp }}/image/image-${{ matrix.arch }}.tar
+          # The tag image.yml gave the candidate in this workflow run.
+          CANDIDATE: baibot:candidate-${{ github.run_id }}
+          DIGEST_FILE: ${{ runner.temp }}/${{ matrix.arch }}.digest
+        run: |
+          docker image load --input "$ARCHIVE"
+          actual=$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$CANDIDATE")
+          test "$actual" = "linux/$ARCH"
+          arch_image="$IMAGE:$BASE-$ARCH"
+          image_id=$(docker image inspect --format '{{.Id}}' "$CANDIDATE")
+          if docker buildx imagetools inspect --raw "$arch_image" > "$RUNNER_TEMP/existing.json" 2> "$RUNNER_TEMP/inspect-error"; then
+            # Never overwrite a version/SHA tag with different image content on reruns.
+            existing_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["config"]["digest"])' < "$RUNNER_TEMP/existing.json")
+            test "$existing_id" = "$image_id"
+            digest=$(docker buildx imagetools inspect "$arch_image" --format '{{.Manifest.Digest}}')
+            printf '%s@%s\n' "$IMAGE" "$digest" > "$DIGEST_FILE"
+          else
+            cat "$RUNNER_TEMP/inspect-error"
+            # Network/authentication errors must fail closed rather than overwrite tags.
+            python3 -c 'import pathlib,re,sys; sys.exit(not re.search(r"manifest unknown|not found", pathlib.Path(sys.argv[1]).read_text()))' "$RUNNER_TEMP/inspect-error"
+            docker image tag "$CANDIDATE" "$arch_image"
+            docker image push "$arch_image"
+            docker image inspect "$arch_image" > "$RUNNER_TEMP/pushed-image.json"
+            python3 - <<'PYTHON'
+          import json, os, pathlib, re
+          metadata = json.loads((pathlib.Path(os.environ['RUNNER_TEMP']) / 'pushed-image.json').read_text())[0]
+          pattern = re.escape(os.environ['IMAGE']) + r'@sha256:[0-9a-f]{64}'
+          references = {ref for ref in metadata['RepoDigests'] if re.fullmatch(pattern, ref)}
+          assert len(references) == 1, 'Expected one digest for the published repository'
+          pathlib.Path(os.environ['DIGEST_FILE']).write_text(references.pop() + '\n')
+          PYTHON
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digest-${{ matrix.arch }}
+          path: ${{ runner.temp }}/${{ matrix.arch }}.digest
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: error
+
+  publish-index:
+    needs: [prepare, publish-platform]
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      packages: write
+      # For the build provenance attestation of the index, and its storage record.
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: digest-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/digests
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Validate and publish the combined image index and aliases
+        id: index
+        env:
+          BASE: ${{ needs.prepare.outputs.base }}
+          ALIASES: ${{ needs.prepare.outputs.aliases }}
+          IMAGE: ghcr.io/etkecc/baibot
+          DIGESTS: ${{ runner.temp }}/digests
+        run: |
+          amd64=$(cat "$DIGESTS/amd64.digest")
+          arm64=$(cat "$DIGESTS/arm64.digest")
+          docker buildx imagetools create --dry-run "$amd64" "$arm64" > "$RUNNER_TEMP/index.json"
+          python3 release/check-platforms.py --amd64 "$amd64" --arm64 "$arm64" < "$RUNNER_TEMP/index.json"
+          if docker buildx imagetools inspect --raw "$IMAGE:$BASE" > "$RUNNER_TEMP/published-index.json" 2> "$RUNNER_TEMP/inspect-error"; then
+            python3 release/check-platforms.py --amd64 "$amd64" --arm64 "$arm64" < "$RUNNER_TEMP/published-index.json"
+          else
+            cat "$RUNNER_TEMP/inspect-error"
+            python3 -c 'import pathlib,re,sys; sys.exit(not re.search(r"manifest unknown|not found", pathlib.Path(sys.argv[1]).read_text()))' "$RUNNER_TEMP/inspect-error"
+            docker buildx imagetools create --tag "$IMAGE:$BASE" \
+              --annotation "index:org.opencontainers.image.version=$BASE" "$amd64" "$arm64"
+            docker buildx imagetools inspect --raw "$IMAGE:$BASE" > "$RUNNER_TEMP/published-index.json"
+            python3 release/check-platforms.py --amd64 "$amd64" --arm64 "$arm64" < "$RUNNER_TEMP/published-index.json"
+          fi
+          index_digest=$(docker buildx imagetools inspect "$IMAGE:$BASE" --format '{{.Manifest.Digest}}')
+          [[ "$index_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          tags=()
+          for alias in $ALIASES; do tags+=(--tag "$IMAGE:$alias"); done
+          docker buildx imagetools create "${tags[@]}" "$IMAGE@$index_digest"
+          for alias in "$BASE" $ALIASES; do
+            actual=$(docker buildx imagetools inspect "$IMAGE:$alias" --format '{{.Manifest.Digest}}')
+            test "$actual" = "$index_digest"
+          done
+          printf 'Verified %s@%s (%s %s)\n' "$IMAGE" "$index_digest" "$BASE" "$ALIASES"
+          printf 'index=%s\namd64=%s\narm64=%s\n' "$index_digest" "${amd64#*@}" "${arm64#*@}" >> "$GITHUB_OUTPUT"
+      # Lets anyone check that an image tag (multi-architecture or 1 architecture) was built by this workflow
+      # from a commit of this repository: gh attestation verify oci://ghcr.io/etkecc/baibot:<tag> --owner etkecc
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ghcr.io/etkecc/baibot
+          subject-digest: ${{ steps.index.outputs.index }}
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ghcr.io/etkecc/baibot
+          subject-digest: ${{ steps.index.outputs.amd64 }}
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ghcr.io/etkecc/baibot
+          subject-digest: ${{ steps.index.outputs.arm64 }}
+          push-to-registry: true

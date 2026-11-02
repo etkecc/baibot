@@ -155,3 +155,18 @@ If you decided to go with [OpenAI](./providers.md#openai):
 
 - enable the `openai` entry in the `agents.static_definitions` list in the configuration file
 - adjust the `initial_global_config.handler.catch_all` setting in the configuration file (`null` -> `static/openai`)
+
+
+### Releases
+
+Releases are automatic CalVer tags (`vYYYY.MM.DD.N`, UTC date; `N` counts from 0 within the day), published as `ghcr.io/etkecc/baibot:vYYYY.MM.DD.N` and `latest`. Nobody picks versions or pushes tags by hand. The Cargo package stays at `0.0.0`; release builds embed the real version via `BAIBOT_VERSION`.
+
+[`.github/workflows/release.yml`](../.github/workflows/release.yml) runs after every CI run on `main`, and every 30 minutes. [`release/plan-release.py`](../release/plan-release.py) releases `main`'s head commit when something in the image changed since the last release (`IMAGE_PATHS`) and CI passed, and either no Renovate update may still land (an open pull request, or a branch Renovate merges itself) or the commit is at least 90 minutes old. A manual `Release` run releases right away if the image changed and CI passed. Every `main` commit that passes CI is published as `edge`.
+
+[`release/release-notes.py`](../release/release-notes.py) writes each GitHub release's notes from its commits, best effort: every non-merge commit that touches the image is listed by its subject, so write subjects that read well to people who run baibot. Optional trailers improve the notes; Git only reads trailers in the message's last paragraph, so put them in 1 block with any `Co-Authored-By:`, without blank lines between them:
+
+- `Release-note: <text>` rewords the entry (or includes a commit outside the image, such as documentation)
+- `Release-note: skip` leaves out a commit nobody upgrading needs to know about
+- `Breaking-change: <what breaks and what to do>` lists the commit first, under "Breaking changes"
+
+The scripts in `release/` come from [kukaroll](https://github.com/devture/kukaroll)'s, which uses the same release setup; `just release-test` runs their tests.

@@ -1,3 +1,5 @@
+Releases after 1.30.0 are CalVer tags (`vYYYY.MM.DD.N`), released automatically; their changes are in the [GitHub releases](https://github.com/etkecc/baibot/releases). This file is no longer updated.
+
 # (2026-11-01) Version 1.30.0
 
 - (**Bugfix**) Fix the Anthropic provider failing with `unknown variant 'thinking'` on current Claude models. baibot now talks to the Anthropic API directly instead of through the unmaintained [anthropic-rs](https://github.com/etkecc/anthropic-rs) library, and skips response blocks it does not show (like thinking).

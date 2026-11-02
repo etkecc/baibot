@@ -1,0 +1,111 @@
+name: Release
+
+# Cuts CalVer releases (vYYYY.MM.DD.N) from main without a human picking a version.
+# release/plan-release.py decides when:
+# unforced runs wait for green CI and for Renovate PRs that may still land, so a burst of merges becomes 1 release.
+# Manual runs release main right away if the image changed since the last release and CI passed.
+# The tag is pushed by this workflow (GITHUB_TOKEN tags trigger no other workflows),
+# so it validates and publishes the release itself, then creates its GitHub Release.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Version numbers derive from existing tags; never let 2 runs compute one at once.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+      statuses: read
+      pull-requests: read
+    outputs:
+      release: ${{ steps.plan.outputs.release }}
+      version: ${{ steps.plan.outputs.version }}
+      previous: ${{ steps.plan.outputs.previous }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Decide whether main should be released now
+        id: plan
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' }}
+        run: python3 release/plan-release.py
+
+  # CI already passed for this commit (the planner checks); this builds and tests the images with the version embedded.
+  checks:
+    needs: plan
+    if: needs.plan.outputs.release == 'true'
+    uses: ./.github/workflows/image.yml
+    permissions:
+      contents: read
+    with:
+      version: ${{ needs.plan.outputs.version }}
+
+  tag:
+    needs: [plan, checks]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Tag the tested commit
+        env:
+          TAG: v${{ needs.plan.outputs.version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag --annotate --message "baibot $TAG" "$TAG" "$GITHUB_SHA"
+          # Fails rather than moves the tag if it already exists.
+          git push origin "refs/tags/$TAG"
+
+  publish:
+    needs: [plan, tag]
+    uses: ./.github/workflows/publish-images.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    with:
+      channel: stable
+      version: ${{ needs.plan.outputs.version }}
+
+  github-release:
+    needs: [plan, publish]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Create the GitHub Release once its images are published
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ needs.plan.outputs.version }}
+          PREVIOUS: ${{ needs.plan.outputs.previous }}
+        run: |
+          python3 release/release-notes.py "$PREVIOUS" "$GITHUB_SHA" "$TAG" > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --notes-file "$RUNNER_TEMP/notes.md" --latest --title "$TAG"

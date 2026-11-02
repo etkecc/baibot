@@ -1,0 +1,64 @@
+name: Build candidate images
+
+# Builds and smoke-tests the image for each architecture, and keeps it as an artifact,
+# so that publish-images.yml publishes exactly the tested images.
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: CalVer release version embedded into the binary; empty builds report "dev"
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    name: Image ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Only trusted main and release builds run here: the self-hosted runner keeps the Cargo build cache.
+          - runner: self-hosted
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    env:
+      # Unique per run: the self-hosted runner's Docker daemon outlives the job.
+      CANDIDATE: baibot:candidate-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          push: false
+          tags: ${{ env.CANDIDATE }}
+          build-args: BAIBOT_VERSION=${{ inputs.version }}
+      - name: Smoke-test the image
+        env:
+          EXPECTED: ${{ inputs.version || 'dev' }}
+        run: |
+          actual=$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$CANDIDATE")
+          test "$actual" = "linux/${{ matrix.arch }}"
+          test "$(docker run --rm --entrypoint /app/baibot "$CANDIDATE" --version)" = "baibot $EXPECTED"
+      - name: Export the tested image for publication
+        env:
+          ARCHIVE: ${{ runner.temp }}/image-${{ matrix.arch }}.tar
+        run: |
+          docker image save --output "$ARCHIVE" "$CANDIDATE"
+          docker image rm "$CANDIDATE"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-${{ matrix.arch }}
+          path: ${{ runner.temp }}/image-${{ matrix.arch }}.tar
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: error

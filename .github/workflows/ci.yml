@@ -6,13 +6,13 @@ on:
   push:
     branches:
       - "**"
-    tags: [ "v*" ]
 permissions:
   contents: read
   pull-requests: read
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # main's runs publish edge images; let each finish rather than cut a publication short.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   prek:
     name: Lint, format & test
@@ -44,10 +44,9 @@ jobs:
         run: just test
 
   # The prek job never builds a container image, so a bump of the Dockerfile's
-  # base image reaches main unvalidated and fails later, in Publish, after
-  # ghcr.io/etkecc/baibot:latest has already been attempted. These two jobs close
-  # that gap: decide whether a Dockerfile changed, and if so build the image the
-  # way Publish does - but without pushing anything.
+  # base image would reach main unvalidated and fail later, when building the
+  # edge image. These two jobs close that gap on branches: decide whether a
+  # Dockerfile changed, and if so build the image - but without pushing anything.
   #
   # The build is gated rather than unconditional because it is a full Rust
   # release build; running it on every push would turn a ~1 minute pipeline into
@@ -71,10 +70,10 @@ jobs:
             exit 0
           fi
 
-          # Publish builds and pushes from main, so a main-side build here would
+          # The image job below builds every main commit, so a main-side build here would
           # be redundant. This gate exists for branches, before they merge.
           if [ "${{ github.ref_name }}" = 'main' ]; then
-            echo 'On main; Publish covers this.'
+            echo 'On main; the image job covers this.'
             echo 'build=false' >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -102,3 +101,22 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           push: false
+
+  # Every main commit that passes the checks is published as edge (and edge-<commit>).
+  # Releases (vYYYY.MM.DD.N and latest) are cut by release.yml.
+  image:
+    needs: prek
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/image.yml
+
+  publish-edge:
+    needs: image
+    uses: ./.github/workflows/publish-images.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    with:
+      channel: edge

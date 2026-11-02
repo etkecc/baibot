@@ -29,7 +29,13 @@ Both of these commands will build and tag your container image as `localhost/bai
 
 ### 🐋 Running in a container
 
-We recommend using a **tagged-release** (e.g. `v1.0.0`, not `latest`) of our [prebuilt container images](https://github.com/etkecc/baibot/pkgs/container/baibot), but you can also [build a container image](#-building-a-container-image) yourself.
+We recommend using a **tagged release** (e.g. `v2026.11.03.0`, not `latest`) of our [prebuilt container images](https://github.com/etkecc/baibot/pkgs/container/baibot), but you can also [build a container image](#-building-a-container-image) yourself.
+
+The images are tagged:
+
+- `vYYYY.MM.DD.N` (e.g. `v2026.11.03.0`): a release, with its changes in the [GitHub releases](https://github.com/etkecc/baibot/releases). Releases up to `v1.30.0` used semantic versions.
+- `latest`: the newest release
+- `edge`: the newest commit on `main` that passed CI (not a release)
 
 You should:
 
@@ -41,7 +47,7 @@ The example below uses [🐋 Docker](https://www.docker.com/) to run the contain
 ```sh
 # Adjust the version tag to point to the latest available tagged version.
 # If building your own container image name, adjust to something like `localhost/baibot:latest`.
-CONTAINER_IMAGE_NAME=ghcr.io/etkecc/baibot:v1.0.0
+CONTAINER_IMAGE_NAME=ghcr.io/etkecc/baibot:v2026.11.03.0
 
 /usr/bin/env docker run \
   -it \
@@ -65,7 +71,7 @@ services:
     container_name: baibot
     # Adjust the version tag to point to the latest available tagged version.
     # If building your own container image name, adjust to something like `localhost/baibot:latest`.
-    image: ghcr.io/etkecc/baibot:v1.0.0
+    image: ghcr.io/etkecc/baibot:v2026.11.03.0
     # Set `UID` and `GID` in a `.env` file next to `compose.yml` (e.g. `UID=1000`, `GID=1000`)
     # or export them in your shell (`export UID GID="$(id -g)"`).
     # These should match the user that owns the data directory.
