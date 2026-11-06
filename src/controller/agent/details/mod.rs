@@ -46,7 +46,8 @@ pub async fn handle(
                 return Ok(());
             }
         }
-        PublicIdentifier::DynamicGlobal(_) => {
+        // Static and global agents hold the operator's credentials, so only administrators may print their configuration.
+        PublicIdentifier::Static(_) | PublicIdentifier::DynamicGlobal(_) => {
             if !message_context.sender_can_manage_global_config() {
                 bot.messaging()
                     .send_error_markdown_no_fail(
@@ -61,7 +62,6 @@ pub async fn handle(
                 return Ok(());
             }
         }
-        PublicIdentifier::Static(_) => {}
     };
 
     let config_yaml_pretty = serde_yaml_ng::to_string(&agent.definition().config)?;

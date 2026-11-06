@@ -46,6 +46,8 @@ After making your modifications to the sample YAML, you submit it back to the bo
 
 To **show** full details for a given agent: `!bai agent details FULL_AGENT_IDENTIFIER`
 
+The details include the agent's configuration (API key included), so only administrators can show `static/` and `global/` agents. Room-local agents can be shown by [room-local agent managers](./access.md#-room-local-agent-managers).
+
 This command requires a full agent identifier (e.g. `room-local/agent-id`).
 
 
