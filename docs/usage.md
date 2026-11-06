@@ -113,4 +113,4 @@ The difference from [creating images](#creating-images) is that the bot will:
 - potentially switch to a different (cheaper or otherwise more suitable) model, if available
 - post the image directly to the room (as a reply to your message), without starting a threaded conversation
 
-For [OpenAI](./providers.md#openai) agents, stickers switch GPT image models, including GPT Image 2.5, to `gpt-image-1-mini`. An explicitly configured `high`, `xhigh`, or `max` quality is reduced to `low`. DALL-E 3 switches to DALL-E 2. These choices keep sticker generation inexpensive.
+For [OpenAI](./providers.md#openai) agents, stickers use `gpt-image-1-mini`, and an explicitly configured `high`, `xhigh`, or `max` quality is reduced to `low`. These choices keep sticker generation inexpensive.

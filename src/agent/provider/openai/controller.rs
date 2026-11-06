@@ -571,8 +571,7 @@ fn build_image_request(
         .model_id_as_openai_image_model()
         .map_err(|err| anyhow::anyhow!(err))?;
 
-    // Only GPT image models have a known cheaper sibling. Other models keep their model.
-    let model = if params.cheaper_model_switching_allowed && is_gpt_image_model(&original_model) {
+    let model = if params.cheaper_model_switching_allowed {
         ImageModel::GptImage1Mini
     } else {
         original_model
@@ -644,21 +643,6 @@ fn build_image_edit_request(
     request_builder
         .build()
         .map_err(|e| anyhow::anyhow!("Failed to build CreateImageEditRequest: {}", e))
-}
-
-fn is_gpt_image_model(model: &ImageModel) -> bool {
-    match model {
-        ImageModel::GptImage1Mini
-        | ImageModel::GptImage1dot5
-        | ImageModel::GptImage2
-        | ImageModel::GptImage2_2026_04_21
-        | ImageModel::GptImage2_5Sunburst
-        | ImageModel::GptImage2_5Sunburst2026_09_08
-        | ImageModel::GptImage2_5Flare
-        | ImageModel::GptImage2_5Flare2026_09_08
-        | ImageModel::ChatGptImageLatest => true,
-        ImageModel::Other(_) => false,
-    }
 }
 
 #[cfg(test)]
@@ -810,8 +794,8 @@ mod tests {
     }
 
     #[test]
-    fn other_models_keep_their_model_for_stickers() {
-        for model_id in ["gpt-image-3", "custom/image-model"] {
+    fn models_unknown_to_async_openai_are_sent_as_is_and_switch_for_stickers() {
+        for model_id in ["gpt-image-3", "gpt-image-3-flare"] {
             let config = ImageGenerationConfig {
                 model_id: model_id.to_owned(),
                 ..Default::default()
@@ -835,7 +819,7 @@ mod tests {
             assert_eq!(
                 serde_json::to_value(request).unwrap(),
                 json!({
-                    "model": model_id,
+                    "model": "gpt-image-1-mini",
                     "prompt": "a cat",
                     "quality": "low",
                     "size": "1024x1024",
