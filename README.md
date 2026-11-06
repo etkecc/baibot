@@ -65,7 +65,7 @@ See the bot's [🧑‍💻 development documentation](./docs/development.md) for
 
 This bot evolves over time, sometimes with backward-incompatible changes.
 
-When updating the bot, refer to the [GitHub releases](https://github.com/etkecc/baibot/releases) to catch up with what's new (changes up to `v1.30.0` are in [the changelog](CHANGELOG.md)).
+When updating the bot, refer to the [GitHub releases](https://github.com/etkecc/baibot/releases) to catch up with what's new (changes up to `v1.30.0` are in [the old changelog](https://github.com/etkecc/baibot/blob/v1.30.0/CHANGELOG.md)).
 
 
 ## 🆘 Support
