@@ -115,8 +115,8 @@ agents:
     #       speed: 1.0
     #       response_format: opus
     #     image_generation:
-    #       # Use gpt-image-2.5-flare for faster generation.
-    #       model_id: gpt-image-2.5-sunburst
+    #       # Use gpt-image-2.6-flare for faster generation.
+    #       model_id: gpt-image-2.6-sunburst
     #       style: null
     #       # null lets the model choose; examples: 1024x1024, 1536x1024, 2048x2048.
     #       size: null

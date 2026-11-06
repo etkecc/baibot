@@ -127,16 +127,16 @@ Use this provider with the OpenAI API. For other OpenAI-compatible services (e.g
 
 💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/openai.yml).
 
-**Image generation and editing** use `image_generation.model_id`. New agents default to [`gpt-image-2.5-sunburst`](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst), which supports generation and precise editing. [`gpt-image-2.5-flare`](https://developers.openai.com/api/docs/models/gpt-image-2.5-flare) is also supported for faster generation. Both accept dated snapshots ending in `-2026-09-08`.
+**Image generation and editing** use `image_generation.model_id`. New agents default to [`gpt-image-2.6-sunburst`](https://developers.openai.com/api/docs/models/gpt-image-2.6-sunburst), which supports generation and precise editing. [`gpt-image-2.6-flare`](https://developers.openai.com/api/docs/models/gpt-image-2.6-flare) is also supported for faster generation.
 
-The following settings apply to both image generation and editing with GPT Image 2.5:
+The following settings apply to both image generation and editing with GPT Image 2.5 and 2.6:
 
 | Setting | Values |
 | --- | --- |
 | `quality` | `low`, `medium`, `high`, `xhigh`, `max`, or `auto`. `null` uses the model default, `auto`. |
 | `size` | `auto`, a standard size such as `1024x1024`, `1536x1024`, or `1024x1536`, or a custom size such as `2048x2048`. `null` lets the model choose. Custom dimensions must satisfy [OpenAI's size constraints](https://developers.openai.com/api/docs/guides/image-generation#size-and-quality-options). |
 
-Existing agents keep their configured model. To switch, change `image_generation.model_id` in the agent configuration to `gpt-image-2.5-sunburst` or `gpt-image-2.5-flare`.
+Existing agents keep their configured model. To switch, change `image_generation.model_id` in the agent configuration to `gpt-image-2.6-sunburst` or `gpt-image-2.6-flare`.
 
 **Text-to-speech** uses `text_to_speech.model_id`. New agents default to the [`gpt-realtime-2.1-mini`](https://developers.openai.com/api/docs/models/gpt-realtime-2.1-mini) Realtime model with the `cedar` voice. OpenAI shuts down its older speech models (`tts-1`, `tts-1-hd`, `gpt-4o-mini-tts`) on 2027-01-06. Agents using them keep working until then; to switch, set `model_id: gpt-realtime-2.1-mini` and a [Realtime voice](https://developers.openai.com/api/docs/guides/realtime-conversations#voice-options) (e.g. `cedar` or `marin`, as `onyx`, `nova` and `fable` are not available).
 

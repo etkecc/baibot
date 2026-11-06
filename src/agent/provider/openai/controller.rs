@@ -659,6 +659,8 @@ mod tests {
         "gpt-image-2.5-sunburst-2026-09-08",
         "gpt-image-2.5-flare",
         "gpt-image-2.5-flare-2026-09-08",
+        "gpt-image-2.6-sunburst",
+        "gpt-image-2.6-flare",
         "chatgpt-image-latest",
     ];
 
@@ -741,12 +743,14 @@ mod tests {
     }
 
     #[test]
-    fn gpt_image_2_5_edits_preserve_size_and_quality() {
+    fn gpt_image_2_5_and_2_6_edits_preserve_size_and_quality() {
         for model_id in [
             "gpt-image-2.5-sunburst",
             "gpt-image-2.5-sunburst-2026-09-08",
             "gpt-image-2.5-flare",
             "gpt-image-2.5-flare-2026-09-08",
+            "gpt-image-2.6-sunburst",
+            "gpt-image-2.6-flare",
         ] {
             for size in ["auto", "1536x1024", "2048x2048"] {
                 for quality in ["xhigh", "max"] {

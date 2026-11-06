@@ -22,8 +22,8 @@ text_to_speech:
   response_format: opus
 image_generation:
   # Sunburst supports image generation and precise editing.
-  # Use gpt-image-2.5-flare for faster generation.
-  model_id: gpt-image-2.5-sunburst
+  # Use gpt-image-2.6-flare for faster generation.
+  model_id: gpt-image-2.6-sunburst
   # null lets the model choose; examples: 1024x1024, 1536x1024, 1024x1536, 2048x2048.
   size: null
   # null uses the model default (auto). Options: low, medium, high, xhigh, max, auto.
