@@ -1,5 +1,4 @@
-// At the time of testing, LocalAI can be powered by `openai`, but we use `openai_compat` for better reliability
-// in the event of future updates to `async-openai`.
+// LocalAI uses `openai_compat`, because the `openai` provider only supports OpenAI's own API.
 
 use super::openai_compat::Config;
 

@@ -1,3 +1,8 @@
+//! Provider for OpenAI's own API only.
+//!
+//! OpenAI-compatible services (LocalAI, etc.) use the `openai_compat` provider instead,
+//! so code here does not need to handle their models or options.
+
 mod config;
 mod controller;
 mod realtime_tts;
