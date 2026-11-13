@@ -4,7 +4,7 @@
 #                                     #
 #######################################
 
-FROM docker.io/rust:1.99.1-slim-trixie AS build
+FROM docker.io/rust:1.100.0-slim-trixie AS build
 
 RUN apt-get update && apt-get install -y build-essential cmake pkg-config libssl-dev libsqlite3-dev
 
