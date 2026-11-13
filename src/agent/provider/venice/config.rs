@@ -135,7 +135,7 @@ impl Default for TextGenerationConfig {
 }
 
 fn default_text_model_id() -> String {
-    "kimi-k2-5".to_owned()
+    "deepseek-v4-1-flash-1017-uncensored".to_owned()
 }
 
 /// Defaults prompt-cache retention to 24h so caching is on unless a config explicitly opts out.
