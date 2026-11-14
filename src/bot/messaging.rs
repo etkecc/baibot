@@ -14,6 +14,7 @@ use mxlink::{CallbackError, MessageResponseType};
 
 use tracing::Instrument;
 
+use crate::authorization::{Authorizer, Permission};
 use crate::{
     conversation::matrix::determine_interaction_context_for_room_event,
     entity::{MessageContext, MessagePayload, RoomConfigContext, TriggerEventInfo},
@@ -287,22 +288,11 @@ impl Messaging {
 
         tracing::trace!(?room_config, "Room config");
 
-        let trigger_event_sender_is_admin = mxidwc::match_user_id(
-            event.sender.clone().as_str(),
-            self.bot.admin_pattern_regexes(),
-        );
+        let sender_can_use = Authorizer::new(self.bot.admin_pattern_regexes(), &global_config)
+            .allows(&event.sender, Permission::Use)
+            .map_err(|err| CallbackError::Unknown(err.into()))?;
 
-        let trigger_event_sender_is_allowed_user = match &global_config.access.user_patterns {
-            Some(user_patterns) => {
-                let allowed_user_regexes = mxidwc::parse_patterns_vector(user_patterns)
-                    .map_err(|err| CallbackError::Unknown(err.into()))?;
-
-                mxidwc::match_user_id(event.sender.clone().as_str(), &allowed_user_regexes)
-            }
-            None => false,
-        };
-
-        if !trigger_event_sender_is_admin && !trigger_event_sender_is_allowed_user {
+        if !sender_can_use {
             tracing::debug!("Ignoring message from non-admin/non-allowed user");
             return Ok(());
         }
@@ -350,12 +340,8 @@ impl Messaging {
         let room_config_context =
             RoomConfigContext::new(global_config.clone(), room_config.clone());
 
-        let trigger_event_info = TriggerEventInfo::new(
-            event.event_id.clone(),
-            event.sender.clone(),
-            payload,
-            trigger_event_sender_is_admin,
-        );
+        let trigger_event_info =
+            TriggerEventInfo::new(event.event_id.clone(), event.sender.clone(), payload);
 
         let message_context = MessageContext::new(
             room.clone(),

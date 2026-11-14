@@ -3,6 +3,8 @@ use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId, RoomId};
 
 use mxlink::ThreadInfo;
 
+use crate::authorization::{Authorizer, Permission};
+
 use super::{
     MessagePayload, RoomConfigContext, TriggerEventInfo, globalconfig::GlobalConfig,
     roomconfig::RoomConfig,
@@ -83,40 +85,38 @@ impl MessageContext {
         &self.thread_info
     }
 
+    pub fn authorizer(&self) -> Authorizer<'_> {
+        Authorizer::new(&self.admin_whitelist_regexes, self.global_config())
+    }
+
     pub fn sender_can_manage_global_config(&self) -> bool {
-        self.trigger_event_info.sender_is_admin
+        // This only depends on the static administrator patterns, so it cannot fail.
+        matches!(
+            self.authorizer()
+                .allows(self.sender_id(), Permission::ManageGlobalConfig),
+            Ok(true)
+        )
     }
 
     pub fn sender_can_manage_room_local_agents(&self) -> mxidwc::Result<bool> {
-        Ok(self.sender_can_manage_global_config()
-            || self.sender_is_allowed_room_local_agent_manager()?)
+        self.authorizer()
+            .allows(self.sender_id(), Permission::ManageRoomLocalAgents)
     }
 
     pub fn combined_admin_and_user_regexes(&self) -> Vec<regex::Regex> {
-        let mut combined = self.admin_whitelist_regexes.clone();
+        let authorizer = self.authorizer();
 
-        if let Some(user_patterns) = &self.global_config().access.user_patterns {
-            let user_regexes = mxidwc::parse_patterns_vector(user_patterns);
+        match authorizer.context_author_regexes() {
+            Ok(regexes) => regexes,
+            Err(err) => {
+                tracing::warn!(
+                    "Error parsing user patterns for room {}: {:?}",
+                    self.room.room_id(),
+                    err
+                );
 
-            match user_regexes {
-                Ok(user_regexes) => {
-                    combined.extend(user_regexes);
-                }
-                Err(err) => {
-                    tracing::warn!(
-                        "Error parsing user patterns for room {}: {:?}",
-                        self.room.room_id(),
-                        err
-                    );
-                }
+                authorizer.admin_regexes()
             }
         }
-
-        combined
-    }
-
-    fn sender_is_allowed_room_local_agent_manager(&self) -> mxidwc::Result<bool> {
-        self.room_config_context()
-            .is_user_allowed_room_local_agent_manager(self.sender_id().clone())
     }
 }

@@ -14,6 +14,7 @@ use mxlink::ThreadInfo;
 
 use tracing::Instrument;
 
+use crate::authorization::{Authorizer, Permission};
 use crate::entity::{MessageContext, MessagePayload, RoomConfigContext, TriggerEventInfo};
 
 #[derive(Clone)]
@@ -101,20 +102,11 @@ impl Reacting {
 
         tracing::trace!(?global_config, "Global config");
 
-        let trigger_event_sender_is_admin =
-            mxidwc::match_user_id(event.sender().as_str(), self.bot.admin_pattern_regexes());
+        let sender_can_use = Authorizer::new(self.bot.admin_pattern_regexes(), &global_config)
+            .allows(event.sender(), Permission::Use)
+            .map_err(|err| CallbackError::Unknown(err.into()))?;
 
-        let trigger_event_sender_is_allowed_user = match &global_config.access.user_patterns {
-            Some(user_patterns) => {
-                let allowed_user_regexes = mxidwc::parse_patterns_vector(user_patterns)
-                    .map_err(|err| CallbackError::Unknown(err.into()))?;
-
-                mxidwc::match_user_id(event.sender().as_str(), &allowed_user_regexes)
-            }
-            None => false,
-        };
-
-        if !trigger_event_sender_is_admin && !trigger_event_sender_is_allowed_user {
+        if !sender_can_use {
             tracing::debug!("Ignoring reaction from non-admin/non-allowed user");
             return Ok(());
         }
@@ -231,7 +223,6 @@ impl Reacting {
                 reacted_to_event_id: reaction_event_content.relates_to.event_id.clone(),
                 reacted_to_event_sender_id,
             },
-            trigger_event_sender_is_admin,
         );
 
         let message_context = MessageContext::new(

@@ -10,6 +10,7 @@ use mxlink::CallbackError;
 
 use tracing::Instrument;
 
+use crate::authorization::{Authorizer, Permission};
 use crate::entity::RoomConfigContext;
 
 #[derive(Clone)]
@@ -51,22 +52,11 @@ impl Rooms {
             .await
             .map_err(|e| CallbackError::Unknown(e.into()))?;
 
-        let sender_is_admin = mxidwc::match_user_id(
-            room_member.sender.clone().as_str(),
-            self.bot.admin_pattern_regexes(),
-        );
+        let sender_can_invite = Authorizer::new(self.bot.admin_pattern_regexes(), &global_config)
+            .allows(&room_member.sender, Permission::Invite)
+            .map_err(|e| CallbackError::Unknown(e.into()))?;
 
-        let sender_is_allowed_user = match &global_config.access.user_patterns {
-            Some(user_patterns) => {
-                let allowed_user_regexes = mxidwc::parse_patterns_vector(user_patterns)
-                    .map_err(|e| CallbackError::Unknown(e.into()))?;
-
-                mxidwc::match_user_id(room_member.sender.clone().as_str(), &allowed_user_regexes)
-            }
-            None => false,
-        };
-
-        if !(sender_is_admin || sender_is_allowed_user) {
+        if !sender_can_invite {
             return Ok(InvitationDecision::Reject);
         }
 
