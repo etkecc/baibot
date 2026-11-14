@@ -6,9 +6,18 @@ use crate::{agent::PublicIdentifier, controller::ControllerType, strings};
 #[derive(Debug, PartialEq)]
 pub enum AgentControllerType {
     List,
-    Details(PublicIdentifier),
-    CreateRoomLocal { provider: String, agent_id: String },
-    CreateGlobal { provider: String, agent_id: String },
+    Details {
+        agent_identifier: PublicIdentifier,
+        reveal_secrets: bool,
+    },
+    CreateRoomLocal {
+        provider: String,
+        agent_id: String,
+    },
+    CreateGlobal {
+        provider: String,
+        agent_id: String,
+    },
     Delete(PublicIdentifier),
     Help,
 }
@@ -17,7 +26,13 @@ pub fn determine_controller(command_prefix: &str, text: &str) -> ControllerType 
     if text.starts_with("list") {
         return ControllerType::Agent(AgentControllerType::List);
     }
-    if let Some(agent_id_string) = text.strip_prefix("details") {
+    // `details-revealing-secrets` also starts with `details`, so it's matched first.
+    let details_args = text
+        .strip_prefix("details-revealing-secrets")
+        .map(|args| (args, true))
+        .or_else(|| text.strip_prefix("details").map(|args| (args, false)));
+
+    if let Some((agent_id_string, reveal_secrets)) = details_args {
         let agent_id_string = agent_id_string.trim();
 
         if agent_id_string.is_empty() || agent_id_string.contains(" ") {
@@ -30,7 +45,10 @@ pub fn determine_controller(command_prefix: &str, text: &str) -> ControllerType 
             return ControllerType::Error(strings::agent::invalid_id_generic());
         };
 
-        return ControllerType::Agent(AgentControllerType::Details(agent_identifier));
+        return ControllerType::Agent(AgentControllerType::Details {
+            agent_identifier,
+            reveal_secrets,
+        });
     }
 
     if let Some(remaining_text) = text.strip_prefix("create-room-local") {

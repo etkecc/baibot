@@ -36,9 +36,10 @@ pub async fn dispatch_controller(
             .await
         }
         AgentControllerType::List => list::handle(bot, message_context).await,
-        AgentControllerType::Details(agent_identifier) => {
-            details::handle(bot, message_context, agent_identifier).await
-        }
+        AgentControllerType::Details {
+            agent_identifier,
+            reveal_secrets,
+        } => details::handle(bot, message_context, agent_identifier, *reveal_secrets).await,
         AgentControllerType::Delete(agent_identifier) => {
             delete::handle(
                 bot,

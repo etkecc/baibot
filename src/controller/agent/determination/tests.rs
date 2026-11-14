@@ -29,9 +29,18 @@ fn determine_controller() {
         TestCase {
             name: "details",
             input: "details static/agent-id",
-            expected: super::ControllerType::Agent(super::AgentControllerType::Details(
-                PublicIdentifier::Static("agent-id".to_owned()),
-            )),
+            expected: super::ControllerType::Agent(super::AgentControllerType::Details {
+                agent_identifier: PublicIdentifier::Static("agent-id".to_owned()),
+                reveal_secrets: false,
+            }),
+        },
+        TestCase {
+            name: "details revealing secrets",
+            input: "details-revealing-secrets static/agent-id",
+            expected: super::ControllerType::Agent(super::AgentControllerType::Details {
+                agent_identifier: PublicIdentifier::Static("agent-id".to_owned()),
+                reveal_secrets: true,
+            }),
         },
         TestCase {
             name: "details with invalid agent identifier",

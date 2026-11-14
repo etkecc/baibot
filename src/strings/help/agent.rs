@@ -28,7 +28,7 @@ pub fn list_agents(command_prefix: &str) -> String {
 
 pub fn show_agent_details(command_prefix: &str) -> String {
     format!(
-        "- **Show** full details for a given agent: `{command_prefix} agent details FULL_AGENT_IDENTIFIER`"
+        "- **Show** full details for a given agent, with secrets redacted: `{command_prefix} agent details FULL_AGENT_IDENTIFIER` (`{command_prefix} agent details-revealing-secrets FULL_AGENT_IDENTIFIER` shows secrets too, in the room where you run it)"
     )
 }
 
@@ -57,5 +57,5 @@ pub fn delete_agent(command_prefix: &str) -> String {
 }
 
 pub fn available_commands_outro_update_note() -> &'static str {
-    "To **update** a given agent's configuration: show the agent's **details** (current configuration), then **delete** it and finally **re-create** it."
+    "To **update** a given agent's configuration: show the agent's **details** (current configuration), then **delete** it and finally **re-create** it. The details redact secrets, so put the API key back in when re-creating it (or use `details-revealing-secrets`)."
 }

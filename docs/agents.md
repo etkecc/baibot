@@ -46,7 +46,9 @@ After making your modifications to the sample YAML, you submit it back to the bo
 
 To **show** full details for a given agent: `!bai agent details FULL_AGENT_IDENTIFIER`
 
-The details include the agent's configuration (API key included), so only administrators can show `static/` and `global/` agents. Room-local agents can be shown by [room-local agent managers](./access.md#-room-local-agent-managers).
+Secrets in the configuration (such as the API key) are redacted. To **show the secrets too**: `!bai agent details-revealing-secrets FULL_AGENT_IDENTIFIER`. They are posted in the room where you run it, so consider who else can read that room.
+
+Only administrators can show `static/` and `global/` agents. Room-local agents can be shown by [room-local agent managers](./access.md#-room-local-agent-managers).
 
 This command requires a full agent identifier (e.g. `room-local/agent-id`).
 
@@ -60,4 +62,4 @@ This command requires a full agent identifier (e.g. `room-local/agent-id`).
 
 ### Updating agents
 
-To **update** a given agent's configuration: show the agent's [details](#showing-agent-details) (current configuration), then [delete](#deleting-agents) it and finally [re-create](#creating-agents) it.
+To **update** a given agent's configuration: show the agent's [details](#showing-agent-details) (current configuration), then [delete](#deleting-agents) it and finally [re-create](#creating-agents) it. The details redact secrets, so put the API key back in when re-creating it (or use `details-revealing-secrets`).
