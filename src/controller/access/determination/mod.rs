@@ -2,6 +2,7 @@
 mod tests;
 
 use super::super::ControllerType;
+use crate::authorization::Permission;
 
 #[derive(Debug, PartialEq)]
 pub enum AccessControllerType {
@@ -60,4 +61,17 @@ pub fn determine_controller(text: &str) -> ControllerType {
     }
 
     ControllerType::Access(AccessControllerType::Help)
+}
+
+impl AccessControllerType {
+    pub fn required_permission(&self) -> Permission {
+        match self {
+            // Anyone can see the help, so that all users can get familiar with how the bot's access system works.
+            Self::Help => Permission::Use,
+            Self::GetUsers
+            | Self::SetUsers(_)
+            | Self::GetRoomLocalAgentManagers
+            | Self::SetRoomLocalAgentManagers(_) => Permission::ManageGlobalConfig,
+        }
+    }
 }

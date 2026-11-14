@@ -25,18 +25,6 @@ pub async fn handle_room_local(
     provider: &str,
     agent_id_prefixless: &str,
 ) -> anyhow::Result<()> {
-    if !message_context.sender_can_manage_room_local_agents()? {
-        bot.messaging()
-            .send_error_markdown_no_fail(
-                message_context.room(),
-                &strings::agent::not_allowed_to_manage_room_local_agents_in_room(),
-                MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
-            )
-            .await;
-
-        return Ok(());
-    }
-
     let Ok(provider) = AgentProvider::from_string(provider) else {
         bot.messaging()
             .send_error_markdown_no_fail(
@@ -138,18 +126,6 @@ pub async fn handle_global(
     provider: &str,
     agent_id_prefixless: &str,
 ) -> anyhow::Result<()> {
-    if !message_context.sender_can_manage_global_config() {
-        bot.messaging()
-            .send_error_markdown_no_fail(
-                message_context.room(),
-                strings::global_config::no_permissions_to_administrate(),
-                MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
-            )
-            .await;
-
-        return Ok(());
-    }
-
     let Ok(provider) = AgentProvider::from_string(provider) else {
         bot.messaging()
             .send_error_markdown_no_fail(

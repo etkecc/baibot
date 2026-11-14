@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod tests;
 
-use crate::{agent::PublicIdentifier, controller::ControllerType, strings};
+use crate::{
+    agent::PublicIdentifier, authorization::Permission, controller::ControllerType, strings,
+};
 
 #[derive(Debug, PartialEq)]
 pub enum AgentControllerType {
@@ -114,4 +116,29 @@ pub fn determine_controller(command_prefix: &str, text: &str) -> ControllerType 
     }
 
     ControllerType::Agent(AgentControllerType::Help)
+}
+
+impl AgentControllerType {
+    pub fn required_permission(&self) -> Permission {
+        match self {
+            Self::List | Self::Help => Permission::Use,
+            Self::CreateRoomLocal { .. } => Permission::ManageRoomLocalAgents,
+            Self::CreateGlobal { .. } => Permission::ManageGlobalConfig,
+            Self::Details {
+                agent_identifier, ..
+            } => match agent_identifier {
+                PublicIdentifier::DynamicRoomLocal(_) => Permission::ManageRoomLocalAgents,
+                // Static and global agents hold the operator's credentials.
+                PublicIdentifier::DynamicGlobal(_) | PublicIdentifier::Static(_) => {
+                    Permission::ManageGlobalConfig
+                }
+            },
+            Self::Delete(agent_identifier) => match agent_identifier {
+                PublicIdentifier::DynamicRoomLocal(_) => Permission::ManageRoomLocalAgents,
+                PublicIdentifier::DynamicGlobal(_) => Permission::ManageGlobalConfig,
+                // Nobody can delete static agents, which the deletion handler explains.
+                PublicIdentifier::Static(_) => Permission::Use,
+            },
+        }
+    }
 }

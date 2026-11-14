@@ -1,6 +1,6 @@
 use mxlink::MessageResponseType;
 
-use crate::{Bot, entity::MessageContext, strings};
+use crate::{Bot, authorization::Permission, entity::MessageContext, strings};
 
 use super::ControllerType;
 
@@ -9,7 +9,73 @@ pub async fn dispatch_controller(
     message_context: &MessageContext,
     bot: &Bot,
 ) {
-    let result = match controller_type {
+    let result = match check_permission(controller_type, message_context, bot).await {
+        Ok(true) => dispatch(controller_type, message_context, bot).await,
+        Ok(false) => Ok(()),
+        Err(err) => Err(err),
+    };
+
+    if let Err(e) = result {
+        tracing::error!(
+            "Error handling message {} from sender {} in room {}: {:?}",
+            message_context.event_id(),
+            message_context.sender_id(),
+            message_context.room_id(),
+            e,
+        );
+
+        bot.messaging()
+            .send_error_markdown_no_fail(
+                message_context.room(),
+                strings::error::error_while_processing_message(),
+                MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
+            )
+            .await;
+    }
+}
+
+/// Checks whether the sender has the permission the command requires, telling them if they don't.
+async fn check_permission(
+    controller_type: &ControllerType,
+    message_context: &MessageContext,
+    bot: &Bot,
+) -> anyhow::Result<bool> {
+    let permission = controller_type.required_permission();
+
+    if message_context
+        .authorizer()
+        .allows(message_context.sender_id(), permission)?
+    {
+        return Ok(true);
+    }
+
+    let message = match permission {
+        Permission::ManageGlobalConfig => {
+            strings::global_config::no_permissions_to_administrate().to_owned()
+        }
+        Permission::ManageRoomLocalAgents => {
+            strings::agent::not_allowed_to_manage_room_local_agents_in_room()
+        }
+        Permission::Use | Permission::Invite => strings::access::not_allowed(),
+    };
+
+    bot.messaging()
+        .send_error_markdown_no_fail(
+            message_context.room(),
+            &message,
+            MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
+        )
+        .await;
+
+    Ok(false)
+}
+
+async fn dispatch(
+    controller_type: &ControllerType,
+    message_context: &MessageContext,
+    bot: &Bot,
+) -> anyhow::Result<()> {
+    match controller_type {
         ControllerType::Access(controller_type) => {
             super::access::dispatch_controller(controller_type, message_context, bot).await
         }
@@ -90,23 +156,5 @@ pub async fn dispatch_controller(
             )
             .await
         }
-    };
-
-    if let Err(e) = result {
-        tracing::error!(
-            "Error handling message {} from sender {} in room {}: {:?}",
-            message_context.event_id(),
-            message_context.sender_id(),
-            message_context.room_id(),
-            e,
-        );
-
-        bot.messaging()
-            .send_error_markdown_no_fail(
-                message_context.room(),
-                strings::error::error_while_processing_message(),
-                MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
-            )
-            .await;
     }
 }

@@ -32,41 +32,7 @@ pub async fn handle(
         }
     };
 
-    // Access checks
-
-    match &agent_identifier {
-        PublicIdentifier::DynamicRoomLocal(_) => {
-            if !message_context.sender_can_manage_room_local_agents()? {
-                bot.messaging()
-                    .send_error_markdown_no_fail(
-                        message_context.room(),
-                        &strings::agent::not_allowed_to_manage_room_local_agents_in_room(),
-                        MessageResponseType::Reply(
-                            message_context.thread_info().root_event_id.clone(),
-                        ),
-                    )
-                    .await;
-
-                return Ok(());
-            }
-        }
-        // Static and global agents hold the operator's credentials, so only administrators may print their configuration.
-        PublicIdentifier::Static(_) | PublicIdentifier::DynamicGlobal(_) => {
-            if !message_context.sender_can_manage_global_config() {
-                bot.messaging()
-                    .send_error_markdown_no_fail(
-                        message_context.room(),
-                        strings::global_config::no_permissions_to_administrate(),
-                        MessageResponseType::Reply(
-                            message_context.thread_info().root_event_id.clone(),
-                        ),
-                    )
-                    .await;
-
-                return Ok(());
-            }
-        }
-    };
+    // Access is checked centrally, before dispatching (see `AgentControllerType::required_permission()`).
 
     let mut config = agent.definition().config.clone();
     if !reveal_secrets {

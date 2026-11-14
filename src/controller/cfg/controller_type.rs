@@ -1,5 +1,6 @@
 use crate::{
     agent::{AgentPurpose, PublicIdentifier},
+    authorization::Permission,
     entity::roomconfig::{
         SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
         TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
@@ -84,4 +85,16 @@ pub enum ConfigTextToSpeechSettingRelatedControllerType {
 
     GetVoiceOverride,
     SetVoiceOverride(Option<String>),
+}
+
+impl ConfigControllerType {
+    pub fn required_permission(&self) -> Permission {
+        match self {
+            Self::Help | Self::Status => Permission::Use,
+            Self::SettingsRelated(SettingsStorageSource::Room, _) => Permission::Use,
+            Self::SettingsRelated(SettingsStorageSource::Global, _) => {
+                Permission::ManageGlobalConfig
+            }
+        }
+    }
 }

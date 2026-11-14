@@ -23,3 +23,7 @@ pub fn room_local_agent_managers_now_match_patterns(patterns: &[String]) -> Stri
 pub fn failed_to_parse_patterns(err: &str) -> String {
     format!("Failed to parse patterns: {}", err)
 }
+
+pub fn not_allowed() -> String {
+    "You are not allowed to do this.".to_owned()
+}

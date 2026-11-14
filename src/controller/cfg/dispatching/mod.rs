@@ -1,6 +1,4 @@
-use crate::strings;
 use crate::{Bot, entity::MessageContext};
-use mxlink::MessageResponseType;
 
 use super::controller_type::{
     ConfigControllerType, ConfigSettingRelatedControllerType, SettingsStorageSource,
@@ -15,8 +13,7 @@ pub async fn dispatch_controller(
     message_context: &MessageContext,
     bot: &Bot,
 ) -> anyhow::Result<()> {
-    // Anyone can access Help and Status.
-    // Settings-related access checks are done in dispatch_config_related_handler().
+    // Access checks are done centrally, before dispatching (see `ConfigControllerType::required_permission()`).
 
     match handler {
         ConfigControllerType::Help => super::help::handle(bot, message_context).await,
@@ -39,19 +36,6 @@ async fn dispatch_config_related_handler(
     message_context: &MessageContext,
     bot: &Bot,
 ) -> anyhow::Result<()> {
-    if let SettingsStorageSource::Global = config_type
-        && !message_context.sender_can_manage_global_config()
-    {
-        bot.messaging()
-            .send_error_markdown_no_fail(
-                message_context.room(),
-                strings::global_config::no_permissions_to_administrate(),
-                MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
-            )
-            .await;
-        return Ok(());
-    }
-
     let room_settings = match config_type {
         SettingsStorageSource::Room => &message_context.room_config().settings,
         SettingsStorageSource::Global => &message_context.global_config().fallback_room_settings,
