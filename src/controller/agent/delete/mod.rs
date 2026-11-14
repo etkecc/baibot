@@ -1,9 +1,15 @@
 use mxlink::MessageResponseType;
 
 use crate::entity::{
-    MessageContext, globalconfig::GlobalConfigurationManager, roomconfig::RoomConfigurationManager,
+    MessageContext,
+    globalconfig::{self, GlobalConfigurationManager},
+    roomconfig::{self, RoomConfigurationManager},
 };
-use crate::{Bot, agent::PublicIdentifier, strings};
+use crate::{
+    Bot,
+    agent::{AgentDefinition, PublicIdentifier},
+    strings,
+};
 
 pub async fn handle(
     bot: &Bot,
@@ -65,20 +71,17 @@ async fn delete_room_local_agent(
     message_context: &MessageContext,
     agent_id: &PublicIdentifier,
 ) -> anyhow::Result<()> {
-    let mut room_config = message_context.room_config().clone();
-
-    let mut was_deleted = false;
-
     let agent_id_prefixless = agent_id.prefixless();
 
-    let mut agents = Vec::new();
-    for agent_config in room_config.agents {
-        if agent_config.id == agent_id_prefixless {
-            was_deleted = true;
-        } else {
-            agents.push(agent_config.clone());
-        }
-    }
+    // We may unset all handlers in the room config which refer to this agent.
+    // We intentionally do not do this, because we do not support "agent edit" yet and ask people to do "agent delete" and "agent create" instead.
+    // We'd rather not magically reconfigure the room on agent deletion and obstruct this use case.
+    let was_deleted =
+        roomconfig::update(room_config_manager, message_context.room(), |room_config| {
+            remove_agent(&mut room_config.agents, &agent_id_prefixless)
+        })
+        .await?
+        .is_some();
 
     if !was_deleted {
         bot.messaging()
@@ -91,18 +94,6 @@ async fn delete_room_local_agent(
 
         return Ok(());
     }
-
-    room_config.agents = agents;
-
-    let room_config_manager = room_config_manager.lock().await;
-
-    // We may unset all handlers in the room config which refer to this agent.
-    // We intentionally do not do this, because we do not support "agent edit" yet and ask people to do "agent delete" and "agent create" instead.
-    // We'd rather not magically reconfigure the room on agent deletion and obstruct this use case.
-
-    room_config_manager
-        .persist(message_context.room(), &room_config)
-        .await?;
 
     bot.messaging()
         .send_success_markdown_no_fail(
@@ -121,20 +112,13 @@ async fn delete_global_agent(
     message_context: &MessageContext,
     agent_id: &PublicIdentifier,
 ) -> anyhow::Result<()> {
-    let mut global_config = message_context.global_config().clone();
-
-    let mut was_deleted = false;
-
     let agent_id_prefixless = agent_id.prefixless();
 
-    let mut agents = Vec::new();
-    for agent_config in global_config.agents {
-        if agent_config.id == agent_id_prefixless {
-            was_deleted = true;
-        } else {
-            agents.push(agent_config.clone());
-        }
-    }
+    let was_deleted = globalconfig::update(global_config_manager, |global_config| {
+        remove_agent(&mut global_config.agents, &agent_id_prefixless)
+    })
+    .await?
+    .is_some();
 
     if !was_deleted {
         bot.messaging()
@@ -148,14 +132,6 @@ async fn delete_global_agent(
         return Ok(());
     }
 
-    global_config.agents = agents;
-
-    global_config_manager
-        .lock()
-        .await
-        .persist(&global_config)
-        .await?;
-
     bot.messaging()
         .send_success_markdown_no_fail(
             message_context.room(),
@@ -165,4 +141,37 @@ async fn delete_global_agent(
         .await;
 
     Ok(())
+}
+
+/// Removes the agent with the given (prefixless) id, returning `None` if there was no such agent.
+fn remove_agent(agents: &mut Vec<AgentDefinition>, agent_id_prefixless: &str) -> Option<()> {
+    let count_before = agents.len();
+    agents.retain(|agent| agent.id != agent_id_prefixless);
+
+    (agents.len() != count_before).then_some(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn remove_agent() {
+        let definition = |id: &str| {
+            crate::agent::AgentDefinition::new(
+                id.to_owned(),
+                crate::agent::AgentProvider::OpenAI,
+                serde_yaml_ng::Value::Null,
+            )
+        };
+
+        let mut agents = vec![definition("a"), definition("b")];
+
+        assert_eq!(super::remove_agent(&mut agents, "missing"), None);
+        assert_eq!(agents.len(), 2);
+
+        assert_eq!(super::remove_agent(&mut agents, "a"), Some(()));
+        assert_eq!(
+            agents.iter().map(|a| a.id.as_str()).collect::<Vec<_>>(),
+            ["b"]
+        );
+    }
 }

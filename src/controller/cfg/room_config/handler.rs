@@ -7,7 +7,7 @@ use crate::{
     strings,
 };
 
-use crate::entity::roomconfig::RoomConfigurationManager;
+use crate::entity::roomconfig::{self, RoomConfigurationManager};
 
 pub async fn handle_get(
     bot: &Bot,
@@ -106,22 +106,18 @@ pub async fn handle_set(
         }
     }
 
-    let mut new_room_config = message_context.room_config().clone();
-
     let agent_id = agent_identifier
         .as_ref()
         .map(|agent_identifier| agent_identifier.as_string());
 
-    new_room_config
-        .settings
-        .handler
-        .set_by_purpose(purpose, agent_id);
-
-    room_config_manager
-        .lock()
-        .await
-        .persist(message_context.room(), &new_room_config)
-        .await?;
+    roomconfig::update(room_config_manager, message_context.room(), |room_config| {
+        room_config
+            .settings
+            .handler
+            .set_by_purpose(purpose, agent_id);
+        Some(())
+    })
+    .await?;
 
     let message = match agent_identifier {
         Some(agent_identifier) => {

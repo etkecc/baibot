@@ -3,7 +3,10 @@ use mxlink::MessageResponseType;
 use crate::{
     Bot,
     agent::{AgentPurpose, PublicIdentifier},
-    entity::{MessageContext, globalconfig::GlobalConfigurationManager},
+    entity::{
+        MessageContext,
+        globalconfig::{self, GlobalConfigurationManager},
+    },
     strings,
 };
 
@@ -131,18 +134,14 @@ pub async fn handle_set(
         .as_ref()
         .map(|agent_identifier| agent_identifier.as_string());
 
-    let mut global_config = global_config_manager.lock().await.get_or_create().await?;
-
-    global_config
-        .fallback_room_settings
-        .handler
-        .set_by_purpose(purpose, agent_id);
-
-    global_config_manager
-        .lock()
-        .await
-        .persist(&global_config)
-        .await?;
+    globalconfig::update(global_config_manager, |global_config| {
+        global_config
+            .fallback_room_settings
+            .handler
+            .set_by_purpose(purpose, agent_id);
+        Some(())
+    })
+    .await?;
 
     let message = match agent_identifier {
         Some(agent_identifier) => {

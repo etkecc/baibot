@@ -8,8 +8,8 @@ use crate::agent::provider::{ControllerTrait, PingResult};
 use crate::agent::{AgentDefinition, create_from_provider_and_yaml_value_config};
 use crate::agent::{AgentInstance, AgentProvider};
 use crate::controller::utils::get_text_body_or_complain;
-use crate::entity::globalconfig::GlobalConfigurationManager;
-use crate::entity::roomconfig::RoomConfigurationManager;
+use crate::entity::globalconfig::{self, GlobalConfigurationManager};
+use crate::entity::roomconfig::{self, RoomConfigurationManager};
 use crate::strings;
 use crate::{Bot, entity::MessageContext};
 
@@ -98,15 +98,25 @@ pub async fn handle_room_local(
         parsed_config.config.clone(),
     );
 
-    let mut room_config = message_context.room_config().clone();
+    let was_added =
+        roomconfig::update(room_config_manager, message_context.room(), |room_config| {
+            add_agent(&mut room_config.agents, &agent_definition)
+        })
+        .await?
+        .is_some();
 
-    room_config.agents.push(agent_definition.clone());
+    // The agent may have been created by someone else while this agent was being checked.
+    if !was_added {
+        bot.messaging()
+            .send_error_markdown_no_fail(
+                message_context.room(),
+                &strings::agent::already_exists_see_help(agent_id_prefixless, bot.command_prefix()),
+                MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
+            )
+            .await;
 
-    room_config_manager
-        .lock()
-        .await
-        .persist(message_context.room(), &room_config)
-        .await?;
+        return Ok(());
+    }
 
     send_completion_wrap_up(
         bot,
@@ -199,14 +209,24 @@ pub async fn handle_global(
         parsed_config.config.clone(),
     );
 
-    let mut global_config = message_context.global_config().clone();
-    global_config.agents.push(agent_definition.clone());
+    let was_added = globalconfig::update(global_config_manager, |global_config| {
+        add_agent(&mut global_config.agents, &agent_definition)
+    })
+    .await?
+    .is_some();
 
-    global_config_manager
-        .lock()
-        .await
-        .persist(&global_config)
-        .await?;
+    // The agent may have been created by someone else while this agent was being checked.
+    if !was_added {
+        bot.messaging()
+            .send_error_markdown_no_fail(
+                message_context.room(),
+                &strings::agent::already_exists_see_help(agent_id_prefixless, bot.command_prefix()),
+                MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
+            )
+            .await;
+
+        return Ok(());
+    }
 
     send_completion_wrap_up(
         bot,
@@ -387,4 +407,15 @@ async fn send_completion_wrap_up(
             MessageResponseType::InThread(message_context.thread_info().clone()),
         )
         .await;
+}
+
+/// Adds the agent, returning `None` if an agent with the same id already exists.
+fn add_agent(agents: &mut Vec<AgentDefinition>, agent_definition: &AgentDefinition) -> Option<()> {
+    if agents.iter().any(|agent| agent.id == agent_definition.id) {
+        return None;
+    }
+
+    agents.push(agent_definition.clone());
+
+    Some(())
 }

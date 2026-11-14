@@ -1,6 +1,9 @@
 use mxlink::MessageResponseType;
 
-use crate::entity::{MessageContext, roomconfig::RoomSettings};
+use crate::entity::{
+    MessageContext,
+    roomconfig::{self, RoomSettings},
+};
 use crate::{Bot, strings};
 
 pub async fn handle_set<T>(
@@ -12,14 +15,15 @@ pub async fn handle_set<T>(
 where
     T: std::fmt::Display,
 {
-    let mut room_config = message_context.room_config().clone();
-    setter_callback(&mut room_config.settings);
-
-    bot.room_config_manager()
-        .lock()
-        .await
-        .persist(message_context.room(), &room_config)
-        .await?;
+    roomconfig::update(
+        bot.room_config_manager(),
+        message_context.room(),
+        |room_config| {
+            setter_callback(&mut room_config.settings);
+            Some(())
+        },
+    )
+    .await?;
 
     let message = match value {
         Some(value) => strings::room_config::value_was_set_to(value),

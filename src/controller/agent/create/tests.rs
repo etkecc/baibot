@@ -59,3 +59,22 @@ fn agent_config_parsing_works() {
         }
     }
 }
+
+#[test]
+fn add_agent_rejects_duplicate_ids() {
+    let definition = |id: &str| {
+        crate::agent::AgentDefinition::new(
+            id.to_owned(),
+            crate::agent::AgentProvider::OpenAI,
+            serde_yaml_ng::Value::Null,
+        )
+    };
+
+    let mut agents = vec![definition("a")];
+
+    assert_eq!(super::add_agent(&mut agents, &definition("a")), None);
+    assert_eq!(agents.len(), 1);
+
+    assert_eq!(super::add_agent(&mut agents, &definition("b")), Some(()));
+    assert_eq!(agents.len(), 2);
+}

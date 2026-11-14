@@ -1,6 +1,10 @@
 use mxlink::MessageResponseType;
 
-use crate::{Bot, entity::MessageContext, strings};
+use crate::{
+    Bot,
+    entity::{MessageContext, globalconfig},
+    strings,
+};
 
 pub async fn handle_get(bot: &Bot, message_context: &MessageContext) -> anyhow::Result<()> {
     let message = match &message_context.global_config().access.user_patterns {
@@ -38,13 +42,11 @@ pub async fn handle_set(
         return Ok(());
     }
 
-    let mut global_config_manager_guard = bot.global_config_manager().lock().await;
-
-    let mut global_config = global_config_manager_guard.get_or_create().await?;
-
-    global_config.access.user_patterns = patterns.clone();
-
-    global_config_manager_guard.persist(&global_config).await?;
+    globalconfig::update(bot.global_config_manager(), |global_config| {
+        global_config.access.user_patterns = patterns.clone();
+        Some(())
+    })
+    .await?;
 
     let message = match patterns {
         Some(patterns) => strings::access::users_now_match_patterns(patterns),
