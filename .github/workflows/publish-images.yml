@@ -186,8 +186,9 @@ jobs:
           else
             cat "$RUNNER_TEMP/inspect-error"
             python3 -c 'import pathlib,re,sys; sys.exit(not re.search(r"manifest unknown|not found", pathlib.Path(sys.argv[1]).read_text()))' "$RUNNER_TEMP/inspect-error"
-            docker buildx imagetools create --tag "$IMAGE:$BASE" \
-              --annotation "index:org.opencontainers.image.version=$BASE" "$amd64" "$arm64"
+            # No annotations: the platform images are Docker manifests, and a Docker manifest list
+            # can't carry them. Older buildx dropped them silently, newer refuses.
+            docker buildx imagetools create --tag "$IMAGE:$BASE" "$amd64" "$arm64"
             docker buildx imagetools inspect --raw "$IMAGE:$BASE" > "$RUNNER_TEMP/published-index.json"
             python3 release/check-platforms.py --amd64 "$amd64" --arm64 "$arm64" < "$RUNNER_TEMP/published-index.json"
           fi
