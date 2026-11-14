@@ -26,7 +26,7 @@ futures-util = { version = "0.3.*", features = ["sink"] }
 matrix-sdk = { version = "0.19.1", default-features = false }
 mime_guess = "2.0.*"
 mxidwc = "1.0.*"
-mxlink = ">=1.16.1"
+mxlink = ">=1.16.2"
 ogg = "0.9.*"
 opusic-c = "1.6.*"
 quick_cache = "0.7.*"
