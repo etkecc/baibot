@@ -24,7 +24,7 @@ pub fn users_intro() -> String {
 }
 
 pub fn users_access() -> String {
-    "Users can **use all the bot's features** (text-generation, speech-to-text, etc.), but cannot manage the bot's configuration.".to_string()
+    "Users can **use all the bot's features** (text-generation, speech-to-text, etc.) and **change the bot's configuration in a room**, but cannot change its global configuration or create agents.".to_string()
 }
 
 pub fn users_command_get(command_prefix: &str) -> String {
