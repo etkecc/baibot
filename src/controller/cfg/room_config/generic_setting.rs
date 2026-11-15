@@ -17,7 +17,7 @@ where
 {
     roomconfig::update(
         bot.room_config_manager(),
-        message_context.room(),
+        message_context.target_room(),
         |room_config| {
             setter_callback(&mut room_config.settings);
             Some(())

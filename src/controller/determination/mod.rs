@@ -79,7 +79,7 @@ pub fn determine_controller(
     }
 }
 
-fn determine_text_controller(
+pub(super) fn determine_text_controller(
     command_prefix: &str,
     text: &str,
     room_text_generation_prefix_requirement_type: TextGenerationPrefixRequirementType,
@@ -89,6 +89,14 @@ fn determine_text_controller(
 
     if text.starts_with(&format!("{command_prefix} help")) || text == command_prefix {
         return ControllerType::Help;
+    }
+
+    if text == format!("{command_prefix} room list") {
+        return ControllerType::RoomList;
+    }
+
+    if let Some(controller_type) = super::remote::determine_controller(command_prefix, text) {
+        return controller_type;
     }
 
     if let Some(remaining) = text.strip_prefix(&format!("{command_prefix} access")) {

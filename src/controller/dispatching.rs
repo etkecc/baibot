@@ -49,14 +49,11 @@ async fn check_permission(
         return Ok(true);
     }
 
-    let message = match permission {
-        Permission::ManageGlobalConfig => {
-            strings::global_config::no_permissions_to_administrate().to_owned()
+    let message = match (controller_type, permission) {
+        (ControllerType::RoomList | ControllerType::InRoom(_, _), _) => {
+            strings::remote::only_administrators().to_owned()
         }
-        Permission::ManageRoomLocalAgents => {
-            strings::agent::not_allowed_to_manage_room_local_agents_in_room()
-        }
-        Permission::Use | Permission::Invite => strings::access::not_allowed(),
+        (_, permission) => denial_message(permission),
     };
 
     bot.messaging()
@@ -68,6 +65,18 @@ async fn check_permission(
         .await;
 
     Ok(false)
+}
+
+fn denial_message(permission: Permission) -> String {
+    match permission {
+        Permission::ManageGlobalConfig => {
+            strings::global_config::no_permissions_to_administrate().to_owned()
+        }
+        Permission::ManageRoomLocalAgents => {
+            strings::agent::not_allowed_to_manage_room_local_agents_in_room()
+        }
+        Permission::Use | Permission::Invite => strings::access::not_allowed(),
+    }
 }
 
 async fn dispatch(
@@ -86,6 +95,10 @@ async fn dispatch(
             super::cfg::dispatch_controller(controller_type, message_context, bot).await
         }
         ControllerType::Help => super::help::handle(bot, message_context).await,
+        ControllerType::RoomList => super::remote::handle_room_list(bot, message_context).await,
+        ControllerType::InRoom(target, command) => {
+            super::remote::handle_in_room(bot, message_context, target, command).await
+        }
         ControllerType::Unknown => {
             bot.messaging()
                 .send_error_markdown_no_fail(

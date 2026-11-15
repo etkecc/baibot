@@ -27,6 +27,15 @@ pub enum ControllerType {
     ImageGeneration(String),
     ImageEdit(String),
     StickerGeneration(String),
+
+    /// Lists the rooms the bot is in, which can be managed remotely via `InRoom`.
+    RoomList,
+
+    /// Runs a command against another room (`in <room-id-or-alias> <command>`), replying in the current room.
+    InRoom(
+        mxlink::matrix_sdk::ruma::OwnedRoomOrAliasId,
+        Box<ControllerType>,
+    ),
 }
 
 impl ControllerType {
@@ -36,6 +45,9 @@ impl ControllerType {
             Self::Access(controller_type) => controller_type.required_permission(),
             Self::Agent(controller_type) => controller_type.required_permission(),
             Self::Config(controller_type) => controller_type.required_permission(),
+            // Only administrators can manage other rooms for now.
+            // The command itself is checked again against the target room when dispatching it.
+            Self::RoomList | Self::InRoom(_, _) => Permission::ManageGlobalConfig,
             Self::Ignore
             | Self::Help
             | Self::UsageHelp
@@ -144,6 +156,14 @@ mod tests {
             (delete(global()), Permission::ManageGlobalConfig),
             (delete(static_()), Permission::Use),
             (determine("status"), Permission::Use),
+            (ControllerType::RoomList, Permission::ManageGlobalConfig),
+            (
+                ControllerType::InRoom(
+                    "!room:example.com".try_into().unwrap(),
+                    Box::new(ControllerType::Help),
+                ),
+                Permission::ManageGlobalConfig,
+            ),
             (
                 determine("global text-generation context-management-enabled"),
                 Permission::ManageGlobalConfig,

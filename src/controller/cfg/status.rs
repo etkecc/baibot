@@ -25,7 +25,7 @@ pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Resu
     message.push_str(&generate_room_handlers_section(
         &message_context.room_config().settings.handler,
         &agents,
-        bot.command_prefix(),
+        &message_context.command_prefix_for_target_room(bot.command_prefix()),
     ));
     message.push_str("\n\n");
 
@@ -36,7 +36,7 @@ pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Resu
             .fallback_room_settings
             .handler,
         &agents,
-        bot.command_prefix(),
+        &message_context.command_prefix_for_target_room(bot.command_prefix()),
     ));
     message.push_str("\n\n");
 
@@ -44,7 +44,7 @@ pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Resu
     message.push_str(&generate_room_agents_section(
         message_context.room_config(),
         &agents,
-        bot.command_prefix(),
+        &message_context.command_prefix_for_target_room(bot.command_prefix()),
     ));
     message.push_str("\n\n");
 

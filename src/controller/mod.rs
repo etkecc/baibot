@@ -11,6 +11,7 @@ pub mod image;
 pub mod join;
 pub mod provider;
 pub mod reaction;
+pub mod remote;
 pub mod usage;
 mod utils;
 

@@ -76,12 +76,13 @@ async fn delete_room_local_agent(
     // We may unset all handlers in the room config which refer to this agent.
     // We intentionally do not do this, because we do not support "agent edit" yet and ask people to do "agent delete" and "agent create" instead.
     // We'd rather not magically reconfigure the room on agent deletion and obstruct this use case.
-    let was_deleted =
-        roomconfig::update(room_config_manager, message_context.room(), |room_config| {
-            remove_agent(&mut room_config.agents, &agent_id_prefixless)
-        })
-        .await?
-        .is_some();
+    let was_deleted = roomconfig::update(
+        room_config_manager,
+        message_context.target_room(),
+        |room_config| remove_agent(&mut room_config.agents, &agent_id_prefixless),
+    )
+    .await?
+    .is_some();
 
     if !was_deleted {
         bot.messaging()
@@ -98,7 +99,10 @@ async fn delete_room_local_agent(
     bot.messaging()
         .send_success_markdown_no_fail(
             message_context.room(),
-            &strings::agent::removed_room_local(agent_id, bot.command_prefix()),
+            &strings::agent::removed_room_local(
+                agent_id,
+                &message_context.command_prefix_for_target_room(bot.command_prefix()),
+            ),
             MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
         )
         .await;
@@ -135,7 +139,10 @@ async fn delete_global_agent(
     bot.messaging()
         .send_success_markdown_no_fail(
             message_context.room(),
-            &strings::agent::removed_global(agent_id, bot.command_prefix()),
+            &strings::agent::removed_global(
+                agent_id,
+                &message_context.command_prefix_for_target_room(bot.command_prefix()),
+            ),
             MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
         )
         .await;

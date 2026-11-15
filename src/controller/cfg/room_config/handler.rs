@@ -110,13 +110,17 @@ pub async fn handle_set(
         .as_ref()
         .map(|agent_identifier| agent_identifier.as_string());
 
-    roomconfig::update(room_config_manager, message_context.room(), |room_config| {
-        room_config
-            .settings
-            .handler
-            .set_by_purpose(purpose, agent_id);
-        Some(())
-    })
+    roomconfig::update(
+        room_config_manager,
+        message_context.target_room(),
+        |room_config| {
+            room_config
+                .settings
+                .handler
+                .set_by_purpose(purpose, agent_id);
+            Some(())
+        },
+    )
     .await?;
 
     let message = match agent_identifier {

@@ -61,6 +61,12 @@ pub fn administrators_outro() -> String {
         .to_string()
 }
 
+pub fn administrators_remote_management(command_prefix: &str) -> String {
+    format!(
+        "Administrators can also manage other rooms from any room (for example, a private room with the bot), with `config` and `agent` commands:\n- **List** the rooms the bot is in: `{command_prefix} room list`\n- **Run** a command in another room: `{command_prefix} in ROOM_ID_OR_ALIAS COMMAND`, for example `{command_prefix} in #room:example.com config status`"
+    )
+}
+
 pub fn room_local_agent_managers_heading() -> String {
     "💼 Room-local agent managers".to_owned()
 }

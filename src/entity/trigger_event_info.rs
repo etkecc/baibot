@@ -2,7 +2,7 @@ use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId};
 
 use super::MessagePayload;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TriggerEventInfo {
     pub event_id: OwnedEventId,
     pub sender: OwnedUserId,

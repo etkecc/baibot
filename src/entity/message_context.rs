@@ -12,7 +12,10 @@ use super::{
 
 #[derive(Debug)]
 pub struct MessageContext {
+    /// The room the triggering message was sent in. Replies go here.
     room: Room,
+    /// The room the command acts on. Usually the same as `room`, but differs for remote commands (`in <room> ...`).
+    target_room: Room,
     room_config_context: RoomConfigContext,
     admin_whitelist_regexes: Vec<regex::Regex>,
     trigger_event_info: TriggerEventInfo,
@@ -30,6 +33,7 @@ impl MessageContext {
         thread_info: ThreadInfo,
     ) -> Self {
         Self {
+            target_room: room.clone(),
             room,
             room_config_context,
             admin_whitelist_regexes,
@@ -37,6 +41,20 @@ impl MessageContext {
             thread_info,
 
             bot_display_name: None,
+        }
+    }
+
+    /// Returns a copy of this context which acts on `target_room` (with its configuration), while still replying in the original room.
+    pub fn retargeted(&self, target_room: Room, room_config_context: RoomConfigContext) -> Self {
+        Self {
+            room: self.room.clone(),
+            target_room,
+            room_config_context,
+            admin_whitelist_regexes: self.admin_whitelist_regexes.clone(),
+            trigger_event_info: self.trigger_event_info.clone(),
+            thread_info: self.thread_info.clone(),
+
+            bot_display_name: self.bot_display_name.clone(),
         }
     }
 
@@ -49,10 +67,27 @@ impl MessageContext {
         &self.bot_display_name
     }
 
+    /// The room the triggering message was sent in, where replies go.
     pub fn room(&self) -> &Room {
         &self.room
     }
 
+    /// The room the command acts on (whose configuration `room_config()` returns).
+    pub fn target_room(&self) -> &Room {
+        &self.target_room
+    }
+
+    /// The command prefix to suggest for commands acting on the target room:
+    /// the bot's prefix normally, or `<prefix> in <room-id>` when managing another room.
+    pub fn command_prefix_for_target_room(&self, command_prefix: &str) -> String {
+        if self.target_room.room_id() == self.room.room_id() {
+            command_prefix.to_owned()
+        } else {
+            format!("{command_prefix} in {}", self.target_room.room_id())
+        }
+    }
+
+    /// The ID of the room the triggering message was sent in (see `room()`), not of the target room.
     pub fn room_id(&self) -> &RoomId {
         self.room.room_id()
     }

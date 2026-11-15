@@ -38,6 +38,11 @@ The bot can be administrated by users that match some [statically](./configurati
 
 Administrators cannot be changed without adjusting the bot's configuration on the server.
 
+Administrators can also **manage other rooms** from any room (for example, a private room with the bot), using `config` and `agent` commands. Replies are sent to the room the command was sent in.
+
+- **List** the rooms the bot is in: `!bai room list`
+- **Run** a command in another room: `!bai in ROOM_ID_OR_ALIAS COMMAND`, for example `!bai in #room:example.com config status` or `!bai in !abc123:example.com agent list`
+
 
 ### 💼 Room-local agent managers
 

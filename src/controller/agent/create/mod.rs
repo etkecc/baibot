@@ -60,7 +60,10 @@ pub async fn handle_room_local(
         bot.messaging()
             .send_error_markdown_no_fail(
                 message_context.room(),
-                &strings::agent::already_exists_see_help(agent_id_prefixless, bot.command_prefix()),
+                &strings::agent::already_exists_see_help(
+                    agent_id_prefixless,
+                    &message_context.command_prefix_for_target_room(bot.command_prefix()),
+                ),
                 MessageResponseType::InThread(message_context.thread_info().clone()),
             )
             .await;
@@ -98,19 +101,23 @@ pub async fn handle_room_local(
         parsed_config.config.clone(),
     );
 
-    let was_added =
-        roomconfig::update(room_config_manager, message_context.room(), |room_config| {
-            add_agent(&mut room_config.agents, &agent_definition)
-        })
-        .await?
-        .is_some();
+    let was_added = roomconfig::update(
+        room_config_manager,
+        message_context.target_room(),
+        |room_config| add_agent(&mut room_config.agents, &agent_definition),
+    )
+    .await?
+    .is_some();
 
     // The agent may have been created by someone else while this agent was being checked.
     if !was_added {
         bot.messaging()
             .send_error_markdown_no_fail(
                 message_context.room(),
-                &strings::agent::already_exists_see_help(agent_id_prefixless, bot.command_prefix()),
+                &strings::agent::already_exists_see_help(
+                    agent_id_prefixless,
+                    &message_context.command_prefix_for_target_room(bot.command_prefix()),
+                ),
                 MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
             )
             .await;
@@ -171,7 +178,10 @@ pub async fn handle_global(
         bot.messaging()
             .send_error_markdown_no_fail(
                 message_context.room(),
-                &strings::agent::already_exists_see_help(agent_id_prefixless, bot.command_prefix()),
+                &strings::agent::already_exists_see_help(
+                    agent_id_prefixless,
+                    &message_context.command_prefix_for_target_room(bot.command_prefix()),
+                ),
                 MessageResponseType::InThread(message_context.thread_info().clone()),
             )
             .await;
@@ -220,7 +230,10 @@ pub async fn handle_global(
         bot.messaging()
             .send_error_markdown_no_fail(
                 message_context.room(),
-                &strings::agent::already_exists_see_help(agent_id_prefixless, bot.command_prefix()),
+                &strings::agent::already_exists_see_help(
+                    agent_id_prefixless,
+                    &message_context.command_prefix_for_target_room(bot.command_prefix()),
+                ),
                 MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
             )
             .await;
@@ -402,7 +415,7 @@ async fn send_completion_wrap_up(
             &strings::agent::post_creation_helpful_commands(
                 agent_identifier,
                 agent_instance,
-                bot.command_prefix(),
+                &message_context.command_prefix_for_target_room(bot.command_prefix()),
             ),
             MessageResponseType::InThread(message_context.thread_info().clone()),
         )

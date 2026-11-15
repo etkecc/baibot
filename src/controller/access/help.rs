@@ -14,7 +14,10 @@ pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Resu
         message_context,
     ));
     message.push_str("\n\n");
-    message.push_str(&build_section_administrators(bot.admin_patterns()));
+    message.push_str(&build_section_administrators(
+        bot.command_prefix(),
+        bot.admin_patterns(),
+    ));
     message.push_str("\n\n");
     message.push_str(&build_section_room_local_agent_managers(
         bot.command_prefix(),
@@ -100,7 +103,7 @@ fn build_section_users(
     message
 }
 
-fn build_section_administrators(admin_patterns: &[String]) -> String {
+fn build_section_administrators(command_prefix: &str, admin_patterns: &[String]) -> String {
     let mut message = String::new();
 
     message.push_str(&format!(
@@ -115,6 +118,10 @@ fn build_section_administrators(admin_patterns: &[String]) -> String {
     ));
     message.push_str("\n\n");
     message.push_str(&strings::help::access::administrators_outro());
+    message.push_str("\n\n");
+    message.push_str(&strings::help::access::administrators_remote_management(
+        command_prefix,
+    ));
 
     message
 }

@@ -8,6 +8,7 @@ pub mod image_edit;
 pub mod image_generation;
 pub mod introduction;
 pub mod provider;
+pub mod remote;
 pub mod room_config;
 pub mod speech_to_text;
 pub mod text_to_speech;
