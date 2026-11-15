@@ -31,7 +31,7 @@ Whether the bot responds depends on:
 
 Room messages start a threaded conversation where you can continue back-and-forth communication with the bot. Using [on-demand involvement](./features.md#on-demand-involvement), you can can also mention the bot to provoke it to get involved in any conversation thread or reply chain.
 
-Unless you've enabled the [♻️ Context Management](./features.md#️-context-management) feature, all messages will be sent to the agent's API each time. If the context management feature is enabled, older messages may be dropped.
+Unless you've enabled the [♻️ Context Management](./configuration/text-generation.md#️-context-management) feature, all messages will be sent to the agent's API each time. If the context management feature is enabled, older messages may be dropped.
 
 
 ### 🗣️ Text-to-Speech
@@ -61,7 +61,7 @@ If there's a speech-to-text handler agent configured, the bot **may** transcribe
 
 See a [🖼️ Screenshot of the default flow for Speech-to-Text and Text-Generation](./screenshots/speech-to-text-default-flow.webp).
 
-The speech-to-text feature triggers automatically by default, but can be adjusted via the [🦻 Speech-to-Text / 🪄 Flow Type](./features.md#-speech-to-text-flow-type) setting.
+The speech-to-text feature triggers automatically by default, but can be adjusted via the [🦻 Speech-to-Text / 🪄 Flow Type](./configuration/speech-to-text.md#-flow-type) setting.
 
 If all your messages are in the same language, you can improve accuracy & latency by configuring the language (see [🦻 Speech-to-Text / 🔤 Language](./configuration/speech-to-text.md#-language)).
 
@@ -101,13 +101,13 @@ You can then respond in the same message thread with:
 
 #### 🫵 Creating stickers
 
-A variation of [creating images](#creating-images) is creating "sticker images".
+A variation of [creating images](#️-creating-images) is creating "sticker images".
 
 See a [🖼️ Screenshot of the Sticker Creation feature](./screenshots/sticker-generation.webp).
 
 To create a sticker, send a command like `!bai sticker A huge ramen bowl with lots of chashu and a mountain of beansprouts on top`.
 
-The difference from [creating images](#creating-images) is that the bot will:
+The difference from [creating images](#️-creating-images) is that the bot will:
 
 - request a supported square size (`1024x1024` for OpenAI GPT image models, `256x256` for DALL-E 2)
 - potentially switch to a different (cheaper or otherwise more suitable) model, if available

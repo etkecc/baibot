@@ -91,7 +91,7 @@ Text-to-Speech is the bot's ability to **turn text messages into voice messages*
 
 It can be performed **on the bot's own text messages** (responses to yours due to [💬 Text Generation](#-text-generation)) and/or **on your own text messages**.
 
-Text-to-Speech can be enabled to be done automatically or on-demand (only after reacting to a message with 🗣️), and is configurable for different message types ([🪄 Bot Messages Flow Type](./configuration/README.md#-bot-messages-flow-type) vs [🪄 User Messages Flow Type](./configuration/README.md#-user-messages-flow-type)).
+Text-to-Speech can be enabled to be done automatically or on-demand (only after reacting to a message with 🗣️), and is configurable for different message types ([🪄 Bot Messages Flow Type](./configuration/text-to-speech.md#-bot-messages-flow-type) vs [🪄 User Messages Flow Type](./configuration/text-to-speech.md#-user-messages-flow-type)).
 
 By default, the bot **doesn't** perform text-to-speech. It can be configured for [Seamless voice interaction](#seamless-voice-interaction), where you can **speak to the bot** (instead of typing) and then **hear its responses**.
 
@@ -182,7 +182,7 @@ You may also wish to see:
 
 - [🛠️ Configuration / 🖌️ Image Generation](./configuration/image-generation.md) for configuration options related to Image Generation
 - [📖 Usage / Image Generation / 🖌️ Creating Images](./usage.md#-creating-images) section for more details on how to use the bot for Image Creation in a room
-- [🖌️ Image Editing](#️-image-editing) - another image generation feature
+- [🖌️ Image Editing](#-image-editing) - another image generation feature
 - [🫵 Sticker Creation](#-sticker-creation) - a special case of Image Creation
 
 
