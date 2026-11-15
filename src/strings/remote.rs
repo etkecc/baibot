@@ -1,7 +1,3 @@
-pub fn only_administrators() -> &'static str {
-    "Only administrators can manage other rooms."
-}
-
 pub fn missing_command(command_prefix: &str) -> String {
     format!(
         "Specify a command to run in the room, for example: `{command_prefix} in !room-id:example.com config status`"
@@ -24,13 +20,28 @@ pub fn bot_not_in_room(room: &str) -> String {
     format!("The bot is not joined to the room `{room}`.")
 }
 
-pub fn room_list_none() -> &'static str {
-    "The bot is not joined to any rooms."
+pub fn cannot_manage_room(room: &str) -> String {
+    format!(
+        "You cannot manage {} from here: the bot is not in that room, or you are not a member of it.",
+        crate::utils::text::inline_code(room)
+    )
 }
 
-pub fn room_list_intro(command_prefix: &str) -> String {
+pub fn room_list_none() -> &'static str {
+    "There are no rooms you can manage."
+}
+
+pub fn room_list_intro() -> &'static str {
+    "The bot is joined to these rooms:"
+}
+
+pub fn room_list_intro_non_admin() -> &'static str {
+    "You can manage these rooms (you are a member and have a management permission there):"
+}
+
+pub fn room_list_how_to_manage(command_prefix: &str) -> String {
     format!(
-        "The bot is joined to these rooms. To manage one of them from here, send `{command_prefix} in <room-id-or-alias> <command>`, for example `{command_prefix} in !room-id:example.com config status`."
+        "💡 To manage one of them from here, send `{command_prefix} in <room-id-or-alias> <command>`, for example `{command_prefix} in !room-id:example.com config status`."
     )
 }
 

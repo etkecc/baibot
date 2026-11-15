@@ -48,17 +48,10 @@ async fn check_permission(
         return Ok(true);
     }
 
-    let message = match (controller_type, permission) {
-        (ControllerType::RoomList | ControllerType::InRoom(_, _), _) => {
-            strings::remote::only_administrators().to_owned()
-        }
-        (_, permission) => denial_message(permission),
-    };
-
     bot.messaging()
         .send_error_markdown_no_fail(
             message_context.room(),
-            &message,
+            &denial_message(permission),
             MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
         )
         .await;

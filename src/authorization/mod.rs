@@ -72,6 +72,10 @@ impl Permission {
         Self::ManageAccess,
     ];
 
+    /// Permissions for managing a room (which also allow managing it remotely).
+    pub const MANAGEMENT: [Permission; 3] =
+        [Self::ManageConfig, Self::ManageAgents, Self::ManageAccess];
+
     /// The name used in access rules and commands.
     pub fn name(self) -> &'static str {
         match self {

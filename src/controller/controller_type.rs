@@ -48,9 +48,9 @@ impl ControllerType {
             Self::Access(controller_type) => controller_type.required_permission(),
             Self::Agent(controller_type) => controller_type.required_permission(),
             Self::Config(controller_type) => controller_type.required_permission(),
-            // Only administrators can manage other rooms for now.
-            // The command itself is checked again against the target room when dispatching it.
-            Self::RoomList | Self::InRoom(_, _) => Some(Permission::Administer),
+            // Membership and permissions in the listed or target rooms are checked when handling these.
+            // The command run in another room is checked against that room when dispatching it.
+            Self::RoomList | Self::InRoom(_, _) => None,
             Self::ImageGeneration(_) | Self::ImageEdit(_) | Self::StickerGeneration(_) => {
                 Some(Permission::ImageGeneration)
             }
@@ -137,13 +137,13 @@ mod tests {
             (delete(global()), Some(Permission::Administer)),
             (delete(static_()), None),
             (determine("status"), Some(Permission::ManageConfig)),
-            (ControllerType::RoomList, Some(Permission::Administer)),
+            (ControllerType::RoomList, None),
             (
                 ControllerType::InRoom(
                     "!room:example.com".try_into().unwrap(),
                     Box::new(ControllerType::Help),
                 ),
-                Some(Permission::Administer),
+                None,
             ),
             (
                 determine("global text-generation context-management-enabled"),
