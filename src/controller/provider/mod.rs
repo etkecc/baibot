@@ -9,8 +9,9 @@ pub fn determine_controller(_text: &str) -> ControllerType {
 }
 
 pub async fn handle_help(message_context: &MessageContext, bot: &Bot) -> anyhow::Result<()> {
-    let can_create_global_agents = message_context.sender_can_manage_global_config();
-    let can_create_room_local_agents = message_context.sender_can_manage_room_local_agents()?;
+    let can_create_global_agents = message_context.sender_is_admin();
+    let can_create_room_local_agents =
+        message_context.sender_can(crate::authorization::Permission::ManageAgents);
 
     let mut message = String::new();
     message.push_str(&format!("## {}", strings::help::provider::heading()));

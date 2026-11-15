@@ -3,9 +3,9 @@ use mxlink::MessageResponseType;
 use crate::{Bot, entity::MessageContext, strings};
 
 pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Result<()> {
-    let sender_can_manage_global_config = message_context.sender_can_manage_global_config();
+    let sender_can_manage_global_config = message_context.sender_is_admin();
     let sender_can_manage_room_local_agents =
-        message_context.sender_can_manage_room_local_agents()?;
+        message_context.sender_can(crate::authorization::Permission::ManageAgents);
 
     let mut message = String::from("");
     message.push_str(&format!("## {}\n\n", strings::help::heading_introduction()));

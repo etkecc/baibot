@@ -14,7 +14,7 @@ use mxlink::ThreadInfo;
 
 use tracing::Instrument;
 
-use crate::authorization::{Authorizer, Permission};
+use crate::authorization::authorizer_for_room;
 use crate::entity::{MessageContext, MessagePayload, RoomConfigContext, TriggerEventInfo};
 
 #[derive(Clone)]
@@ -102,12 +102,27 @@ impl Reacting {
 
         tracing::trace!(?global_config, "Global config");
 
-        let sender_can_use = Authorizer::new(self.bot.admin_pattern_regexes(), &global_config)
-            .allows(event.sender(), Permission::Use)
+        let room_config = self
+            .bot
+            .room_config_manager()
+            .lock()
+            .await
+            .get_or_create_for_room(&room)
+            .await
             .map_err(|err| CallbackError::Unknown(err.into()))?;
 
-        if !sender_can_use {
-            tracing::debug!("Ignoring reaction from non-admin/non-allowed user");
+        tracing::trace!(?room_config, "Room config");
+
+        let authorizer = authorizer_for_room(
+            self.bot.admin_pattern_regexes(),
+            &global_config,
+            &room_config,
+            &room,
+        )
+        .await;
+
+        if !authorizer.allows_anything_in_room(event.sender()) {
+            tracing::debug!("Ignoring reaction from a user without any permission in this room");
             return Ok(());
         }
 
@@ -200,17 +215,6 @@ impl Reacting {
 
         let thread_info = ThreadInfo::new(thread_root_event_id, reacted_to_event_id.clone());
 
-        let room_config = self
-            .bot
-            .room_config_manager()
-            .lock()
-            .await
-            .get_or_create_for_room(&room)
-            .await
-            .map_err(|err| CallbackError::Unknown(err.into()))?;
-
-        tracing::trace!(?room_config, "Room config");
-
         let room_config_context =
             RoomConfigContext::new(global_config.clone(), room_config.clone());
 
@@ -228,7 +232,7 @@ impl Reacting {
         let message_context = MessageContext::new(
             room,
             room_config_context,
-            self.bot.admin_pattern_regexes().clone(),
+            authorizer,
             trigger_event_info,
             thread_info,
         );

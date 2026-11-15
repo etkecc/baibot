@@ -6,6 +6,7 @@ use mxlink::matrix_sdk::{Room, RoomMemberships};
 use serde::{Deserialize, Serialize};
 
 use crate::agent::AgentDefinition;
+use crate::authorization::AccessRule;
 
 mod handler;
 mod speech_to_text;
@@ -42,6 +43,16 @@ pub struct RoomConfig {
     pub settings: RoomSettings,
 
     pub agents: Vec<AgentDefinition>,
+
+    #[serde(default)]
+    pub access: RoomConfigAccess,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct RoomConfigAccess {
+    /// This room's access rules (see `crate::authorization`), on top of the global ones.
+    #[serde(default)]
+    pub rules: Vec<AccessRule>,
 }
 
 impl RoomConfigTrait for RoomConfig {}

@@ -7,6 +7,7 @@ use mxlink::MessageResponseType;
 use mxlink::matrix_sdk::ruma::{OwnedRoomOrAliasId, RoomAliasId, RoomId, RoomOrAliasId};
 use mxlink::matrix_sdk::{Room, RoomState};
 
+use crate::authorization::authorizer_for_room;
 use crate::entity::roomconfig::TextGenerationPrefixRequirementType;
 use crate::entity::{MessageContext, RoomConfigContext};
 use crate::{Bot, strings};
@@ -99,10 +100,18 @@ pub async fn handle_in_room(
         .get_or_create_for_room(&target_room)
         .await?;
 
+    let authorizer = authorizer_for_room(
+        bot.admin_pattern_regexes(),
+        message_context.global_config(),
+        &room_config,
+        &target_room,
+    )
+    .await;
+
     let room_config_context =
         RoomConfigContext::new(message_context.global_config().clone(), room_config);
 
-    let message_context = message_context.retargeted(target_room, room_config_context);
+    let message_context = message_context.retargeted(target_room, room_config_context, authorizer);
 
     tracing::info!(
         target_room_id = message_context.target_room().room_id().as_str(),

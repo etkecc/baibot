@@ -119,25 +119,26 @@ pub fn determine_controller(command_prefix: &str, text: &str) -> ControllerType 
 }
 
 impl AgentControllerType {
-    pub fn required_permission(&self) -> Permission {
+    pub fn required_permission(&self) -> Option<Permission> {
         match self {
-            Self::List | Self::Help => Permission::Use,
-            Self::CreateRoomLocal { .. } => Permission::ManageRoomLocalAgents,
-            Self::CreateGlobal { .. } => Permission::ManageGlobalConfig,
+            // The list only shows agent identifiers, capabilities and providers (not definitions).
+            Self::List | Self::Help => None,
+            Self::CreateRoomLocal { .. } => Some(Permission::ManageAgents),
+            Self::CreateGlobal { .. } => Some(Permission::Administer),
             Self::Details {
                 agent_identifier, ..
             } => match agent_identifier {
-                PublicIdentifier::DynamicRoomLocal(_) => Permission::ManageRoomLocalAgents,
+                PublicIdentifier::DynamicRoomLocal(_) => Some(Permission::ManageAgents),
                 // Static and global agents hold the operator's credentials.
                 PublicIdentifier::DynamicGlobal(_) | PublicIdentifier::Static(_) => {
-                    Permission::ManageGlobalConfig
+                    Some(Permission::Administer)
                 }
             },
             Self::Delete(agent_identifier) => match agent_identifier {
-                PublicIdentifier::DynamicRoomLocal(_) => Permission::ManageRoomLocalAgents,
-                PublicIdentifier::DynamicGlobal(_) => Permission::ManageGlobalConfig,
+                PublicIdentifier::DynamicRoomLocal(_) => Some(Permission::ManageAgents),
+                PublicIdentifier::DynamicGlobal(_) => Some(Permission::Administer),
                 // Nobody can delete static agents, which the deletion handler explains.
-                PublicIdentifier::Static(_) => Permission::Use,
+                PublicIdentifier::Static(_) => None,
             },
         }
     }

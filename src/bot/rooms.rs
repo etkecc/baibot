@@ -52,9 +52,9 @@ impl Rooms {
             .await
             .map_err(|e| CallbackError::Unknown(e.into()))?;
 
+        // Only global rules grant invitations, so no room is needed.
         let sender_can_invite = Authorizer::new(self.bot.admin_pattern_regexes(), &global_config)
-            .allows(&room_member.sender, Permission::Invite)
-            .map_err(|e| CallbackError::Unknown(e.into()))?;
+            .allows(&room_member.sender, Permission::Invite);
 
         if !sender_can_invite {
             return Ok(InvitationDecision::Reject);

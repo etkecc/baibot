@@ -8,7 +8,8 @@ pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Resu
 
     let mut message = String::new();
 
-    let can_manage_agents = message_context.sender_can_manage_room_local_agents()?;
+    let can_manage_agents =
+        message_context.sender_can(crate::authorization::Permission::ManageAgents);
 
     message.push_str(&format!("## {}", strings::help::agent::heading()));
     message.push_str("\n\n");
@@ -36,7 +37,7 @@ pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Resu
         ));
         message.push('\n');
 
-        if message_context.sender_can_manage_global_config() {
+        if message_context.sender_is_admin() {
             message.push_str(&strings::help::agent::create_agent_global(
                 bot.command_prefix(),
             ));

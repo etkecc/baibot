@@ -14,7 +14,7 @@ use mxlink::{CallbackError, MessageResponseType};
 
 use tracing::Instrument;
 
-use crate::authorization::{Authorizer, Permission};
+use crate::authorization::authorizer_for_room;
 use crate::{
     conversation::matrix::determine_interaction_context_for_room_event,
     entity::{MessageContext, MessagePayload, RoomConfigContext, TriggerEventInfo},
@@ -288,12 +288,16 @@ impl Messaging {
 
         tracing::trace!(?room_config, "Room config");
 
-        let sender_can_use = Authorizer::new(self.bot.admin_pattern_regexes(), &global_config)
-            .allows(&event.sender, Permission::Use)
-            .map_err(|err| CallbackError::Unknown(err.into()))?;
+        let authorizer = authorizer_for_room(
+            self.bot.admin_pattern_regexes(),
+            &global_config,
+            &room_config,
+            &room,
+        )
+        .await;
 
-        if !sender_can_use {
-            tracing::debug!("Ignoring message from non-admin/non-allowed user");
+        if !authorizer.allows_anything_in_room(&event.sender) {
+            tracing::debug!("Ignoring message from a user without any permission in this room");
             return Ok(());
         }
 
@@ -346,7 +350,7 @@ impl Messaging {
         let message_context = MessageContext::new(
             room.clone(),
             room_config_context,
-            self.bot.admin_pattern_regexes().clone(),
+            authorizer,
             trigger_event_info,
             interaction_context.thread_info.clone(),
         )

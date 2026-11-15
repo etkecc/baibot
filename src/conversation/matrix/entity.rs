@@ -1,10 +1,9 @@
 use chrono::{DateTime, Utc};
-use regex::Regex;
 
-use mxlink::matrix_sdk::ruma::OwnedUserId;
 use mxlink::matrix_sdk::ruma::events::room::message::{
     FileMessageEventContent, ImageMessageEventContent,
 };
+use mxlink::matrix_sdk::ruma::{OwnedUserId, UserId};
 use mxlink::mime::Mime;
 
 #[derive(Clone)]
@@ -34,21 +33,33 @@ pub struct MatrixMessageProcessingParams {
     /// The prefixes that will be stripped when processing the 1st message in the context (thread or reply chain).
     pub(crate) first_message_prefixes_to_strip: Vec<String>,
 
-    /// A list of users whose messages are allowed.
-    /// If None, all messages are allowed.
-    /// If Some, only messages from the allowed users (and the bot itself, `bot_user_id`) are allowed.
-    pub(crate) allowed_users: Option<Vec<Regex>>,
+    /// Selects the senders whose messages are included (the bot's own messages always are).
+    pub(crate) sender_filter: SenderFilter,
+}
+
+/// Tells whether messages from a given sender are to be included in a conversation.
+#[derive(Clone)]
+pub struct SenderFilter(std::sync::Arc<dyn Fn(&UserId) -> bool + Send + Sync>);
+
+impl SenderFilter {
+    pub fn new(filter: impl Fn(&UserId) -> bool + Send + Sync + 'static) -> Self {
+        Self(std::sync::Arc::new(filter))
+    }
+
+    pub fn allows(&self, user_id: &UserId) -> bool {
+        (self.0)(user_id)
+    }
 }
 
 impl MatrixMessageProcessingParams {
-    pub fn new(bot_user_id: OwnedUserId, allowed_users: Option<Vec<Regex>>) -> Self {
+    pub fn new(bot_user_id: OwnedUserId, sender_filter: SenderFilter) -> Self {
         Self {
             bot_user_id,
             bot_user_prefixes_to_strip: vec![],
 
             first_message_prefixes_to_strip: vec![],
 
-            allowed_users,
+            sender_filter,
         }
     }
 

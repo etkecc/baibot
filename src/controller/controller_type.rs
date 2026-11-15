@@ -40,25 +40,30 @@ pub enum ControllerType {
 
 impl ControllerType {
     /// The permission the sender needs for this command, checked centrally before dispatching.
-    pub fn required_permission(&self) -> Permission {
+    ///
+    /// `None` means that the command is available to anyone who may talk to the bot in the room
+    /// (see `Authorizer::allows_anything_in_room`), which the incoming message gate already checks.
+    pub fn required_permission(&self) -> Option<Permission> {
         match self {
             Self::Access(controller_type) => controller_type.required_permission(),
             Self::Agent(controller_type) => controller_type.required_permission(),
             Self::Config(controller_type) => controller_type.required_permission(),
             // Only administrators can manage other rooms for now.
             // The command itself is checked again against the target room when dispatching it.
-            Self::RoomList | Self::InRoom(_, _) => Permission::ManageGlobalConfig,
+            Self::RoomList | Self::InRoom(_, _) => Some(Permission::Administer),
+            Self::ImageGeneration(_) | Self::ImageEdit(_) | Self::StickerGeneration(_) => {
+                Some(Permission::ImageGeneration)
+            }
+            // Chat completion runs several stages (speech-to-text, text generation, text-to-speech),
+            // each checking its own permission.
+            Self::ChatCompletion(_) => None,
             Self::Ignore
             | Self::Help
             | Self::UsageHelp
             | Self::Unknown
             | Self::Error(_)
             | Self::ErrorInThread(_, _)
-            | Self::ProviderHelp
-            | Self::ChatCompletion(_)
-            | Self::ImageGeneration(_)
-            | Self::ImageEdit(_)
-            | Self::StickerGeneration(_) => Permission::Use,
+            | Self::ProviderHelp => None,
         }
     }
 }
@@ -91,90 +96,82 @@ mod tests {
             |agent_identifier| ControllerType::Agent(AgentControllerType::Delete(agent_identifier));
 
         let cases = vec![
-            (ControllerType::Help, Permission::Use),
+            (ControllerType::Help, None),
+            (determine("help"), None),
             (
                 ControllerType::ImageGeneration("x".to_owned()),
-                Permission::Use,
+                Some(Permission::ImageGeneration),
             ),
-            (
-                ControllerType::Access(AccessControllerType::Help),
-                Permission::Use,
-            ),
+            (ControllerType::Access(AccessControllerType::Help), None),
             (
                 ControllerType::Access(AccessControllerType::GetUsers),
-                Permission::ManageGlobalConfig,
+                Some(Permission::Administer),
             ),
             (
                 ControllerType::Access(AccessControllerType::SetRoomLocalAgentManagers(None)),
-                Permission::ManageGlobalConfig,
+                Some(Permission::Administer),
             ),
-            (
-                ControllerType::Agent(AgentControllerType::List),
-                Permission::Use,
-            ),
+            (ControllerType::Agent(AgentControllerType::List), None),
             (
                 ControllerType::Agent(AgentControllerType::CreateRoomLocal {
                     provider: "openai".to_owned(),
                     agent_id: "id".to_owned(),
                 }),
-                Permission::ManageRoomLocalAgents,
+                Some(Permission::ManageAgents),
             ),
             (
                 ControllerType::Agent(AgentControllerType::CreateGlobal {
                     provider: "openai".to_owned(),
                     agent_id: "id".to_owned(),
                 }),
-                Permission::ManageGlobalConfig,
+                Some(Permission::Administer),
             ),
-            (details(room_local()), Permission::ManageRoomLocalAgents),
+            (details(room_local()), Some(Permission::ManageAgents)),
             (
                 ControllerType::Agent(AgentControllerType::Details {
                     agent_identifier: static_(),
                     reveal_secrets: true,
                 }),
-                Permission::ManageGlobalConfig,
+                Some(Permission::Administer),
             ),
             (
                 ControllerType::Access(AccessControllerType::SetUsers(None)),
-                Permission::ManageGlobalConfig,
+                Some(Permission::Administer),
             ),
             (
                 ControllerType::Access(AccessControllerType::GetRoomLocalAgentManagers),
-                Permission::ManageGlobalConfig,
+                Some(Permission::Administer),
             ),
-            (
-                ControllerType::Agent(AgentControllerType::Help),
-                Permission::Use,
-            ),
+            (ControllerType::Agent(AgentControllerType::Help), None),
             (
                 determine("room text-generation context-management-enabled"),
-                Permission::Use,
+                Some(Permission::ManageConfig),
             ),
-            (details(global()), Permission::ManageGlobalConfig),
-            (details(static_()), Permission::ManageGlobalConfig),
-            (delete(room_local()), Permission::ManageRoomLocalAgents),
-            (delete(global()), Permission::ManageGlobalConfig),
-            (delete(static_()), Permission::Use),
-            (determine("status"), Permission::Use),
-            (ControllerType::RoomList, Permission::ManageGlobalConfig),
+            (details(global()), Some(Permission::Administer)),
+            (details(static_()), Some(Permission::Administer)),
+            (delete(room_local()), Some(Permission::ManageAgents)),
+            (delete(global()), Some(Permission::Administer)),
+            (delete(static_()), None),
+            (determine("status"), Some(Permission::ManageConfig)),
+            (ControllerType::RoomList, Some(Permission::Administer)),
             (
                 ControllerType::InRoom(
                     "!room:example.com".try_into().unwrap(),
                     Box::new(ControllerType::Help),
                 ),
-                Permission::ManageGlobalConfig,
+                Some(Permission::Administer),
             ),
             (
                 determine("global text-generation context-management-enabled"),
-                Permission::ManageGlobalConfig,
+                Some(Permission::Administer),
             ),
             (
                 determine("room set-handler catch-all static/agent-id"),
-                Permission::Use,
+                Some(Permission::ManageConfig),
             ),
             (
                 determine("global set-handler catch-all static/agent-id"),
-                Permission::ManageGlobalConfig,
+                Some(Permission::Administer),
             ),
         ];
 

@@ -64,14 +64,14 @@ pub fn determine_controller(text: &str) -> ControllerType {
 }
 
 impl AccessControllerType {
-    pub fn required_permission(&self) -> Permission {
+    pub fn required_permission(&self) -> Option<Permission> {
         match self {
             // Anyone can see the help, so that all users can get familiar with how the bot's access system works.
-            Self::Help => Permission::Use,
+            Self::Help => None,
             Self::GetUsers
             | Self::SetUsers(_)
             | Self::GetRoomLocalAgentManagers
-            | Self::SetRoomLocalAgentManagers(_) => Permission::ManageGlobalConfig,
+            | Self::SetRoomLocalAgentManagers(_) => Some(Permission::Administer),
         }
     }
 }

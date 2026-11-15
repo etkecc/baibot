@@ -1,3 +1,4 @@
+use crate::authorization::Permission;
 use mxlink::{MatrixLink, MessageResponseType};
 
 use tracing::Instrument;
@@ -37,11 +38,25 @@ pub async fn handle(
         return send_guide(bot, message_context).await;
     }
 
+    if !super::thread_starter_may_generate(bot, message_context).await? {
+        bot.messaging()
+            .send_error_markdown_no_fail(
+                message_context.room(),
+                &strings::image_generation::thread_started_without_permission(
+                    Permission::ImageGeneration.name(),
+                ),
+                response_type,
+            )
+            .await;
+
+        return Ok(());
+    }
+
     let _typing_notice_guard = bot.start_typing_notice(message_context.room()).await;
 
     let params = MatrixMessageProcessingParams::new(
         bot.user_id().to_owned(),
-        Some(message_context.combined_admin_and_user_regexes()),
+        message_context.context_sender_filter(Permission::ImageGeneration, false),
     );
 
     let conversation = create_llm_conversation_for_matrix_thread(

@@ -24,6 +24,6 @@ pub fn failed_to_parse_patterns(err: &str) -> String {
     format!("Failed to parse patterns: {}", err)
 }
 
-pub fn not_allowed() -> String {
-    "You are not allowed to do this.".to_owned()
+pub fn missing_permission(permission_name: &str) -> String {
+    format!("You are not allowed to do this here: it requires the `{permission_name}` permission.")
 }

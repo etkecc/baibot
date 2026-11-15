@@ -10,6 +10,7 @@ use crate::agent::ControllerTrait;
 use crate::agent::provider::{
     SpeechToTextParams, TextGenerationParams, TextGenerationPromptVariables,
 };
+use crate::authorization::Permission;
 use crate::controller::utils::agent::get_effective_agent_for_purpose_or_complain;
 use crate::conversation::matrix::MatrixMessageProcessingParams;
 use crate::entity::MessagePayload;
@@ -54,6 +55,19 @@ pub enum ChatCompletionControllerType {
 
     ThreadMention,
     ReplyMention,
+}
+
+impl ChatCompletionControllerType {
+    /// Tells whether the user addressed the bot explicitly (command prefix or mention),
+    /// as opposed to the bot reacting to a message on its own (depending on room settings).
+    fn is_explicit_invocation(&self) -> bool {
+        match self {
+            Self::TextCommand | Self::TextMention | Self::ThreadMention | Self::ReplyMention => {
+                true
+            }
+            Self::TextDirect | Self::Audio | Self::Image | Self::File => false,
+        }
+    }
 }
 
 struct TextToSpeechEligiblePayload {
@@ -118,6 +132,13 @@ pub async fn handle(
             }
         };
 
+        if !message_context.sender_can(Permission::SpeechToText) {
+            tracing::debug!(
+                "Ignoring audio message from a user without the speech-to-text permission"
+            );
+            return Ok(());
+        }
+
         if _typing_notice_guard.is_none() {
             _typing_notice_guard = Some(bot.start_typing_notice(message_context.room()).await);
         }
@@ -147,138 +168,181 @@ pub async fn handle(
         // Let's proceed below where we potentially handle text-generation.
     }
 
-    let text_to_speech_stage_params: Option<TextToSpeechParams> = if message_context
+    let should_generate_text = message_context
         .room_config_context()
-        .should_auto_text_generate(original_message_is_audio)
-    {
-        if _typing_notice_guard.is_none() {
-            _typing_notice_guard = Some(bot.start_typing_notice(message_context.room()).await);
-        }
+        .should_auto_text_generate(original_message_is_audio);
 
-        let speech_to_text_created_event_id_reaction_event_id =
-            if let Some(speech_to_text_created_event_id) = speech_to_text_created_event_id {
-                let reaction_event_response = bot
-                    .reacting()
-                    .react_no_fail(
-                        message_context.room(),
-                        speech_to_text_created_event_id.clone(),
-                        strings::PROGRESS_INDICATOR_EMOJI.to_owned(),
-                    )
-                    .await;
+    let sender_can_generate_text = message_context.sender_can(Permission::TextGeneration);
 
-                reaction_event_response
-                    .map(|reaction_event_response| reaction_event_response.event_id)
-            } else {
-                None
-            };
-
-        let response_type = match controller_type {
-            // When we're triggered via a reply mention, we reply to the message that triggered us.
-            ChatCompletionControllerType::ReplyMention => {
-                MessageResponseType::Reply(message_context.thread_info().last_event_id.clone())
-            }
-
-            // In all other cases, we're dealing with a threaded conversation, so we reply in the thread.
-            _ => MessageResponseType::InThread(message_context.thread_info().clone()),
-        };
-
-        let text_to_speech_eligible_payload = handle_stage_text_generation(
-            bot,
-            matrix_link.clone(),
-            message_context,
-            controller_type,
-            response_type.clone(),
-        )
-        .await;
-
-        if let Some(speech_to_text_created_event_id_reaction_event_id) =
-            speech_to_text_created_event_id_reaction_event_id
-        {
+    if should_generate_text && !sender_can_generate_text {
+        if controller_type.is_explicit_invocation() {
             bot.messaging()
-                .redact_event_no_fail(
+                .send_error_markdown_no_fail(
                     message_context.room(),
-                    speech_to_text_created_event_id_reaction_event_id,
-                    Some("Done".to_owned()),
+                    &strings::access::missing_permission(Permission::TextGeneration.name()),
+                    MessageResponseType::Reply(message_context.event_id().clone()),
                 )
                 .await;
+
+            return Ok(());
         }
 
-        // If no text was generated (due to some issue), there's no point in continuing.
-        let Some(text_to_speech_eligible_payload) = text_to_speech_eligible_payload else {
-            return Ok(());
-        };
+        // Not falling back to the flow for rooms which don't generate text automatically,
+        // which would offer text-to-speech for the user's own message instead.
+        tracing::debug!("Not generating text for a user without the text-generation permission");
+        return Ok(());
+    }
 
-        match message_context
-            .room_config_context()
-            .text_to_speech_bot_messages_flow_type()
-        {
-            TextToSpeechBotMessagesFlowType::Never => None,
-            TextToSpeechBotMessagesFlowType::OnDemandAlways => Some(TextToSpeechParams::Offer(
-                text_to_speech_eligible_payload,
-                response_type,
-            )),
-            TextToSpeechBotMessagesFlowType::OnDemandForVoice => {
-                if original_message_is_audio {
-                    Some(TextToSpeechParams::Offer(
-                        text_to_speech_eligible_payload,
-                        response_type,
-                    ))
+    let text_to_speech_stage_params: Option<TextToSpeechParams> =
+        if should_generate_text && sender_can_generate_text {
+            if _typing_notice_guard.is_none() {
+                _typing_notice_guard = Some(bot.start_typing_notice(message_context.room()).await);
+            }
+
+            let speech_to_text_created_event_id_reaction_event_id =
+                if let Some(speech_to_text_created_event_id) = speech_to_text_created_event_id {
+                    let reaction_event_response = bot
+                        .reacting()
+                        .react_no_fail(
+                            message_context.room(),
+                            speech_to_text_created_event_id.clone(),
+                            strings::PROGRESS_INDICATOR_EMOJI.to_owned(),
+                        )
+                        .await;
+
+                    reaction_event_response
+                        .map(|reaction_event_response| reaction_event_response.event_id)
                 } else {
                     None
+                };
+
+            let response_type = match controller_type {
+                // When we're triggered via a reply mention, we reply to the message that triggered us.
+                ChatCompletionControllerType::ReplyMention => {
+                    MessageResponseType::Reply(message_context.thread_info().last_event_id.clone())
                 }
+
+                // In all other cases, we're dealing with a threaded conversation, so we reply in the thread.
+                _ => MessageResponseType::InThread(message_context.thread_info().clone()),
+            };
+
+            let text_to_speech_eligible_payload = handle_stage_text_generation(
+                bot,
+                matrix_link.clone(),
+                message_context,
+                controller_type,
+                response_type.clone(),
+            )
+            .await;
+
+            if let Some(speech_to_text_created_event_id_reaction_event_id) =
+                speech_to_text_created_event_id_reaction_event_id
+            {
+                bot.messaging()
+                    .redact_event_no_fail(
+                        message_context.room(),
+                        speech_to_text_created_event_id_reaction_event_id,
+                        Some("Done".to_owned()),
+                    )
+                    .await;
             }
-            TextToSpeechBotMessagesFlowType::OnlyForVoice => {
-                if original_message_is_audio {
-                    Some(TextToSpeechParams::Perform(
-                        text_to_speech_eligible_payload,
-                        response_type,
-                    ))
-                } else {
-                    None
+
+            // If no text was generated (due to some issue), there's no point in continuing.
+            let Some(text_to_speech_eligible_payload) = text_to_speech_eligible_payload else {
+                return Ok(());
+            };
+
+            match message_context
+                .room_config_context()
+                .text_to_speech_bot_messages_flow_type()
+            {
+                TextToSpeechBotMessagesFlowType::Never => None,
+                TextToSpeechBotMessagesFlowType::OnDemandAlways => Some(TextToSpeechParams::Offer(
+                    text_to_speech_eligible_payload,
+                    response_type,
+                )),
+                TextToSpeechBotMessagesFlowType::OnDemandForVoice => {
+                    if original_message_is_audio {
+                        Some(TextToSpeechParams::Offer(
+                            text_to_speech_eligible_payload,
+                            response_type,
+                        ))
+                    } else {
+                        None
+                    }
                 }
+                TextToSpeechBotMessagesFlowType::OnlyForVoice => {
+                    if original_message_is_audio {
+                        Some(TextToSpeechParams::Perform(
+                            text_to_speech_eligible_payload,
+                            response_type,
+                        ))
+                    } else {
+                        None
+                    }
+                }
+                TextToSpeechBotMessagesFlowType::Always => Some(TextToSpeechParams::Perform(
+                    text_to_speech_eligible_payload,
+                    response_type,
+                )),
             }
-            TextToSpeechBotMessagesFlowType::Always => Some(TextToSpeechParams::Perform(
-                text_to_speech_eligible_payload,
-                response_type,
-            )),
-        }
-    } else {
-        tracing::debug!("Not generating text due to auto-usage configuration");
+        } else {
+            tracing::debug!("Not generating text due to auto-usage configuration");
 
-        let response_type = MessageResponseType::Reply(message_context.event_id().clone());
+            let response_type = MessageResponseType::Reply(message_context.event_id().clone());
 
-        // If we got text from the user, perhaps it's eligible for text-to-speech.
+            // If we got text from the user, perhaps it's eligible for text-to-speech.
 
-        let MessagePayload::Text(text_payload) = &message_context.payload() else {
-            // Audio message, or a notice or something else.
-            // We don't wish to proceed with potential TTS for non-text messages.
-            return Ok(());
+            let MessagePayload::Text(text_payload) = &message_context.payload() else {
+                // Audio message, or a notice or something else.
+                // We don't wish to proceed with potential TTS for non-text messages.
+                return Ok(());
+            };
+
+            let text_to_speech_eligible_payload = TextToSpeechEligiblePayload {
+                text: text_payload.body.clone(),
+                event_id: message_context.event_id().clone(),
+            };
+
+            match message_context
+                .room_config_context()
+                .text_to_speech_user_messages_flow_type()
+            {
+                TextToSpeechUserMessagesFlowType::Never => None,
+                TextToSpeechUserMessagesFlowType::OnDemand => Some(TextToSpeechParams::Offer(
+                    text_to_speech_eligible_payload,
+                    response_type,
+                )),
+                TextToSpeechUserMessagesFlowType::Always => Some(TextToSpeechParams::Perform(
+                    text_to_speech_eligible_payload,
+                    response_type,
+                )),
+            }
         };
-
-        let text_to_speech_eligible_payload = TextToSpeechEligiblePayload {
-            text: text_payload.body.clone(),
-            event_id: message_context.event_id().clone(),
-        };
-
-        match message_context
-            .room_config_context()
-            .text_to_speech_user_messages_flow_type()
-        {
-            TextToSpeechUserMessagesFlowType::Never => None,
-            TextToSpeechUserMessagesFlowType::OnDemand => Some(TextToSpeechParams::Offer(
-                text_to_speech_eligible_payload,
-                response_type,
-            )),
-            TextToSpeechUserMessagesFlowType::Always => Some(TextToSpeechParams::Perform(
-                text_to_speech_eligible_payload,
-                response_type,
-            )),
-        }
-    };
 
     // We're potentially dealing with some text in text_to_speech_eligible_payload - either coming directly from the user or generated by an agent.
 
     match text_to_speech_stage_params {
+        Some(TextToSpeechParams::Perform(_, _))
+            if !message_context.sender_can(Permission::TextToSpeech) =>
+        {
+            tracing::debug!(
+                "Not performing text-to-speech for a user without the text-to-speech permission"
+            );
+        }
+        // Offers are made even if the sender cannot use text-to-speech, because others in the room may.
+        // Whoever reacts is checked then (see the reaction controller), which also skips messages
+        // whose author is denied text-to-speech. So there's no point in offering it on such a user's own message.
+        Some(TextToSpeechParams::Offer(text_to_speech_eligible_payload, _))
+            if text_to_speech_eligible_payload.event_id == *message_context.event_id()
+                && message_context
+                    .authorizer()
+                    .denies(message_context.sender_id(), Permission::TextToSpeech) =>
+        {
+            tracing::debug!(
+                "Not offering text-to-speech on the message of a user denied text-to-speech"
+            );
+        }
         Some(TextToSpeechParams::Perform(text_to_speech_eligible_payload, response_type)) => {
             if _typing_notice_guard.is_none() {
                 _typing_notice_guard = Some(bot.start_typing_notice(message_context.room()).await);
@@ -422,28 +486,30 @@ async fn handle_stage_text_generation(
         message_context.bot_display_name(),
     );
 
-    let allowed_users = match controller_type {
-        // Regular chat completion only operates on messages from allowed users.
+    let sender_filter = match controller_type {
+        // Regular chat completion only operates on messages from users allowed to use text generation.
         ChatCompletionControllerType::TextCommand
         | ChatCompletionControllerType::TextMention
         | ChatCompletionControllerType::TextDirect
         | ChatCompletionControllerType::Audio
         | ChatCompletionControllerType::Image
         | ChatCompletionControllerType::File => {
-            Some(message_context.combined_admin_and_user_regexes())
+            message_context.context_sender_filter(Permission::TextGeneration, false)
         }
 
         // When we're triggered via an explicit mention (thread or reply), we wish to operate against the mention's whole context
         // (the whole thread or the whole reply chain upward of the message that triggered us).
         //
-        // This is to allow admins and users to trigger text-generation for other users' messages.
-        // When we're dragged into a conversation by a known (to us) user, we'd like to process all messages in the conversation,
-        // not just those from allowed users.
+        // This is to allow users to trigger text-generation for other users' messages.
+        // When we're dragged into a conversation by a user allowed to use text generation, we'd like to process all messages in the conversation,
+        // except those of authors explicitly denied text generation.
         ChatCompletionControllerType::ThreadMention
-        | ChatCompletionControllerType::ReplyMention => None,
+        | ChatCompletionControllerType::ReplyMention => {
+            message_context.context_sender_filter(Permission::TextGeneration, true)
+        }
     };
 
-    let params = MatrixMessageProcessingParams::new(bot.user_id().to_owned(), allowed_users)
+    let params = MatrixMessageProcessingParams::new(bot.user_id().to_owned(), sender_filter)
         .with_first_message_prefixes_to_strip(first_message_prefixes_to_strip)
         .with_bot_user_prefixes_to_strip(bot_user_prefixes_to_strip);
 

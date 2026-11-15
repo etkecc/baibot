@@ -83,7 +83,7 @@ fn build_section_users(
         message.push_str(&strings::access::users_no_patterns());
     }
 
-    if message_context.sender_can_manage_global_config() {
+    if message_context.sender_is_admin() {
         message.push_str("\n\n");
 
         message.push_str(strings::the_following_commands_are_available());
@@ -160,7 +160,7 @@ fn build_section_room_local_agent_managers(
         message.push_str(&strings::access::room_local_agent_managers_no_patterns());
     }
 
-    if message_context.sender_can_manage_global_config() {
+    if message_context.sender_is_admin() {
         message.push_str("\n\n");
         message.push_str(strings::the_following_commands_are_available());
         message.push('\n');

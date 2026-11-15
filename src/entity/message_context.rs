@@ -4,6 +4,7 @@ use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId, RoomId};
 use mxlink::ThreadInfo;
 
 use crate::authorization::{Authorizer, Permission};
+use crate::conversation::matrix::SenderFilter;
 
 use super::{
     MessagePayload, RoomConfigContext, TriggerEventInfo, globalconfig::GlobalConfig,
@@ -17,7 +18,8 @@ pub struct MessageContext {
     /// The room the command acts on. Usually the same as `room`, but differs for remote commands (`in <room> ...`).
     target_room: Room,
     room_config_context: RoomConfigContext,
-    admin_whitelist_regexes: Vec<regex::Regex>,
+    /// Answers access questions for the target room.
+    authorizer: Authorizer,
     trigger_event_info: TriggerEventInfo,
     thread_info: ThreadInfo,
 
@@ -28,7 +30,7 @@ impl MessageContext {
     pub fn new(
         room: Room,
         room_config_context: RoomConfigContext,
-        admin_whitelist_regexes: Vec<regex::Regex>,
+        authorizer: Authorizer,
         trigger_event_info: TriggerEventInfo,
         thread_info: ThreadInfo,
     ) -> Self {
@@ -36,7 +38,7 @@ impl MessageContext {
             target_room: room.clone(),
             room,
             room_config_context,
-            admin_whitelist_regexes,
+            authorizer,
             trigger_event_info,
             thread_info,
 
@@ -44,13 +46,19 @@ impl MessageContext {
         }
     }
 
-    /// Returns a copy of this context which acts on `target_room` (with its configuration), while still replying in the original room.
-    pub fn retargeted(&self, target_room: Room, room_config_context: RoomConfigContext) -> Self {
+    /// Returns a copy of this context which acts on `target_room` (with its configuration and authorizer),
+    /// while still replying in the original room.
+    pub fn retargeted(
+        &self,
+        target_room: Room,
+        room_config_context: RoomConfigContext,
+        authorizer: Authorizer,
+    ) -> Self {
         Self {
             room: self.room.clone(),
             target_room,
             room_config_context,
-            admin_whitelist_regexes: self.admin_whitelist_regexes.clone(),
+            authorizer,
             trigger_event_info: self.trigger_event_info.clone(),
             thread_info: self.thread_info.clone(),
 
@@ -120,38 +128,31 @@ impl MessageContext {
         &self.thread_info
     }
 
-    pub fn authorizer(&self) -> Authorizer<'_> {
-        Authorizer::new(&self.admin_whitelist_regexes, self.global_config())
+    /// Answers access questions for the target room.
+    pub fn authorizer(&self) -> &Authorizer {
+        &self.authorizer
     }
 
-    pub fn sender_can_manage_global_config(&self) -> bool {
-        // This only depends on the static administrator patterns, so it cannot fail.
-        matches!(
-            self.authorizer()
-                .allows(self.sender_id(), Permission::ManageGlobalConfig),
-            Ok(true)
-        )
+    pub fn sender_is_admin(&self) -> bool {
+        self.authorizer.is_admin(self.sender_id())
     }
 
-    pub fn sender_can_manage_room_local_agents(&self) -> mxidwc::Result<bool> {
-        self.authorizer()
-            .allows(self.sender_id(), Permission::ManageRoomLocalAgents)
+    pub fn sender_can(&self, permission: Permission) -> bool {
+        self.authorizer.allows(self.sender_id(), permission)
     }
 
-    pub fn combined_admin_and_user_regexes(&self) -> Vec<regex::Regex> {
-        let authorizer = self.authorizer();
+    /// Selects the authors whose messages are included in conversation context for a feature.
+    ///
+    /// Normally, these are the authors who may use the feature in the room.
+    /// When the sender explicitly pulls the bot into a conversation (`include_others`),
+    /// everyone is included, except authors denied the feature.
+    pub fn context_sender_filter(&self, feature: Permission, include_others: bool) -> SenderFilter {
+        let authorizer = self.authorizer.clone();
 
-        match authorizer.context_author_regexes() {
-            Ok(regexes) => regexes,
-            Err(err) => {
-                tracing::warn!(
-                    "Error parsing user patterns for room {}: {:?}",
-                    self.room.room_id(),
-                    err
-                );
-
-                authorizer.admin_regexes()
-            }
+        if include_others {
+            SenderFilter::new(move |user_id| !authorizer.denies(user_id, feature))
+        } else {
+            SenderFilter::new(move |user_id| authorizer.allows(user_id, feature))
         }
     }
 }

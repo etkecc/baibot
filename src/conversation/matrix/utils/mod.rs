@@ -144,11 +144,7 @@ pub async fn process_matrix_messages(
     let mut messages_filtered: Vec<MatrixMessage> = Vec::new();
 
     for (i, message) in messages.iter().enumerate() {
-        if !is_message_from_allowed_sender(
-            message,
-            &params.bot_user_id,
-            params.allowed_users.as_deref(),
-        ) {
+        if !is_message_from_allowed_sender(message, &params.bot_user_id, &params.sender_filter) {
             continue;
         }
 
@@ -191,29 +187,13 @@ pub async fn process_matrix_messages(
     messages_filtered
 }
 
-/// Tells if the given message is from an allowed sender.
-///
-/// If allowed_users is None, all messages are allowed.
-/// If allowed_users is Some, only messages from the allowed users (and the `bot_user_id`) are allowed.
+/// Tells if the given message is from the bot itself or from a sender the filter allows.
 fn is_message_from_allowed_sender(
     matrix_message: &MatrixMessage,
     bot_user_id: &OwnedUserId,
-    allowed_users: Option<&[regex::Regex]>,
+    sender_filter: &super::SenderFilter,
 ) -> bool {
-    if matrix_message.sender_id == *bot_user_id {
-        return true;
-    }
-
-    if let Some(allowed_users) = allowed_users {
-        if mxidwc::match_user_id(matrix_message.sender_id.as_str(), allowed_users) {
-            return true;
-        }
-    } else {
-        // No allowed users configured, so all messages are allowed
-        return true;
-    }
-
-    false
+    matrix_message.sender_id == *bot_user_id || sender_filter.allows(&matrix_message.sender_id)
 }
 
 pub async fn convert_matrix_native_event_to_matrix_message(

@@ -88,13 +88,13 @@ pub enum ConfigTextToSpeechSettingRelatedControllerType {
 }
 
 impl ConfigControllerType {
-    pub fn required_permission(&self) -> Permission {
+    pub fn required_permission(&self) -> Option<Permission> {
         match self {
-            Self::Help | Self::Status => Permission::Use,
-            Self::SettingsRelated(SettingsStorageSource::Room, _) => Permission::Use,
-            Self::SettingsRelated(SettingsStorageSource::Global, _) => {
-                Permission::ManageGlobalConfig
-            }
+            Self::Help => None,
+            // The status reveals the effective configuration (including the prompt).
+            Self::Status => Some(Permission::ManageConfig),
+            Self::SettingsRelated(SettingsStorageSource::Room, _) => Some(Permission::ManageConfig),
+            Self::SettingsRelated(SettingsStorageSource::Global, _) => Some(Permission::Administer),
         }
     }
 }

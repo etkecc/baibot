@@ -6,6 +6,8 @@ use mxlink::helpers::account_data_config::GlobalConfig as GlobalConfigTrait;
 use mxlink::helpers::account_data_config::GlobalConfigCarrierContent as GlobalConfigCarrierContentTrait;
 
 use crate::agent::AgentDefinition;
+use crate::authorization::AccessRule;
+use crate::authorization::rule::rules_from_legacy_access;
 use crate::entity::roomconfig::RoomSettings;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, EventContent)]
@@ -35,13 +37,18 @@ pub struct GlobalConfig {
 
 impl GlobalConfig {
     pub fn new(user_patterns: Option<Vec<String>>) -> Self {
+        // Rules are derived from `user_patterns` (see `GlobalConfigAccess::effective_rules()`),
+        // as long as the access lists are still managed with the older commands.
+        let access = GlobalConfigAccess {
+            user_patterns,
+            room_local_agent_manager_patterns: None,
+            rules: None,
+        };
+
         Self {
             fallback_room_settings: RoomSettings::default(),
 
-            access: GlobalConfigAccess {
-                user_patterns,
-                room_local_agent_manager_patterns: None,
-            },
+            access,
 
             agents: vec![],
         }
@@ -61,4 +68,22 @@ pub struct GlobalConfigAccess {
     // These remain as patterns and are turned into regex and made use of on demand.
     // Example: `["@*:example.com"]`
     pub room_local_agent_manager_patterns: Option<Vec<String>>,
+
+    // Global access rules (see `crate::authorization`).
+    //
+    // `None` means that the configuration predates access rules. Rules are then derived from the
+    // lists above (see `effective_rules()`) and stored once someone changes them.
+    // Those lists are left untouched, so that older versions keep working after a rollback.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rules: Option<Vec<AccessRule>>,
+}
+
+impl GlobalConfigAccess {
+    /// Returns the global access rules, deriving them from the older lists if none are stored yet.
+    pub fn effective_rules(&self) -> Vec<AccessRule> {
+        match &self.rules {
+            Some(rules) => rules.clone(),
+            None => rules_from_legacy_access(self),
+        }
+    }
 }

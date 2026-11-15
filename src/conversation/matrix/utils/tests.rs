@@ -3,8 +3,12 @@ use chrono::{TimeZone, Utc};
 use mxlink::matrix_sdk::ruma::OwnedUserId;
 
 use crate::conversation::matrix::{
-    MatrixMessage, MatrixMessageContent, MatrixMessageProcessingParams,
+    MatrixMessage, MatrixMessageContent, MatrixMessageProcessingParams, SenderFilter,
 };
+
+fn regex_sender_filter(regexes: Vec<regex::Regex>) -> SenderFilter {
+    SenderFilter::new(move |user_id| mxidwc::match_user_id(user_id.as_str(), &regexes))
+}
 
 #[test]
 fn is_message_from_allowed_sender() {
@@ -43,19 +47,15 @@ fn is_message_from_allowed_sender() {
         }
     };
 
-    let allowed_users = vec![parsed_regex];
+    let allowed_users = regex_sender_filter(vec![parsed_regex]);
 
     assert!(
-        super::is_message_from_allowed_sender(&bot_message, &bot_user_id, Some(&allowed_users)),
+        super::is_message_from_allowed_sender(&bot_message, &bot_user_id, &allowed_users),
         "Bot message should be allowed"
     );
 
     assert!(
-        super::is_message_from_allowed_sender(
-            &allowed_user_message,
-            &bot_user_id,
-            Some(&allowed_users)
-        ),
+        super::is_message_from_allowed_sender(&allowed_user_message, &bot_user_id, &allowed_users),
         "Allowed user message should be allowed"
     );
 
@@ -63,13 +63,17 @@ fn is_message_from_allowed_sender() {
         !super::is_message_from_allowed_sender(
             &unallowed_user_message,
             &bot_user_id,
-            Some(&allowed_users),
+            &allowed_users,
         ),
         "Unallowed user message should be ignored"
     );
 
     assert!(
-        super::is_message_from_allowed_sender(&unallowed_user_message, &bot_user_id, None,),
+        super::is_message_from_allowed_sender(
+            &unallowed_user_message,
+            &bot_user_id,
+            &SenderFilter::new(|_| true),
+        ),
         "An empty list of allowed users lets everyone through"
     );
 }
@@ -147,26 +151,18 @@ async fn process_matrix_messages() {
         }
     };
 
-    let allowed_users = vec![parsed_regex];
+    let allowed_users = regex_sender_filter(vec![parsed_regex]);
 
-    let message_processing_params_basic = super::MatrixMessageProcessingParams::new(
-        bot_user_id.to_owned(),
-        Some(allowed_users.clone()),
-    );
+    let message_processing_params_basic =
+        super::MatrixMessageProcessingParams::new(bot_user_id.to_owned(), allowed_users.clone());
 
     let message_processing_params_with_prefix_stripping =
-        super::MatrixMessageProcessingParams::new(
-            bot_user_id.to_owned(),
-            Some(allowed_users.clone()),
-        )
-        .with_first_message_prefixes_to_strip(vec!["!bai".to_owned()]);
+        super::MatrixMessageProcessingParams::new(bot_user_id.to_owned(), allowed_users.clone())
+            .with_first_message_prefixes_to_strip(vec!["!bai".to_owned()]);
 
     let message_processing_params_with_bot_user_prefix_stripping =
-        super::MatrixMessageProcessingParams::new(
-            bot_user_id.to_owned(),
-            Some(allowed_users.clone()),
-        )
-        .with_bot_user_prefixes_to_strip(vec!["@baibot: ".to_owned(), "@baibot".to_owned()]);
+        super::MatrixMessageProcessingParams::new(bot_user_id.to_owned(), allowed_users.clone())
+            .with_bot_user_prefixes_to_strip(vec!["@baibot: ".to_owned(), "@baibot".to_owned()]);
 
     struct TestCase {
         name: String,

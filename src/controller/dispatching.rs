@@ -40,12 +40,11 @@ async fn check_permission(
     message_context: &MessageContext,
     bot: &Bot,
 ) -> anyhow::Result<bool> {
-    let permission = controller_type.required_permission();
+    let Some(permission) = controller_type.required_permission() else {
+        return Ok(true);
+    };
 
-    if message_context
-        .authorizer()
-        .allows(message_context.sender_id(), permission)?
-    {
+    if message_context.sender_can(permission) {
         return Ok(true);
     }
 
@@ -69,13 +68,13 @@ async fn check_permission(
 
 fn denial_message(permission: Permission) -> String {
     match permission {
-        Permission::ManageGlobalConfig => {
+        Permission::Administer => {
             strings::global_config::no_permissions_to_administrate().to_owned()
         }
-        Permission::ManageRoomLocalAgents => {
+        Permission::ManageAgents => {
             strings::agent::not_allowed_to_manage_room_local_agents_in_room()
         }
-        Permission::Use | Permission::Invite => strings::access::not_allowed(),
+        permission => strings::access::missing_permission(permission.name()),
     }
 }
 
