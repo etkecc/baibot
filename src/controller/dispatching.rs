@@ -74,7 +74,7 @@ fn denial_message(permission: Permission) -> String {
         Permission::ManageAgents => {
             strings::agent::not_allowed_to_manage_room_local_agents_in_room()
         }
-        permission => strings::access::missing_permission(permission.name()),
+        permission => strings::access::missing_permission(permission.emoji(), permission.name()),
     }
 }
 

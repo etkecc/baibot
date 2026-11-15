@@ -9,15 +9,15 @@ pub async fn dispatch_controller(
 ) -> anyhow::Result<()> {
     match handler {
         AccessControllerType::Help => super::help::handle(bot, message_context).await,
-        AccessControllerType::GetUsers => super::users::handle_get(bot, message_context).await,
-        AccessControllerType::SetUsers(patterns) => {
-            super::users::handle_set(bot, message_context, patterns).await
+        AccessControllerType::List => super::rules::handle_list(bot, message_context).await,
+        AccessControllerType::AddRule(scope, rule) => {
+            super::rules::handle_add(bot, message_context, *scope, rule).await
         }
-        AccessControllerType::GetRoomLocalAgentManagers => {
-            super::room_local_agent_managers::handle_get(bot, message_context).await
+        AccessControllerType::RemoveRule(scope, id) => {
+            super::rules::handle_remove(bot, message_context, *scope, id).await
         }
-        AccessControllerType::SetRoomLocalAgentManagers(patterns) => {
-            super::room_local_agent_managers::handle_set(bot, message_context, patterns).await
+        AccessControllerType::Explain(user_id) => {
+            super::rules::handle_explain(bot, message_context, user_id).await
         }
     }
 }

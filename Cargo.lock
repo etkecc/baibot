@@ -260,6 +260,7 @@ dependencies = [
  "async-openai",
  "base64 0.23.1",
  "chrono",
+ "fastrand",
  "futures-util",
  "matrix-sdk",
  "mime_guess",

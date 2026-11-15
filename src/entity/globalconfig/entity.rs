@@ -37,13 +37,13 @@ pub struct GlobalConfig {
 
 impl GlobalConfig {
     pub fn new(user_patterns: Option<Vec<String>>) -> Self {
-        // Rules are derived from `user_patterns` (see `GlobalConfigAccess::effective_rules()`),
-        // as long as the access lists are still managed with the older commands.
-        let access = GlobalConfigAccess {
+        // `user_patterns` (from the initial configuration) seeds the rules.
+        let mut access = GlobalConfigAccess {
             user_patterns,
             room_local_agent_manager_patterns: None,
             rules: None,
         };
+        access.migrate_legacy_lists();
 
         Self {
             fallback_room_settings: RoomSettings::default(),
@@ -71,19 +71,41 @@ pub struct GlobalConfigAccess {
 
     // Global access rules (see `crate::authorization`).
     //
-    // `None` means that the configuration predates access rules. Rules are then derived from the
-    // lists above (see `effective_rules()`) and stored once someone changes them.
-    // Those lists are left untouched, so that older versions keep working after a rollback.
+    // `None` means that the configuration predates access rules and still needs to be migrated
+    // (see `migrate_legacy_lists()`), which happens whenever the configuration is loaded.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rules: Option<Vec<AccessRule>>,
 }
 
 impl GlobalConfigAccess {
-    /// Returns the global access rules, deriving them from the older lists if none are stored yet.
-    pub fn effective_rules(&self) -> Vec<AccessRule> {
+    /// Turns the lists used by older versions (allowed users and room-local agent managers)
+    /// into rules, and removes them.
+    ///
+    /// Lists found next to existing rules (set again by an older version after a downgrade) are
+    /// removed without being turned into rules, since the rules already say who has access.
+    ///
+    /// Returns whether anything changed, in which case the configuration needs to be persisted.
+    pub fn migrate_legacy_lists(&mut self) -> bool {
+        let has_lists =
+            self.user_patterns.is_some() || self.room_local_agent_manager_patterns.is_some();
+
         match &self.rules {
-            Some(rules) => rules.clone(),
-            None => rules_from_legacy_access(self),
+            None => {
+                self.rules = Some(rules_from_legacy_access(self));
+            }
+            Some(_) if has_lists => {
+                tracing::warn!(
+                    user_patterns = ?self.user_patterns,
+                    room_local_agent_manager_patterns = ?self.room_local_agent_manager_patterns,
+                    "Removing user lists of an older version, which access rules have replaced"
+                );
+            }
+            Some(_) => return false,
         }
+
+        self.user_patterns = None;
+        self.room_local_agent_manager_patterns = None;
+
+        true
     }
 }

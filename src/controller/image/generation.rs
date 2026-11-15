@@ -38,6 +38,7 @@ pub async fn handle_image(
             .send_error_markdown_no_fail(
                 message_context.room(),
                 &strings::image_generation::thread_started_without_permission(
+                    Permission::ImageGeneration.emoji(),
                     Permission::ImageGeneration.name(),
                 ),
                 response_type,

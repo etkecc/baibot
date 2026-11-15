@@ -48,8 +48,9 @@ impl From<RuleEffect> for String {
 /// Rules are unordered. A user has a permission if some allow rule matches and no deny rule does.
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct AccessRule {
-    /// Identifies the rule within its list (for removal). Not a position.
-    pub id: u32,
+    /// Identifies the rule within its list (for removal).
+    /// Random (see [`new_rule_id`]), so that it doesn't suggest an order and isn't reused.
+    pub id: String,
 
     pub effect: RuleEffect,
 
@@ -84,9 +85,49 @@ pub fn permission_name_covers(name: &str, permission: Permission) -> bool {
     Permission::from_name(name) == Some(permission)
 }
 
-/// Returns the next free rule id for a list of rules.
-pub fn next_rule_id(rules: &[AccessRule]) -> u32 {
-    rules.iter().map(|rule| rule.id).max().unwrap_or(0) + 1
+/// The emoji shown next to a permission name used in rules, if it is a known one.
+pub fn permission_name_emoji(name: &str) -> Option<&'static str> {
+    if name == USE {
+        return Some("🌟");
+    }
+
+    Permission::from_name(name).map(Permission::emoji)
+}
+
+/// Tells whether a name is valid in rules (a known permission name or [`USE`]).
+pub fn is_valid_permission_name(name: &str) -> bool {
+    name == USE || Permission::from_name(name).is_some()
+}
+
+/// Characters of generated rule ids: lowercase letters and digits, without easily confused ones.
+const RULE_ID_ALPHABET: &[u8] = b"abcdefghjkmnpqrstuvwxyz23456789";
+
+const RULE_ID_LENGTH: usize = 4;
+
+/// Generates a short random rule id which isn't used in the given list of rules.
+pub fn new_rule_id(rules: &[AccessRule]) -> String {
+    new_rule_id_with(rules, &mut fastrand::Rng::new())
+}
+
+fn new_rule_id_with(rules: &[AccessRule], rng: &mut fastrand::Rng) -> String {
+    loop {
+        let id: String = (0..RULE_ID_LENGTH)
+            .map(|_| RULE_ID_ALPHABET[rng.usize(..RULE_ID_ALPHABET.len())] as char)
+            .collect();
+
+        if !rules.iter().any(|rule| rule.id == id) {
+            return id;
+        }
+    }
+}
+
+/// Tells whether a text could be a rule id, to reject anything else early.
+pub fn is_valid_rule_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 32
+        && id
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
 }
 
 /// Derives global rules from the lists used by older versions
@@ -99,8 +140,9 @@ pub fn rules_from_legacy_access(access: &GlobalConfigAccess) -> Vec<AccessRule> 
     let mut rules = vec![];
 
     let mut push = |effect: RuleEffect, permissions: &[&str], users: &[String], min_power_level| {
+        let id = new_rule_id(&rules);
         rules.push(AccessRule {
-            id: next_rule_id(&rules),
+            id,
             effect,
             permissions: permissions.iter().map(|name| name.to_string()).collect(),
             users: users.to_vec(),
@@ -137,4 +179,28 @@ pub fn rules_from_legacy_access(access: &GlobalConfigAccess) -> Vec<AccessRule> 
     }
 
     rules
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AccessRule, RuleEffect, new_rule_id_with};
+
+    #[test]
+    fn new_rule_ids_skip_used_ones() {
+        let seed = 42;
+        let taken = new_rule_id_with(&[], &mut fastrand::Rng::with_seed(seed));
+
+        let rules = [AccessRule {
+            id: taken.clone(),
+            effect: RuleEffect::Allow,
+            permissions: vec![],
+            users: vec![],
+            min_power_level: None,
+        }];
+
+        // The same seed draws the taken id first, so a different one means it was skipped.
+        let id = new_rule_id_with(&rules, &mut fastrand::Rng::with_seed(seed));
+        assert_ne!(id, taken);
+        assert_eq!(id.len(), taken.len());
+    }
 }

@@ -79,15 +79,13 @@ fn determine_controller() {
 }
 
 #[test]
-fn only_config_and_agent_commands_are_supported_remotely() {
+fn only_config_agent_and_access_commands_are_supported_remotely() {
     assert!(super::is_supported_remotely(&determine(
         "!bai config status"
     )));
     assert!(super::is_supported_remotely(&determine("!bai agent list")));
     assert!(!super::is_supported_remotely(&determine("!bai help")));
-    assert!(!super::is_supported_remotely(&determine(
-        "!bai access users"
-    )));
+    assert!(super::is_supported_remotely(&determine("!bai access list")));
     assert!(!super::is_supported_remotely(&determine(
         "!bai image a cat"
     )));
@@ -114,7 +112,7 @@ fn deeply_nested_commands_are_parsed_shallowly() {
 #[test]
 fn escape_markdown() {
     assert_eq!(
-        super::escape_markdown("**Room**\n- [x](y) `z`"),
+        crate::utils::text::escape_markdown("**Room**\n- [x](y) `z`"),
         "\\*\\*Room\\*\\* - \\[x\\]\\(y\\) \\`z\\`"
     );
 }

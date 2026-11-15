@@ -9,7 +9,7 @@ pub fn missing_command(command_prefix: &str) -> String {
 }
 
 pub fn unsupported_command() -> &'static str {
-    "Only `config` and `agent` commands can be run in another room."
+    "Only `config`, `agent` and `access` commands can be run in another room."
 }
 
 pub fn nested_not_supported() -> &'static str {

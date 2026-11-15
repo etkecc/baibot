@@ -179,7 +179,10 @@ pub async fn handle(
             bot.messaging()
                 .send_error_markdown_no_fail(
                     message_context.room(),
-                    &strings::access::missing_permission(Permission::TextGeneration.name()),
+                    &strings::access::missing_permission(
+                        Permission::TextGeneration.emoji(),
+                        Permission::TextGeneration.name(),
+                    ),
                     MessageResponseType::Reply(message_context.event_id().clone()),
                 )
                 .await;

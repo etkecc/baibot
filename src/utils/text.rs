@@ -68,6 +68,35 @@ fn sanitize_link_url(url: &str) -> Option<String> {
     }
 }
 
+/// Escapes characters with a meaning in Markdown (and flattens newlines), so that user-provided text cannot change the formatting of a message.
+pub fn escape_markdown(text: &str) -> String {
+    let mut escaped = String::with_capacity(text.len());
+
+    for c in text.chars() {
+        match c {
+            '\n' | '\r' => escaped.push(' '),
+            '\\' | '`' | '*' | '_' | '[' | ']' | '(' | ')' | '<' | '>' | '#' | '~' | '|' | '!' => {
+                escaped.push('\\');
+                escaped.push(c);
+            }
+            _ => escaped.push(c),
+        }
+    }
+
+    escaped
+}
+
+/// Formats user-provided text as inline code, so it cannot change the formatting of a message.
+///
+/// Text which cannot be safely put in a code span (containing backticks or newlines) is escaped instead.
+pub fn inline_code(text: &str) -> String {
+    if text.contains(['`', '\n', '\r']) {
+        escape_markdown(text)
+    } else {
+        format!("`{text}`")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::render_sources_list;
@@ -83,5 +112,11 @@ mod tests {
             list,
             "\n\nSources:\n[1] [Deno (software)](https://en.wikipedia.org/wiki/Deno_%28software%29)"
         );
+    }
+
+    #[test]
+    fn inline_code() {
+        assert_eq!(super::inline_code("@*:example.com"), "`@*:example.com`");
+        assert_eq!(super::inline_code("a`b"), "a\\`b");
     }
 }

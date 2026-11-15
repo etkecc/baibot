@@ -100,7 +100,7 @@ pub(super) fn determine_text_controller(
     }
 
     if let Some(remaining) = text.strip_prefix(&format!("{command_prefix} access")) {
-        return super::access::determine_controller(remaining.trim());
+        return super::access::determine_controller(command_prefix, remaining.trim());
     }
 
     if let Some(remaining) = text.strip_prefix(&format!("{command_prefix} provider")) {

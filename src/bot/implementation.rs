@@ -210,7 +210,7 @@ impl Bot {
     pub(crate) async fn global_config(&self) -> Result<GlobalConfig, ConfigError> {
         let mut global_config_manager_guard = self.inner.global_config_manager.lock().await;
 
-        global_config_manager_guard.get_or_create().await
+        crate::entity::globalconfig::load(&mut global_config_manager_guard).await
     }
 
     pub(crate) async fn is_caught_up(

@@ -68,6 +68,7 @@ fn is_supported_remotely(controller_type: &ControllerType) -> bool {
         controller_type,
         ControllerType::Config(_)
             | ControllerType::Agent(_)
+            | ControllerType::Access(_)
             // Errors (like a missing argument) and unknown commands are passed through, so their message is shown.
             | ControllerType::Error(_)
             | ControllerType::Unknown
@@ -209,7 +210,10 @@ fn room_line(
     alias: Option<&RoomAliasId>,
     joined_members_count: u64,
 ) -> String {
-    let mut line = format!("- **{}**: `{room_id}`", escape_markdown(name));
+    let mut line = format!(
+        "- **{}**: `{room_id}`",
+        crate::utils::text::escape_markdown(name)
+    );
 
     if let Some(alias) = alias {
         line.push_str(&format!(", `{alias}`"));
@@ -231,22 +235,4 @@ async fn reply_error(bot: &Bot, message_context: &MessageContext, message: &str)
             MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
         )
         .await;
-}
-
-/// Escapes characters with a meaning in Markdown (and flattens newlines), so a room name cannot change the formatting of the list.
-fn escape_markdown(text: &str) -> String {
-    let mut escaped = String::with_capacity(text.len());
-
-    for c in text.chars() {
-        match c {
-            '\n' | '\r' => escaped.push(' '),
-            '\\' | '`' | '*' | '_' | '[' | ']' | '(' | ')' | '<' | '>' | '#' | '~' | '|' | '!' => {
-                escaped.push('\\');
-                escaped.push(c);
-            }
-            _ => escaped.push(c),
-        }
-    }
-
-    escaped
 }

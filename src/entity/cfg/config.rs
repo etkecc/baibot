@@ -543,6 +543,9 @@ impl TryInto<GlobalConfig> for ConfigInitialGlobalConfig {
                 .set_by_purpose(*purpose, agent_id);
         }
 
+        // Turn the initial users into the initial rules.
+        entity.access.migrate_legacy_lists();
+
         Ok(entity)
     }
 }

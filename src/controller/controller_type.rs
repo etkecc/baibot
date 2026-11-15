@@ -103,14 +103,6 @@ mod tests {
                 Some(Permission::ImageGeneration),
             ),
             (ControllerType::Access(AccessControllerType::Help), None),
-            (
-                ControllerType::Access(AccessControllerType::GetUsers),
-                Some(Permission::Administer),
-            ),
-            (
-                ControllerType::Access(AccessControllerType::SetRoomLocalAgentManagers(None)),
-                Some(Permission::Administer),
-            ),
             (ControllerType::Agent(AgentControllerType::List), None),
             (
                 ControllerType::Agent(AgentControllerType::CreateRoomLocal {
@@ -132,14 +124,6 @@ mod tests {
                     agent_identifier: static_(),
                     reveal_secrets: true,
                 }),
-                Some(Permission::Administer),
-            ),
-            (
-                ControllerType::Access(AccessControllerType::SetUsers(None)),
-                Some(Permission::Administer),
-            ),
-            (
-                ControllerType::Access(AccessControllerType::GetRoomLocalAgentManagers),
                 Some(Permission::Administer),
             ),
             (ControllerType::Agent(AgentControllerType::Help), None),

@@ -14,8 +14,8 @@ pub fn guide_how_to_proceed() -> String {
     message
 }
 
-pub fn thread_started_without_permission(permission_name: &str) -> String {
+pub fn thread_started_without_permission(emoji: &str, permission_name: &str) -> String {
     format!(
-        "This thread was started by someone without the `{permission_name}` permission here, so it cannot be continued. Start a new one instead."
+        "This thread was started by someone without the {emoji} `{permission_name}` permission here, so it cannot be continued. Start a new one instead."
     )
 }

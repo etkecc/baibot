@@ -87,6 +87,21 @@ impl Permission {
         }
     }
 
+    /// The emoji shown next to the permission's name (matching the documentation's headings).
+    pub fn emoji(self) -> &'static str {
+        match self {
+            Self::TextGeneration => "💬",
+            Self::SpeechToText => "🦻",
+            Self::TextToSpeech => "🗣️",
+            Self::ImageGeneration => "🖌️",
+            Self::Invite => "👋",
+            Self::ManageConfig => "🛠️",
+            Self::ManageAgents => "🤖",
+            Self::ManageAccess => "🔒",
+            Self::Administer => "👮",
+        }
+    }
+
     /// Parses a permission name that rules may contain ([`Self::Administer`] is not one).
     pub fn from_name(name: &str) -> Option<Self> {
         Self::ROOM
@@ -142,7 +157,10 @@ impl Authorizer {
             power_levels: None,
         };
 
-        authorizer.add_rules(RuleScope::Global, &global_config.access.effective_rules());
+        authorizer.add_rules(
+            RuleScope::Global,
+            global_config.access.rules.as_deref().unwrap_or_default(),
+        );
 
         authorizer
     }
@@ -172,7 +190,7 @@ impl Authorizer {
                 Err(err) => {
                     tracing::error!(
                         ?scope,
-                        rule_id = rule.id,
+                        rule_id = rule.id.as_str(),
                         ?err,
                         "Failed parsing the user patterns of an access rule - treating it as matching nobody (allow) or everyone (deny)"
                     );
@@ -224,14 +242,29 @@ impl Authorizer {
     }
 
     fn matches(&self, user_id: &UserId, permission: Permission, effect: RuleEffect) -> bool {
-        self.rules.iter().any(|compiled| {
-            compiled.rule.effect == effect
-                // Only global rules may grant (or take away) invitations.
-                && (permission != Permission::Invite || compiled.scope == RuleScope::Global)
-                && compiled.rule.covers(permission)
-                && compiled.matches_user(user_id)
-                && self.meets_power_level(user_id, compiled.rule.min_power_level)
-        })
+        !self.matching_rules(user_id, permission, effect).is_empty()
+    }
+
+    /// Returns the rules (scope and id) with the given effect that apply to the user for a permission.
+    /// Used for evaluating, and for explaining decisions to users.
+    pub fn matching_rules(
+        &self,
+        user_id: &UserId,
+        permission: Permission,
+        effect: RuleEffect,
+    ) -> Vec<(RuleScope, String)> {
+        self.rules
+            .iter()
+            .filter(|compiled| {
+                compiled.rule.effect == effect
+                    // Only global rules may grant (or take away) invitations.
+                    && (permission != Permission::Invite || compiled.scope == RuleScope::Global)
+                    && compiled.rule.covers(permission)
+                    && compiled.matches_user(user_id)
+                    && self.meets_power_level(user_id, compiled.rule.min_power_level)
+            })
+            .map(|compiled| (compiled.scope, compiled.rule.id.clone()))
+            .collect()
     }
 
     fn meets_power_level(&self, user_id: &UserId, min_power_level: Option<i64>) -> bool {
@@ -256,7 +289,14 @@ pub async fn authorizer_for_room(
     room_config: &crate::entity::roomconfig::RoomConfig,
     room: &mxlink::matrix_sdk::Room,
 ) -> Authorizer {
-    let power_levels = match room.power_levels().await {
+    Authorizer::new(admin_regexes, global_config)
+        .for_room(&room_config.access.rules, room_power_levels(room).await)
+}
+
+/// Returns the room's current power levels, or `None` (logging why) if they are unknown.
+/// Without power levels, rules with a power-level condition don't match.
+pub async fn room_power_levels(room: &mxlink::matrix_sdk::Room) -> Option<RoomPowerLevels> {
+    match room.power_levels().await {
         Ok(power_levels) => Some(power_levels),
         Err(err) => {
             tracing::warn!(
@@ -266,7 +306,5 @@ pub async fn authorizer_for_room(
             );
             None
         }
-    };
-
-    Authorizer::new(admin_regexes, global_config).for_room(&room_config.access.rules, power_levels)
+    }
 }
