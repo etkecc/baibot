@@ -15,9 +15,9 @@ Controls how automatic text-to-speech functions for **messages sent by the bot**
 
 The following configuration values are recognized:
 
-- (default) `on_demand_for_voice`: the bot will turn its own text messages into audio (voice) messages only after an allowed [👥 user](../access.md#-users) **reacts** to a bot's message with 🗣️. To make it easier for users to react without having to hunt for this emoji, the bot will automatically add a 🗣️ reaction to its own messages which are in response to a user audio (voice) message.
+- (default) `on_demand_for_voice`: the bot will turn its own text messages into audio (voice) messages only after someone with the [`text-to-speech` permission](../access.md#-permissions) **reacts** to a bot's message with 🗣️. To make it easier for users to react without having to hunt for this emoji, the bot will automatically add a 🗣️ reaction to its own messages which are in response to a user audio (voice) message.
 
-- `on_demand_always`: the bot will turn its own text messages into audio (voice) messages only after an allowed [👥 user](../access.md#-users) **reacts** to a bot's message with 🗣️. To make it easier for users to react without having to hunt for this emoji, the bot will automatically add a 🗣️ reaction to **all of its own messages**.
+- `on_demand_always`: the bot will turn its own text messages into audio (voice) messages only after someone with the [`text-to-speech` permission](../access.md#-permissions) **reacts** to a bot's message with 🗣️. To make it easier for users to react without having to hunt for this emoji, the bot will automatically add a 🗣️ reaction to **all of its own messages**.
 
 - `only_for_voice`: the bot will turn its own text messages into audio (voice) messages only if the original user message was a voice message. This is to allow for [Seamless voice interaction](../features.md#seamless-voice-interaction), where you can speak to the bot and then hear its responses
 
@@ -30,17 +30,17 @@ Example: `!bai config room text-to-speech set-bot-msgs-flow-type never` (this ca
 
 ### 🪄 User Messages Flow Type
 
-Controls how automatic text-to-speech functions for **messages sent by [👥 users](../access.md#-users)**.
+Controls how automatic text-to-speech functions for **messages sent by users**.
 
 **Only works when automatic text-generation is disabled** (see [💬 Text Generation / 🪄 Auto Usage](./text-generation.md#-auto-usage)).
 
 The following configuration values are recognized:
 
-- (default) `never`: the bot will never turn [👥 user](../access.md#-users) text messages into audio (voice) messages
+- (default) `never`: the bot will never turn user text messages into audio (voice) messages
 
-- `on_demand`: the bot will turn [👥 user](../access.md#-users) text messages into audio (voice) messages if the text message receives a 🗣️ reaction
+- `on_demand`: the bot will turn user text messages into audio (voice) messages if the text message receives a 🗣️ reaction
 
-- `always`: the bot will turn all [👥 user](../access.md#-users) text messages into audio (voice) messages. This is to allow for [Text-to-Speech-only mode](../features.md/#text-to-speech-only-mode).
+- `always`: the bot will turn all user text messages into audio (voice) messages. This is to allow for [Text-to-Speech-only mode](../features.md/#text-to-speech-only-mode).
 
 Example: `!bai config room text-to-speech set-user-msgs-flow-type always` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings))
 

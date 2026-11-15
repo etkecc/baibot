@@ -30,7 +30,7 @@ Some models also support vision and document understanding, so you may be able t
 
 In multi-user (group) rooms, to avoid disturbing the normal conversation between people, the bot is auto-configured to only respond to messages starting with the command prefix (`!bai`) or direct mentions via the [💬 Text Generation / 🗟 Prefix Requirement Type](./configuration/text-generation.md#-prefix-requirement-type) setting.
 
-Normally, the bot only responds to allowed [👥 Users](./access.md#-users). In certain cases, it's useful for an allowed user to provoke the bot to respond even in foreign threads or reply chains. You can learn more about this feature in the [On-demand involvement](./features.md#on-demand-involvement) section below.
+Normally, the bot only includes messages from people [allowed](./access.md#-permissions) to use text generation. In certain cases, it's useful for an allowed user to provoke the bot to respond even in foreign threads or reply chains. You can learn more about this feature in the [On-demand involvement](./features.md#on-demand-involvement) section below.
 
 If needed, the bot can also attach sender metadata to conversation messages before sending them to the model, which can help the model distinguish between participants in multi-user rooms. See [🛠️ Configuration / 💬 Text Generation / 👤 Sender Context Mode](./configuration/text-generation.md#-sender-context-mode).
 
@@ -74,15 +74,15 @@ To enable tools on an existing dynamically-created agent, you need to [update th
 In the following 2 cases, it's useful to involve the bot in conversations on-demand:
 
 1. In multi-user rooms (with the [🗟 Prefix Requirement](./configuration/text-generation.md#-prefix-requirement-type) setting set to "required")
-2. In rooms with foreign users (users that are not authorized bot [👥 users](./access.md#-users))
+2. In rooms with foreign users (users without [permissions](./access.md#-permissions))
 
-In these instances, an allowed [👥 user](./access.md#-users) can also provoke the bot to respond to **any** thread or reply chain by [mentioning](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) the bot (e.g. `@baibot Hello!`). The following screenshots demonstrate this behavior:
+In these instances, an [allowed](./access.md#-permissions) user can also provoke the bot to respond to **any** thread or reply chain by [mentioning](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) the bot (e.g. `@baibot Hello!`). The following screenshots demonstrate this behavior:
 
 - [🖼️ On-demand involvement in the room](./screenshots/text-generation-prefix-requirement.webp)
 - [🖼️ On-demand involvement in a thread](./screenshots/text-generation-on-demand-thread-involvement.webp) (the Alice user in this example is not an allowed user, yet her messages are still considered as part of the conversation context)
 - [🖼️ On-demand involvement in a reply chain](./screenshots/text-generation-on-demand-reply-involvement.webp) (the Alice user in this example is not an allowed user, yet her messages are still considered as part of the conversation context)
 
-💡 **NOTE**: Normally, the bot **only considers messages from allowed [👥 Users](./access.md#-users)** and ignores all other messages when responding. However, **when the bot is explicitly invoked (via mention)** in a thread or reply chain, **it will consider all messages** in the thread and reply chain (even those from foreign users) as part of the conversation context.
+💡 **NOTE**: Normally, the bot **only considers messages from [allowed](./access.md#-permissions) users** and ignores all other messages when responding. However, **when the bot is explicitly invoked (via mention)** in a thread or reply chain, **it will consider all messages** in the thread and reply chain (even those from foreign users, except users denied text generation) as part of the conversation context.
 
 
 ### 🗣️ Text-to-Speech

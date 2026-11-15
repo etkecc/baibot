@@ -27,7 +27,7 @@ By default, the bot is **auto-configured (upon joining a new room)** to use the 
 
 Example: `!bai config room text-generation set-prefix-requirement-type command_prefix` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings))
 
-Regardless of this configuration, **the bot will also respond to messages by allowed [👥 Users](../access.md#-users) which directly [mention](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) the bot** (e.g. `@baibot`), even if they are not prefixed. An example of this can be seen on these screenshots:
+Regardless of this configuration, **the bot will also respond to messages by [allowed](../access.md#-permissions) users which directly [mention](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) the bot** (e.g. `@baibot`), even if they are not prefixed. An example of this can be seen on these screenshots:
 
 - [🖼️ On-demand involvement in a thread](../screenshots/text-generation-on-demand-thread-involvement.webp)
 - [🖼️ On-demand involvement in a reply chain](../screenshots/text-generation-on-demand-reply-involvement.webp)

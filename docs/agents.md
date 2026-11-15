@@ -48,7 +48,7 @@ To **show** full details for a given agent: `!bai agent details FULL_AGENT_IDENT
 
 Secrets in the configuration (such as the API key) are redacted. To **show the secrets too**: `!bai agent details-revealing-secrets FULL_AGENT_IDENTIFIER`. They are posted in the room where you run it, so consider who else can read that room.
 
-Only administrators can show `static/` and `global/` agents. Room-local agents can be shown by [room-local agent managers](./access.md#-room-local-agent-managers).
+Only administrators can show `static/` and `global/` agents. Room-local agents can be shown by people with the [`manage-agents` permission](./access.md#-permissions) in that room.
 
 This command requires a full agent identifier (e.g. `room-local/agent-id`).
 

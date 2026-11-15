@@ -21,7 +21,7 @@ See screenshots of:
 
 Whether the bot responds depends on:
 
-- ([🔒 access](./access.md)) whether you're a whitelisted bot [👥 user](./access.md#-users)
+- ([🔒 access](./access.md)) whether you have the [`text-generation` permission](./access.md#-permissions) in the room (see `!bai access explain`)
 
 - [🛠️ configuration](./configuration/README.md) whether there's a configured `text-generation` handler agent (or a `catch-all` handler agent). See [Mixing & matching models](./features.md#-mixing--matching-models)
 
