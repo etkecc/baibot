@@ -84,7 +84,7 @@ impl Default for TextGenerationConfig {
 }
 
 fn default_text_model_id() -> String {
-    "gpt-6.1-sol".to_owned()
+    "gpt-6.2-sol".to_owned()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -221,11 +221,11 @@ mod tests {
     #[test]
     fn new_agents_use_sol_without_temperature_and_explicit_values_still_load() {
         let defaults = TextGenerationConfig::default();
-        assert_eq!(defaults.model_id, "gpt-6.1-sol");
+        assert_eq!(defaults.model_id, "gpt-6.2-sol");
         assert_eq!(defaults.temperature, None);
 
         let missing: TextGenerationConfig = serde_yaml_ng::from_str("{}\n").unwrap();
-        assert_eq!(missing.model_id, "gpt-6.1-sol");
+        assert_eq!(missing.model_id, "gpt-6.2-sol");
         assert_eq!(missing.temperature, None);
 
         let existing: TextGenerationConfig =
