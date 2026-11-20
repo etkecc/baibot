@@ -39,6 +39,38 @@ The choice is stored in `var/homeserver` and affects all subsequent commands.
 > - Re-run the prepare and user registration steps
 
 
+#### Upgrading the local Synapse database from PostgreSQL 18 to 19
+
+Fresh Synapse setups and Continuwuity users can skip this migration. PostgreSQL 19 cannot start with the PostgreSQL 18 cluster in `var/services/postgres/`.
+
+From the checkout that still uses PostgreSQL 18, stop Synapse so it cannot write during the backup, then dump the database:
+
+```sh
+just docker-compose-synapse stop synapse &&
+  just docker-compose-synapse up -d postgres &&
+  just docker-compose-synapse exec -T postgres pg_dump -U synapse -d homeserver -Fc > var/services/synapse-postgres-18.dump
+```
+
+After the dump succeeds, stop the stack with `just synapse-stop` and rename `var/services/postgres/` to `var/services/postgres-18/`. Choose an unused backup path if that directory already exists.
+
+Update to the checkout that uses PostgreSQL 19, then start PostgreSQL by itself so Compose initializes an empty database:
+
+```sh
+just synapse-prepare
+just docker-compose-synapse up -d postgres
+just docker-compose-synapse exec -T postgres pg_isready -h 127.0.0.1 -U synapse -d homeserver
+```
+
+Repeat the readiness check until it reports that PostgreSQL is accepting connections. Restore the dump, then start Synapse:
+
+```sh
+just docker-compose-synapse exec -T postgres pg_restore -U synapse -d homeserver --single-transaction < var/services/synapse-postgres-18.dump &&
+  just synapse-start
+```
+
+Keep the dump and original directory until you have verified the restored homeserver. To roll back, stop the stack, move the PostgreSQL 19 directory aside, put the original directory back at `var/services/postgres/`, and start Synapse from the PostgreSQL 18 checkout. This restores the database to its pre-upgrade state. Keep the existing Synapse media store in place.
+
+
 ### Getting started guide
 
 Developing [locally](#running-locally) is possible, but requires a [Rust](https://www.rust-lang.org/) toolchain.
