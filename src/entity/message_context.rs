@@ -4,7 +4,7 @@ use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId, RoomId};
 use mxlink::ThreadInfo;
 
 use crate::authorization::{Authorizer, Permission};
-use crate::conversation::matrix::SenderFilter;
+use crate::conversation::matrix::{ConversationBound, SenderFilter};
 
 use super::{
     MessagePayload, RoomConfigContext, TriggerEventInfo, globalconfig::GlobalConfig,
@@ -114,6 +114,14 @@ impl MessageContext {
 
     pub fn event_id(&self) -> &OwnedEventId {
         &self.trigger_event_info.event_id
+    }
+
+    /// Where conversations built for answering the triggering event end: the event itself.
+    pub fn conversation_bound(&self) -> ConversationBound {
+        ConversationBound::new(
+            self.trigger_event_info.event_id.clone(),
+            self.trigger_event_info.origin_server_ts,
+        )
     }
 
     pub fn sender_id(&self) -> &OwnedUserId {

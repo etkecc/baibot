@@ -208,6 +208,7 @@ impl Reacting {
         let trigger_event_info = TriggerEventInfo::new(
             event.event_id().to_owned(),
             event.sender().to_owned(),
+            event.origin_server_ts(),
             MessagePayload::Reaction {
                 key: reaction_event_content.relates_to.key,
                 reacted_to_event_payload: Box::new(reacted_to_event_payload),

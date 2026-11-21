@@ -7,17 +7,18 @@ use crate::conversation::matrix::MatrixMessage;
 
 use super::llm::{Conversation, Message, convert_matrix_message_to_llm_message};
 use super::matrix::{
-    MatrixMessageProcessingParams, RoomEventFetcher, get_matrix_messages_in_reply_chain,
-    get_matrix_messages_in_thread, process_matrix_messages,
+    ConversationBound, MatrixMessageProcessingParams, RoomEventFetcher,
+    get_matrix_messages_in_reply_chain, get_matrix_messages_in_thread, process_matrix_messages,
 };
 
 pub async fn create_llm_conversation_for_matrix_thread(
     matrix_link: &MatrixLink,
     room: &mxlink::matrix_sdk::Room,
     thread_id: OwnedEventId,
+    bound: &ConversationBound,
     params: &MatrixMessageProcessingParams,
 ) -> Result<Conversation, mxlink::matrix_sdk::Error> {
-    let messages = get_matrix_messages_in_thread(matrix_link, room, thread_id).await?;
+    let messages = get_matrix_messages_in_thread(matrix_link, room, thread_id, bound).await?;
 
     let llm_messages = filter_messages_and_convert_to_llm_messages(messages, params).await;
 

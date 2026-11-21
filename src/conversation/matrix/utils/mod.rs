@@ -3,7 +3,7 @@ mod tests;
 
 use std::sync::Arc;
 
-use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId};
+use mxlink::matrix_sdk::ruma::{EventId, OwnedEventId, OwnedUserId, UserId};
 use mxlink::matrix_sdk::{
     Room,
     deserialized_responses::TimelineEvent,
@@ -19,7 +19,10 @@ use mxlink::matrix_sdk::{
 use mxlink::{MatrixLink, ThreadGetMessagesParams, ThreadInfo};
 use tracing::Instrument;
 
-use super::{MatrixMessage, MatrixMessageContent, MatrixMessageProcessingParams, RoomEventFetcher};
+use super::{
+    ConversationBound, MatrixMessage, MatrixMessageContent, MatrixMessageProcessingParams,
+    RoomEventFetcher,
+};
 use crate::entity::{InteractionContext, InteractionTrigger, MessagePayload};
 use crate::utils::mime::get_mime_type_from_file_name;
 
@@ -28,15 +31,52 @@ struct DetailedMessagePayload {
     message_payload: MessagePayload,
 }
 
+/// Returns the thread's messages (oldest first), up to the given bound (see [`ConversationBound`]).
 pub async fn get_matrix_messages_in_thread(
     matrix_link: &MatrixLink,
     room: &Room,
     thread_id: OwnedEventId,
+    bound: &ConversationBound,
 ) -> Result<Vec<MatrixMessage>, mxlink::matrix_sdk::Error> {
     let messages_native = matrix_link
         .threads()
-        .get_messages(room, thread_id, ThreadGetMessagesParams::default())
+        .get_messages(room, thread_id.clone(), ThreadGetMessagesParams::default())
         .await?;
+
+    let (mut messages_native, ending_events) =
+        bound_thread_events(messages_native, &thread_id, bound, matrix_link.user_id());
+
+    // The conversation ends with the event being answered (and our transcription of it), in that order.
+    // The server may not list those in the thread yet, so we fetch them ourselves if needed.
+    // Without them there's nothing to answer, so failing to fetch them (or finding them deleted in the meantime)
+    // fails the conversation. Otherwise, it would end with an earlier message, which is not what we're answering.
+    for (event_id, event) in ending_events {
+        let event = match event {
+            Some(event) => event,
+            None => {
+                tracing::debug!(
+                    event_id = event_id.as_str(),
+                    "An event the conversation ends with is not listed in its thread yet, so fetching it"
+                );
+
+                let AnySyncTimelineEvent::MessageLike(event) =
+                    room.event(&event_id, None).await?.raw().deserialize()?
+                else {
+                    continue;
+                };
+
+                without_late_edit(event, bound, matrix_link.user_id())
+            }
+        };
+
+        if event.is_redacted() {
+            return Err(mxlink::matrix_sdk::Error::UnknownError(
+                "the message being answered was deleted".into(),
+            ));
+        }
+
+        messages_native.push(event);
+    }
 
     let mut messages: Vec<MatrixMessage> = Vec::new();
 
@@ -51,6 +91,74 @@ pub async fn get_matrix_messages_in_thread(
     }
 
     Ok(messages)
+}
+
+/// Splits the thread's events (sorted oldest first) into those sent before the bound's event (see [`ConversationBound`])
+/// and the events the conversation ends with (the bound's event, then the explicitly included ones), leaving out the rest.
+///
+/// Events sent within the bound's millisecond may come in any order, so only those sent strictly before it are kept,
+/// and the thread's root (which every other event in the thread follows), which always comes first
+/// (when answering the root itself, no other events come before it).
+/// The events the conversation ends with come in the bound's order, each with the event if it was among the thread's
+/// events (the server may not list them in the thread yet).
+/// Edits sent at or after the bound's time are dropped from the kept events (their earlier text is used),
+/// except for the bot's own (like the "thinking…" notice of an earlier answer turning into that answer).
+#[allow(clippy::type_complexity)]
+fn bound_thread_events(
+    events: Vec<AnySyncMessageLikeEvent>,
+    thread_id: &EventId,
+    bound: &ConversationBound,
+    bot_user_id: &UserId,
+) -> (
+    Vec<AnySyncMessageLikeEvent>,
+    Vec<(OwnedEventId, Option<AnySyncMessageLikeEvent>)>,
+) {
+    let mut ending_events: Vec<(OwnedEventId, Option<AnySyncMessageLikeEvent>)> = Vec::new();
+    for event_id in std::iter::once(&bound.event_id).chain(bound.also_include.iter()) {
+        if !ending_events.iter().any(|(id, _)| id == event_id) {
+            ending_events.push((event_id.clone(), None));
+        }
+    }
+
+    // Every other event in the thread follows its root, whatever their timestamps say.
+    let answering_root = bound.event_id == thread_id;
+
+    let mut earlier_events = Vec::new();
+
+    for event in events {
+        let event = without_late_edit(event, bound, bot_user_id);
+
+        if let Some((_, slot)) = ending_events
+            .iter_mut()
+            .find(|(event_id, _)| event_id == event.event_id())
+        {
+            *slot = Some(event);
+        } else if event.event_id() == thread_id {
+            earlier_events.insert(0, event);
+        } else if !answering_root && event.origin_server_ts() < bound.origin_server_ts {
+            earlier_events.push(event);
+        }
+    }
+
+    (earlier_events, ending_events)
+}
+
+/// Drops the latest edit bundled with the event if it was sent at or after the bound's time (see [`bound_thread_events`]).
+fn without_late_edit(
+    mut event: AnySyncMessageLikeEvent,
+    bound: &ConversationBound,
+    bot_user_id: &UserId,
+) -> AnySyncMessageLikeEvent {
+    if let AnySyncMessageLikeEvent::RoomMessage(SyncMessageLikeEvent::Original(message)) =
+        &mut event
+        && let Some(replacement) = &message.unsigned.relations.replace
+        && replacement.origin_server_ts >= bound.origin_server_ts
+        && replacement.sender != bot_user_id
+    {
+        message.unsigned.relations.replace = None;
+    }
+
+    event
 }
 
 pub async fn get_matrix_messages_in_reply_chain(

@@ -593,3 +593,325 @@ fn agent_configurations_are_left_out_of_conversations() {
         Some("Configuration for agent `static/openai`: what does temperature do?")
     );
 }
+
+fn thread_event(
+    event_id: &str,
+    ts: u64,
+) -> mxlink::matrix_sdk::ruma::events::AnySyncMessageLikeEvent {
+    serde_json::from_value(serde_json::json!({
+        "type": "m.room.message",
+        "event_id": event_id,
+        "sender": "@user:example.com",
+        "origin_server_ts": ts,
+        "content": { "msgtype": "m.text", "body": event_id },
+    }))
+    .unwrap()
+}
+
+/// A thread message by `sender`, edited (by the same sender) at `edit_ts` to say "edited".
+fn edited_thread_event(
+    event_id: &str,
+    sender: &str,
+    ts: u64,
+    edit_ts: u64,
+) -> mxlink::matrix_sdk::ruma::events::AnySyncMessageLikeEvent {
+    serde_json::from_value(serde_json::json!({
+        "type": "m.room.message",
+        "event_id": event_id,
+        "sender": sender,
+        "origin_server_ts": ts,
+        "content": { "msgtype": "m.text", "body": "original" },
+        "unsigned": {
+            "m.relations": {
+                "m.replace": {
+                    "type": "m.room.message",
+                    "event_id": "$edit:example.com",
+                    "sender": sender,
+                    "origin_server_ts": edit_ts,
+                    "content": {
+                        "msgtype": "m.text",
+                        "body": "* edited",
+                        "m.new_content": { "msgtype": "m.text", "body": "edited" },
+                        "m.relates_to": { "rel_type": "m.replace", "event_id": event_id },
+                    },
+                },
+            },
+        },
+    }))
+    .unwrap()
+}
+
+fn thread_root_id() -> mxlink::matrix_sdk::ruma::OwnedEventId {
+    "$root:example.com".try_into().unwrap()
+}
+
+fn bot_user_id() -> OwnedUserId {
+    OwnedUserId::try_from("@bot:example.com").unwrap()
+}
+
+/// Returns the kept events' IDs (in conversation order) and the IDs of the missing ones the conversation ends with.
+fn bounded_ids(
+    events: Vec<mxlink::matrix_sdk::ruma::events::AnySyncMessageLikeEvent>,
+    bound: &crate::conversation::matrix::ConversationBound,
+) -> (Vec<String>, Vec<String>) {
+    let (earlier_events, ending_events) =
+        super::bound_thread_events(events, &thread_root_id(), bound, &bot_user_id());
+
+    let mut kept: Vec<String> = earlier_events
+        .iter()
+        .map(|event| event.event_id().to_string())
+        .collect();
+    let mut missing = Vec::new();
+
+    for (event_id, event) in ending_events {
+        match event {
+            Some(event) => kept.push(event.event_id().to_string()),
+            None => missing.push(event_id.to_string()),
+        }
+    }
+
+    (kept, missing)
+}
+
+/// The text a (room message) event says, with its bundled edit (if still there) applied.
+fn latest_text(event: &mxlink::matrix_sdk::ruma::events::AnySyncMessageLikeEvent) -> String {
+    let mxlink::matrix_sdk::ruma::events::AnySyncMessageLikeEvent::RoomMessage(
+        mxlink::matrix_sdk::ruma::events::SyncMessageLikeEvent::Original(message),
+    ) = event
+    else {
+        panic!("Expected an original room message");
+    };
+
+    super::latest_room_message_content(message)
+        .0
+        .body()
+        .to_owned()
+}
+
+fn bound(event_id: &str, ts: u64) -> crate::conversation::matrix::ConversationBound {
+    crate::conversation::matrix::ConversationBound::new(
+        event_id.try_into().unwrap(),
+        mxlink::matrix_sdk::ruma::MilliSecondsSinceUnixEpoch(ts.try_into().unwrap()),
+    )
+}
+
+#[test]
+fn bound_thread_events_stops_at_the_event_being_answered() {
+    let events = || {
+        vec![
+            thread_event("$root:example.com", 1),
+            thread_event("$question:example.com", 2),
+            thread_event("$trigger:example.com", 3),
+            thread_event("$later:example.com", 4),
+            thread_event("$transcript:example.com", 5),
+        ]
+    };
+
+    assert_eq!(
+        bounded_ids(events(), &bound("$trigger:example.com", 3)),
+        (
+            vec![
+                "$root:example.com".to_owned(),
+                "$question:example.com".to_owned(),
+                "$trigger:example.com".to_owned(),
+            ],
+            Vec::<String>::new(),
+        ),
+    );
+
+    // Events the bound explicitly includes (like the bot's transcription of a voice message) are kept,
+    // while others posted after the trigger are still left out.
+    assert_eq!(
+        bounded_ids(
+            events(),
+            &bound("$trigger:example.com", 3)
+                .also_including("$transcript:example.com".try_into().unwrap()),
+        ),
+        (
+            vec![
+                "$root:example.com".to_owned(),
+                "$question:example.com".to_owned(),
+                "$trigger:example.com".to_owned(),
+                "$transcript:example.com".to_owned(),
+            ],
+            Vec::<String>::new(),
+        ),
+    );
+
+    // Answering the thread root (e.g. a new conversation) leaves out everything posted in the thread since.
+    assert_eq!(
+        bounded_ids(events(), &bound("$root:example.com", 1)),
+        (vec!["$root:example.com".to_owned()], vec![]),
+    );
+}
+
+#[test]
+fn bound_thread_events_leaves_out_events_sent_within_the_same_millisecond() {
+    // Events sent within the same millisecond may come in any order (e.g. across `/relations` pages),
+    // so the one sorted before the trigger may have been sent after it.
+    let events = vec![
+        thread_event("$root:example.com", 1),
+        thread_event("$same-time:example.com", 3),
+        thread_event("$trigger:example.com", 3),
+    ];
+
+    assert_eq!(
+        bounded_ids(events, &bound("$trigger:example.com", 3)),
+        (
+            vec![
+                "$root:example.com".to_owned(),
+                "$trigger:example.com".to_owned()
+            ],
+            Vec::<String>::new(),
+        ),
+    );
+}
+
+#[test]
+fn bound_thread_events_ends_with_the_bound_events_regardless_of_their_time() {
+    // Our transcription may carry an earlier timestamp than messages sent before the voice message
+    // (when the sender's homeserver clock is ahead of ours), but still belongs at the end.
+    let events = vec![
+        thread_event("$root:example.com", 1),
+        thread_event("$transcript:example.com", 3),
+        thread_event("$text:example.com", 4),
+        thread_event("$voice:example.com", 5),
+    ];
+
+    assert_eq!(
+        bounded_ids(
+            events,
+            &bound("$voice:example.com", 5)
+                .also_including("$transcript:example.com".try_into().unwrap()),
+        ),
+        (
+            vec![
+                "$root:example.com".to_owned(),
+                "$text:example.com".to_owned(),
+                "$voice:example.com".to_owned(),
+                "$transcript:example.com".to_owned(),
+            ],
+            Vec::<String>::new(),
+        ),
+    );
+}
+
+#[test]
+fn bound_thread_events_always_keeps_the_thread_root_first() {
+    // A reply sent within the root's millisecond (or with an earlier timestamp, from a server whose clock is behind)
+    // still follows the root.
+    let events = vec![
+        thread_event("$early-reply:example.com", 1),
+        thread_event("$root:example.com", 2),
+        thread_event("$trigger:example.com", 2),
+    ];
+
+    assert_eq!(
+        bounded_ids(events, &bound("$trigger:example.com", 2)),
+        (
+            vec![
+                "$root:example.com".to_owned(),
+                "$early-reply:example.com".to_owned(),
+                "$trigger:example.com".to_owned(),
+            ],
+            Vec::<String>::new(),
+        ),
+    );
+}
+
+#[test]
+fn bound_thread_events_keeps_no_replies_when_answering_the_root() {
+    // A reply with an earlier timestamp (from a server whose clock is behind) was still sent after the root.
+    let events = vec![
+        thread_event("$early-reply:example.com", 1),
+        thread_event("$root:example.com", 2),
+    ];
+
+    assert_eq!(
+        bounded_ids(events, &bound("$root:example.com", 2)),
+        (vec!["$root:example.com".to_owned()], Vec::<String>::new()),
+    );
+}
+
+#[test]
+fn bound_thread_events_reports_unlisted_events() {
+    let events = vec![
+        thread_event("$root:example.com", 1),
+        thread_event("$question:example.com", 2),
+        thread_event("$same-time:example.com", 3),
+        thread_event("$later:example.com", 4),
+    ];
+
+    assert_eq!(
+        bounded_ids(events, &bound("$trigger:example.com", 3)),
+        (
+            vec![
+                "$root:example.com".to_owned(),
+                "$question:example.com".to_owned()
+            ],
+            vec!["$trigger:example.com".to_owned()],
+        ),
+    );
+
+    // Our transcription of a voice message may not be listed yet either.
+    let events = vec![
+        thread_event("$root:example.com", 1),
+        thread_event("$voice:example.com", 2),
+    ];
+
+    assert_eq!(
+        bounded_ids(
+            events,
+            &bound("$voice:example.com", 2)
+                .also_including("$transcript:example.com".try_into().unwrap()),
+        ),
+        (
+            vec![
+                "$root:example.com".to_owned(),
+                "$voice:example.com".to_owned()
+            ],
+            vec!["$transcript:example.com".to_owned()],
+        ),
+    );
+}
+
+#[test]
+fn bound_thread_events_drops_later_edits_except_the_bots() {
+    let events = vec![
+        thread_event("$root:example.com", 1),
+        // Edited before the trigger: the edit stays.
+        edited_thread_event("$early-edit:example.com", "@user:example.com", 2, 3),
+        // Edited after the trigger: the original text is used.
+        edited_thread_event("$late-edit:example.com", "@user:example.com", 2, 6),
+        // Edited within the trigger's millisecond: may have been sent after it, so dropped.
+        edited_thread_event("$same-time-edit:example.com", "@user:example.com", 2, 5),
+        // The bot's own edits stay (an earlier answer's "thinking…" notice which turned into that answer).
+        edited_thread_event("$bot-answer:example.com", "@bot:example.com", 2, 6),
+        thread_event("$trigger:example.com", 5),
+    ];
+
+    let (earlier_events, ending_events) = super::bound_thread_events(
+        events,
+        &thread_root_id(),
+        &bound("$trigger:example.com", 5),
+        &bot_user_id(),
+    );
+
+    let texts: Vec<String> = earlier_events
+        .iter()
+        .chain(ending_events.iter().filter_map(|(_, event)| event.as_ref()))
+        .map(latest_text)
+        .collect();
+
+    assert_eq!(
+        texts,
+        vec![
+            "$root:example.com",
+            "edited",
+            "original",
+            "original",
+            "edited",
+            "$trigger:example.com",
+        ],
+    );
+}

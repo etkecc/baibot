@@ -413,8 +413,12 @@ impl Messaging {
             return Ok(());
         };
 
-        let trigger_event_info =
-            TriggerEventInfo::new(event.event_id.clone(), event.sender.clone(), payload);
+        let trigger_event_info = TriggerEventInfo::new(
+            event.event_id.clone(),
+            event.sender.clone(),
+            event.origin_server_ts,
+            payload,
+        );
 
         let message_context = MessageContext::new(
             room.clone(),

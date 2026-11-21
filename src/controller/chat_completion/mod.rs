@@ -28,7 +28,7 @@ use crate::{
     conversation::{
         create_llm_conversation_for_matrix_reply_chain, create_llm_conversation_for_matrix_thread,
         llm::{Author, Conversation, MessageContent},
-        matrix::create_list_of_bot_user_prefixes_to_strip,
+        matrix::{ConversationBound, create_list_of_bot_user_prefixes_to_strip},
     },
     entity::MessageContext,
 };
@@ -205,7 +205,7 @@ pub async fn handle(
             }
 
             let speech_to_text_created_event_id_reaction_event_id =
-                if let Some(speech_to_text_created_event_id) = speech_to_text_created_event_id {
+                if let Some(speech_to_text_created_event_id) = &speech_to_text_created_event_id {
                     let reaction_event_response = bot
                         .reacting()
                         .react_no_fail(
@@ -229,12 +229,20 @@ pub async fn handle(
                     .text_generation_reply_style(),
             );
 
+            // The conversation ends at the message being answered, plus our transcription of it (for voice messages).
+            let mut conversation_bound = message_context.conversation_bound();
+            if let Some(speech_to_text_created_event_id) = &speech_to_text_created_event_id {
+                conversation_bound =
+                    conversation_bound.also_including(speech_to_text_created_event_id.clone());
+            }
+
             let text_to_speech_eligible_payload = handle_stage_text_generation(
                 bot,
                 matrix_link.clone(),
                 message_context,
                 controller_type,
                 response_type.clone(),
+                &conversation_bound,
             )
             .await;
 
@@ -505,6 +513,7 @@ async fn handle_stage_text_generation(
     message_context: &MessageContext,
     controller_type: &ChatCompletionControllerType,
     response_type: MessageResponseType,
+    conversation_bound: &ConversationBound,
 ) -> Option<TextToSpeechEligiblePayload> {
     let agent = get_effective_agent_for_purpose_or_complain(
         bot,
@@ -574,6 +583,7 @@ async fn handle_stage_text_generation(
                 &matrix_link,
                 message_context.room(),
                 message_context.thread_info().root_event_id.clone(),
+                conversation_bound,
                 &params,
             )
             .await

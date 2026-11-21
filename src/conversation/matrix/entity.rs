@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use mxlink::matrix_sdk::ruma::events::room::message::{
     FileMessageEventContent, ImageMessageEventContent,
 };
-use mxlink::matrix_sdk::ruma::{OwnedUserId, UserId};
+use mxlink::matrix_sdk::ruma::{MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedUserId, UserId};
 use mxlink::mime::Mime;
 
 #[derive(Clone)]
@@ -70,6 +70,35 @@ impl MatrixMessageProcessingParams {
 
     pub fn with_first_message_prefixes_to_strip(mut self, value: Vec<String>) -> Self {
         self.first_message_prefixes_to_strip = value;
+        self
+    }
+}
+
+/// Where a thread conversation ends: at the event being answered.
+///
+/// Messages posted in the thread after it (e.g. while the bot is still fetching the thread) are left out,
+/// so they can't steer the answer (or the tools it uses) under the triggering sender's permissions.
+#[derive(Debug, Clone)]
+pub struct ConversationBound {
+    /// The event being answered (the last one included).
+    pub event_id: OwnedEventId,
+    /// The event's timestamp: earlier events are kept, later edits dropped.
+    pub origin_server_ts: MilliSecondsSinceUnixEpoch,
+    /// Later events which are still included, like the bot's transcription of a voice message being answered.
+    pub also_include: Vec<OwnedEventId>,
+}
+
+impl ConversationBound {
+    pub fn new(event_id: OwnedEventId, origin_server_ts: MilliSecondsSinceUnixEpoch) -> Self {
+        Self {
+            event_id,
+            origin_server_ts,
+            also_include: vec![],
+        }
+    }
+
+    pub fn also_including(mut self, event_id: OwnedEventId) -> Self {
+        self.also_include.push(event_id);
         self
     }
 }

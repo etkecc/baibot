@@ -64,6 +64,7 @@ pub async fn handle(
         &matrix_link,
         message_context.room(),
         message_context.thread_info().root_event_id.clone(),
+        &message_context.conversation_bound(),
         &params,
     )
     .await?;
