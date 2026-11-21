@@ -48,11 +48,8 @@ pub fn shorten_messages_list_to_context_size(
 
     // We want to retain the prompt in all cases, so we always count it first.
     // We also always reserve enough tokens for the maximum response we expect.
-    let mut current_context_length: u32 = if let Some(prompt_message) = prompt_message {
-        count(prompt_message) + max_response_tokens.unwrap_or(0)
-    } else {
-        0
-    };
+    let mut current_context_length: u32 =
+        prompt_message.as_ref().map_or(0, count) + max_response_tokens.unwrap_or(0);
 
     messages.reverse();
 
@@ -419,6 +416,36 @@ pub mod test {
 
         // 3 text tokens plus the per-message overhead (4).
         assert_eq!(7, super::approximate_token_size_for_message(&message));
+    }
+
+    #[test]
+    fn the_response_allowance_is_reserved_without_a_prompt_too() {
+        let message = super::Message {
+            author: super::Author::User,
+            sender_id: None,
+            content: super::MessageContent::Text("Hello there.".to_string()),
+            timestamp: chrono::Utc::now(),
+        };
+
+        let size = super::approximate_token_size_for_message(&message);
+
+        let kept = super::shorten_messages_list_to_context_size(
+            super::TokenEstimate::Approximate,
+            &None,
+            vec![message.clone()],
+            Some(1),
+            size,
+        );
+        assert!(kept.is_empty());
+
+        let kept = super::shorten_messages_list_to_context_size(
+            super::TokenEstimate::Approximate,
+            &None,
+            vec![message],
+            Some(1),
+            size + 1,
+        );
+        assert_eq!(kept.len(), 1);
     }
 
     #[test]
