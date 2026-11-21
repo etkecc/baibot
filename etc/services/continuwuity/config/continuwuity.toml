@@ -7,7 +7,11 @@ port = 6167
 database_path = "/var/lib/continuwuity"
 
 allow_registration = true
-yes_i_am_very_very_sure_i_want_an_open_registration_server_prone_to_abuse = true
+# Open (challengeless) registration only works in builds with the `openreg` feature,
+# which release images lack. Registration goes through this static token instead
+# (see `register-user.sh`). The very first account still needs the one-time
+# token that Continuwuity prints to its logs on first run.
+registration_token = "baibot-dev-registration-token"
 
 new_user_displayname_suffix = ""
 

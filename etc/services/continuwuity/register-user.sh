@@ -25,16 +25,21 @@ if [ -z "${SESSION_ID}" ]; then
 	exit 1
 fi
 
-# Determine the required auth flow from the server response.
-# The first user requires m.login.registration_token (bootstrap token from logs).
-# Subsequent users use m.login.dummy (open registration).
-if echo "${SESSION_RESPONSE}" | grep -q 'm.login.registration_token'; then
-	CONTAINER_ID=$(docker ps -q --filter name=baibot-continuwuity-continuwuity)
-	REG_TOKEN=$(docker logs "${CONTAINER_ID}" 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep 'using the registration token' | grep -oP 'registration token \K[A-Za-z0-9]+' | head -1)
-	AUTH_BODY="{\"type\": \"m.login.registration_token\", \"token\": \"${REG_TOKEN}\", \"session\": \"${SESSION_ID}\"}"
-else
-	AUTH_BODY="{\"type\": \"m.login.dummy\", \"session\": \"${SESSION_ID}\"}"
+# Registration always requires a token. On first run (no users yet), Continuwuity only accepts
+# the one-time token it prints to its logs. Afterwards, the static token from the config applies.
+CONFIG_FILE="$(dirname "$0")/config/continuwuity.toml"
+REG_TOKEN=$(grep '^registration_token' "${CONFIG_FILE}" | cut -d'"' -f2)
+
+if ! VALIDITY=$(curl -fsS "${SERVER}/_matrix/client/v1/register/m.login.registration_token/validity?token=${REG_TOKEN}"); then
+	echo "Error: Could not check registration token validity."
+	exit 1
 fi
+if echo "${VALIDITY}" | grep -q '"valid":false'; then
+	CONTAINER_ID=$(docker ps -q --filter name=baibot-continuwuity-continuwuity)
+	REG_TOKEN=$(docker logs "${CONTAINER_ID}" 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep 'using the registration token' | grep -oP 'registration token \K[A-Za-z0-9]+' | tail -1)
+fi
+
+AUTH_BODY="{\"type\": \"m.login.registration_token\", \"token\": \"${REG_TOKEN}\", \"session\": \"${SESSION_ID}\"}"
 
 RESULT=$(curl -s -X POST "${REGISTER_URL}" \
 	-H 'Content-Type: application/json' \
