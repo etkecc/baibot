@@ -49,6 +49,7 @@ fn calls(round: u32, names: &[&str]) -> TextGenerationResult {
                 arguments: "{}".to_owned(),
             })
             .collect(),
+        reasoning_bytes: 0,
         continuation: ProviderState::new(round),
     }
 }
@@ -80,6 +81,10 @@ impl ControllerTrait for FakeController {
 
     fn text_generation_max_context_tokens(&self) -> Option<u32> {
         None
+    }
+
+    fn text_generation_bot_tools_enabled(&self) -> bool {
+        true
     }
 
     fn text_to_speech_voice(&self) -> Option<String> {
@@ -336,6 +341,7 @@ async fn calling_tools_after_the_limit_ends_with_the_text_written_so_far() {
             name: "room_history".to_owned(),
             arguments: "{}".to_owned(),
         }],
+        reasoning_bytes: 0,
         continuation: ProviderState::new(5_u32),
     });
 
@@ -543,6 +549,7 @@ async fn calls_larger_than_the_budget_end_the_turn_without_running() {
             name: "room_history".to_owned(),
             arguments: format!("{{\"x\": \"{}\"}}", "y".repeat(300)),
         }],
+        reasoning_bytes: 0,
         continuation: ProviderState::new(1_u32),
     }]);
     let executor = FakeExecutor::new("output");
@@ -570,6 +577,33 @@ async fn call_ids_count_twice_towards_the_budget() {
             name: "room_history".to_owned(),
             arguments: "{}".to_owned(),
         }],
+        reasoning_bytes: 0,
+        continuation: ProviderState::new(1_u32),
+    }]);
+    let executor = FakeExecutor::new("output");
+
+    assert!(
+        run(
+            &controller,
+            &executor,
+            ToolLimits::with_max_output_bytes(200)
+        )
+        .await
+        .is_err()
+    );
+    assert!(executor.executed().is_empty());
+}
+
+#[tokio::test]
+async fn reasoning_sent_back_counts_towards_the_budget() {
+    let controller = FakeController::new(vec![TextGenerationResult::ToolCalls {
+        text: None,
+        calls: vec![ToolCall {
+            id: "call".to_owned(),
+            name: "room_history".to_owned(),
+            arguments: "{}".to_owned(),
+        }],
+        reasoning_bytes: 300,
         continuation: ProviderState::new(1_u32),
     }]);
     let executor = FakeExecutor::new("output");

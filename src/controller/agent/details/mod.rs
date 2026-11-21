@@ -41,19 +41,30 @@ pub async fn handle(
 
     let config_yaml_pretty = serde_yaml_ng::to_string(&config)?;
 
-    bot.messaging()
-        .send_text_markdown_no_fail(
-            message_context.room(),
-            format!(
-                "Configuration for agent `{}` (powered by the `{}` provider):\n```yml\n{}\n```",
-                agent_identifier,
-                agent.definition().provider.to_static_str(),
-                config_yaml_pretty.trim(),
+    let message = format!(
+        "{}{}` (powered by the `{}` provider):\n```yml\n{}\n```",
+        crate::conversation::matrix::AGENT_CONFIGURATION_MESSAGE_PREFIX,
+        agent_identifier,
+        agent.definition().provider.to_static_str(),
+        config_yaml_pretty.trim(),
+    );
+
+    let response_type =
+        MessageResponseType::Reply(message_context.thread_info().root_event_id.clone());
+
+    if reveal_secrets {
+        bot.messaging()
+            .send_text_markdown_containing_secrets_no_fail(
+                message_context.room(),
+                message,
+                response_type,
             )
-            .to_owned(),
-            MessageResponseType::Reply(message_context.thread_info().root_event_id.clone()),
-        )
-        .await;
+            .await;
+    } else {
+        bot.messaging()
+            .send_text_markdown_no_fail(message_context.room(), message, response_type)
+            .await;
+    }
 
     Ok(())
 }

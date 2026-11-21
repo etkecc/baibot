@@ -1,3 +1,5 @@
+mod tools;
+
 use mxlink::matrix_sdk::ruma::OwnedEventId;
 use mxlink::matrix_sdk::ruma::events::room::message::AudioMessageEventContent;
 use mxlink::{MatrixLink, MessageResponseType, ThreadInfo};
@@ -649,8 +651,24 @@ async fn handle_stage_text_generation(
         .room_config_context()
         .text_generation_context_management_enabled();
 
-    let executor = crate::tools::NoTools;
-    let offered_tools = vec![];
+    let tool_offer = if controller.text_generation_bot_tools_enabled() {
+        crate::tools::registry::offer(message_context.authorizer(), message_context.sender_id())
+    } else {
+        crate::tools::registry::ToolOffer::none()
+    };
+    let offered_tools = tool_offer.definitions();
+    let tool_instructions = crate::tools::registry::instructions(&tool_offer, bot.command_prefix());
+
+    let (activity_sender, mut activity_receiver) = tokio::sync::watch::channel(None);
+
+    let executor = tools::BotToolExecutor::new(
+        bot,
+        message_context.room().clone(),
+        message_context.sender_id().clone(),
+        message_context.event_id().clone(),
+        tool_offer.offered,
+        activity_sender,
+    );
 
     let (reserved_context_tokens, tool_limits) = crate::tools::tool_budget(
         context_management_enabled,
@@ -676,7 +694,7 @@ async fn handle_stage_text_generation(
             reserved_context_tokens
         },
         tools: offered_tools,
-        tool_instructions: None,
+        tool_instructions,
         continuation: None,
     };
 
@@ -705,15 +723,43 @@ async fn handle_stage_text_generation(
         // If an edit runs long, hold ~INTERVAL spacing rather than bursting the missed ticks.
         tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
+        // The latest flavor line, kept when only the tool activity changes.
+        let mut flavor = String::new();
+        // What the tools are doing, shown below the flavor line.
+        let mut activity: Option<String> = None;
+        let mut activity_open = true;
+
         let result = loop {
             tokio::select! {
                 biased;
                 generation_result = &mut generation => break generation_result,
+                changed = activity_receiver.changed(), if activity_open => {
+                    if changed.is_err() {
+                        activity_open = false;
+                        continue;
+                    }
+
+                    activity = activity_receiver.borrow_and_update().clone();
+
+                    // Before the notice is posted, the next tick shows the activity.
+                    // When a call is done, the next tick leaves it out (no edit just for that).
+                    if let (Some(event_id), Some(_)) = (&placeholder, &activity) {
+                        bot.messaging()
+                            .edit_text_markdown_no_fail(
+                                message_context.room(),
+                                event_id,
+                                thinking_notice(&flavor, activity.as_deref()),
+                            )
+                            .await;
+                    }
+                }
                 _ = tick.tick() => {
-                    let message = notice_prompt_variables.format(
+                    flavor = notice_prompt_variables.format(
                         strings::thinking::pick_message(start_time.elapsed(), notice_sequence),
                     );
                     notice_sequence = notice_sequence.wrapping_add(1);
+
+                    let message = thinking_notice(&flavor, activity.as_deref());
 
                     match &placeholder {
                         None => {
@@ -827,6 +873,14 @@ async fn handle_stage_text_generation(
     };
 
     Some(TextToSpeechEligiblePayload { text, event_id })
+}
+
+/// Combines the thinking notice's flavor line with what tools are doing (if anything).
+fn thinking_notice(flavor: &str, activity: Option<&str>) -> String {
+    match activity {
+        Some(activity) => format!("{flavor}\n\n{activity}"),
+        None => flavor.to_owned(),
+    }
 }
 
 /// Finalizes a thinking-notice placeholder (if one was posted) with error/notice text, so a

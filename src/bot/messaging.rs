@@ -6,8 +6,10 @@ use mxlink::matrix_sdk::{
         api::client::receipt::create_receipt::v3::ReceiptType,
         events::{
             receipt::ReceiptThread,
+            relation::{Reply, Thread},
             room::message::{
-                OriginalSyncRoomMessageEvent, Relation, RoomMessageEventContentWithoutRelation,
+                OriginalSyncRoomMessageEvent, Relation, RoomMessageEventContent,
+                RoomMessageEventContentWithoutRelation,
             },
         },
     },
@@ -18,6 +20,7 @@ use mxlink::{CallbackError, MessageResponseType};
 use tracing::Instrument;
 
 use crate::authorization::authorizer_for_room;
+use crate::conversation::matrix::CONTAINS_SECRETS_FIELD;
 use crate::{
     conversation::matrix::determine_interaction_context_for_room_event,
     entity::{
@@ -52,6 +55,51 @@ impl Messaging {
 
         match result {
             Ok(result) => Some(result),
+            Err(err) => {
+                tracing::error!(
+                    room_id = format!("{:?}", room.room_id()),
+                    ?err,
+                    "Failed to send text message to room",
+                );
+                None
+            }
+        }
+    }
+
+    /// Like `send_text_markdown_no_fail`, for messages containing secrets (like API keys).
+    ///
+    /// They are marked (see [`CONTAINS_SECRETS_FIELD`]), so that the bot doesn't pass them on later.
+    pub async fn send_text_markdown_containing_secrets_no_fail(
+        &self,
+        room: &Room,
+        message: String,
+        response_type: MessageResponseType,
+    ) -> Option<mxlink::matrix_sdk::ruma::api::client::message::send_message_event::v3::Response>
+    {
+        let mut content = RoomMessageEventContent::text_markdown(message);
+
+        content.relates_to = match response_type {
+            MessageResponseType::InRoom => None,
+            MessageResponseType::Reply(event_id) => {
+                Some(Relation::Reply(Reply::with_event_id(event_id)))
+            }
+            MessageResponseType::InThread(thread_info) => Some(Relation::Thread(Thread::plain(
+                thread_info.root_event_id,
+                thread_info.last_event_id,
+            ))),
+        };
+
+        let mut content = match serde_json::to_value(&content) {
+            Ok(content) => content,
+            Err(err) => {
+                tracing::error!(?err, "Failed to serialize message");
+                return None;
+            }
+        };
+        content[CONTAINS_SECRETS_FIELD] = serde_json::Value::Bool(true);
+
+        match room.send_raw("m.room.message", content).await {
+            Ok(result) => Some(result.response),
             Err(err) => {
                 tracing::error!(
                     room_id = format!("{:?}", room.room_id()),

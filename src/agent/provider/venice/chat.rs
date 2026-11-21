@@ -1,3 +1,4 @@
+use crate::agent::provider::entity::{PreparedConversation, prepare_conversation};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::sync::OnceLock;
@@ -6,10 +7,7 @@ use regex::Regex;
 
 use crate::agent::AgentPurpose;
 use crate::agent::provider::entity::{TextGenerationParams, TextGenerationResult};
-use crate::conversation::llm::{
-    Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
-    MessageContent as LLMMessageContent, TokenEstimate, shorten_messages_list_to_context_size,
-};
+use crate::conversation::llm::{Conversation as LLMConversation, TokenEstimate};
 use crate::strings;
 use crate::utils::text::render_sources_list;
 
@@ -19,9 +17,7 @@ use super::config::{Config, TextGenerationConfig, WebSearchMode};
 use super::utils::{
     convert_llm_messages_to_venice, has_tool_calls, tool_calls, tool_result_messages, tools,
 };
-use super::wire::{
-    ChatCompletionRequest, ChatCompletionResponse, MessageContent, WebSearchCitation,
-};
+use super::wire::{ChatCompletionRequest, ChatCompletionResponse, WebSearchCitation};
 
 pub async fn generate_text(
     config: &Config,
@@ -48,6 +44,10 @@ pub async fn generate_text(
     }
 
     let first_round = params.continuation.is_none();
+
+    // Kept for building the request again without tools, if the model rejects them.
+    let mut retry_conversation =
+        (first_round && !params.tools.is_empty()).then(|| conversation.clone());
 
     let (mut request, earlier_citations) = match params.continuation.take() {
         // The request so far already has everything else (system prompt, tools, the conversation, the model's tool
@@ -143,7 +143,18 @@ pub async fn generate_text(
                 model = model_id,
                 "The model rejected a request with tools - retrying without them"
             );
-            without_tools(&mut request, &mut params, text_generation_config);
+            without_tools(
+                &mut request,
+                &mut params,
+                text_generation_config,
+                retry_conversation.take().unwrap_or_default(),
+            )?;
+
+            // Fields this model rejected so far are dropped from the new request too.
+            for field in unsupported.known_for(&model_id) {
+                super::recovery::strip_droppable_field(&mut request, &field);
+            }
+
             tools_dropped = true;
             continue;
         }
@@ -247,6 +258,9 @@ fn read_response(
             })
             .filter(|text| !text.trim().is_empty());
 
+        // Besides the text, the content may carry the thinking (stripped from the text only), which goes back too.
+        let text_bytes = text.as_deref().map_or(0, str::len);
+
         // It's the reply if the model may not call more tools, so it gets its sources too. Only those of this round's
         // search, as the text counts against the tool budget, and earlier sources would be counted again each round.
         let text = text.map(|text| render_with_citations(text, &own_citations));
@@ -255,6 +269,11 @@ fn read_response(
         // Venice's own calls (web search results) are sent back with their results, which aren't counted, like those of
         // other providers' hosted tools.
         let (calls, assistant_message, venice_results) = tool_calls(choice.message, &request.tools);
+        let reasoning_bytes = crate::tools::json_bytes(&assistant_message.content)
+            .saturating_sub(text_bytes)
+            + crate::tools::json_bytes(&assistant_message.reasoning_content)
+            + crate::tools::json_bytes(&assistant_message.reasoning_details)
+            + crate::tools::json_bytes(&assistant_message.thought_signature);
         request.messages.push(assistant_message);
         request.messages.extend(venice_results);
 
@@ -262,6 +281,7 @@ fn read_response(
             TextGenerationResult::ToolCalls {
                 text,
                 calls,
+                reasoning_bytes,
                 continuation: ProviderState::new(Continuation { request, citations }),
             },
             false,
@@ -358,35 +378,23 @@ pub(super) fn create_request(
     conversation: LLMConversation,
     params: &TextGenerationParams,
 ) -> anyhow::Result<ChatCompletionRequest> {
-    let prompt_text = params.system_prompt(text_generation_config.prompt.clone());
+    // Trimmed with a copy of the parameters, as the tools may be dropped (see `prepare_conversation`).
+    let mut params = params.clone();
+    let PreparedConversation {
+        prompt_text,
+        prompt_message,
+        messages: mut conversation_messages,
+    } = prepare_conversation(
+        &mut params,
+        text_generation_config.prompt.clone(),
+        conversation.messages,
+        TokenEstimate::Approximate,
+        text_generation_config.max_response_tokens.unwrap_or(0),
+        text_generation_config.max_context_tokens,
+    );
+    let params = &params;
 
     let prompt_cache_key = prompt_cache_key(&prompt_text, params);
-
-    let prompt_message = if prompt_text.is_empty() {
-        None
-    } else {
-        Some(LLMMessage {
-            author: LLMAuthor::Prompt,
-            sender_id: None,
-            content: LLMMessageContent::Text(prompt_text),
-            timestamp: chrono::Utc::now(),
-        })
-    };
-
-    let mut conversation_messages = conversation.messages;
-
-    if params.context_management_enabled {
-        conversation_messages = shorten_messages_list_to_context_size(
-            TokenEstimate::Approximate,
-            &prompt_message,
-            conversation_messages,
-            Some(
-                text_generation_config.max_response_tokens.unwrap_or(0)
-                    + params.reserved_context_tokens,
-            ),
-            text_generation_config.max_context_tokens,
-        );
-    }
 
     if let Some(prompt_message) = prompt_message {
         conversation_messages.insert(0, prompt_message);
@@ -457,41 +465,17 @@ fn prompt_cache_key(prompt_text: &str, params: &TextGenerationParams) -> String 
     derive_prompt_cache_key(prompt_text, &conversation_start_time)
 }
 
-/// Takes the tools out of a first-round request, along with the tool instructions in its system prompt.
+/// Builds a first-round request again without tools (also leaving out their instructions from the system prompt,
+/// the context kept free for them, and what was turned on for them, like keeping the thinking).
 pub(super) fn without_tools(
     request: &mut ChatCompletionRequest,
     params: &mut TextGenerationParams,
     text_generation_config: &TextGenerationConfig,
-) {
+    conversation: LLMConversation,
+) -> anyhow::Result<()> {
     params.tools.clear();
-    request.tools.clear();
-
-    // Without tools, Venice may strip the thinking again, as configured (see `create_request`).
-    request.model = text_generation_config.model_id.clone();
-    if let Some(vp) = request.venice_parameters.as_mut()
-        && let Some(configured) = &text_generation_config.venice_parameters
-    {
-        vp.strip_thinking_response = configured.strip_thinking_response;
-    }
-
-    let prompt_text = params.system_prompt(text_generation_config.prompt.clone());
-
-    // The key follows the prompt, so that later requests (which get no tools) hit the same cache.
-    if request.prompt_cache_key.is_some() {
-        request.prompt_cache_key = Some(prompt_cache_key(&prompt_text, params));
-    }
-
-    if request
-        .messages
-        .first()
-        .is_some_and(|message| message.role == "system")
-    {
-        if prompt_text.is_empty() {
-            request.messages.remove(0);
-        } else {
-            request.messages[0].content = Some(MessageContent::Text(prompt_text));
-        }
-    }
+    *request = create_request(text_generation_config, conversation, params)?;
+    Ok(())
 }
 
 /// Builds the prompt-cache routing key from conversation-stable inputs. `DefaultHasher::new()` is a

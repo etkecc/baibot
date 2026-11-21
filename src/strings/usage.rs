@@ -16,6 +16,8 @@ For multi-user rooms, this setting defaults to "required".
 
 Room messages start a threaded conversation where you can continue back-and-forth communication with the bot.
 
+While chatting, you can also ask the bot to read the room's recent messages (🧰 Bot Tools).
+
 ### 🗣️ Text-to-Speech
 
 If there's a text-to-speech handler agent configured (see `%command_prefix% config status`), the bot **may** convert text messages sent to the room to audio (voice).

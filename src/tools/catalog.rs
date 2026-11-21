@@ -1,7 +1,4 @@
-//! The tools the bot knows, by id, for access rules and the tool registry.
-
-/// The id of the tool which reads the room's recent messages.
-pub const ROOM_HISTORY: &str = "builtin.room.history";
+//! What access rules and help need to know about the tools the bot knows.
 
 /// What access rules and help need to know about a tool.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -25,30 +22,27 @@ pub struct ToolInfo {
     pub default_enabled: bool,
 }
 
-/// The built-in tools.
-pub const BUILT_IN: &[ToolInfo] = &[ToolInfo {
-    id: ROOM_HISTORY,
-    emoji: "📜",
-    summary: "read the room's recent messages",
-    default_enabled: true,
-}];
-
 /// Returns the known tools, sorted by id.
 pub fn known() -> impl Iterator<Item = &'static ToolInfo> {
-    BUILT_IN.iter()
+    super::registry::tools().map(|tool| tool.info())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::BUILT_IN;
+    use std::collections::HashSet;
+
+    use super::known;
+    use crate::tools::registry::function_name;
 
     #[test]
-    fn built_in_tools_have_unique_sorted_builtin_ids() {
-        for pair in BUILT_IN.windows(2) {
+    fn known_tools_have_unique_sorted_builtin_ids() {
+        let tools: Vec<_> = known().collect();
+
+        for pair in tools.windows(2) {
             assert!(pair[0].id < pair[1].id, "{} / {}", pair[0].id, pair[1].id);
         }
 
-        for tool in BUILT_IN {
+        for tool in &tools {
             // `builtin.namespace.name`, so that `tool:builtin.*` rules cover all built-in tools and
             // `tool:builtin.namespace.*` rules a group of related ones. All parts are plain names (not a wildcard like
             // `builtin.room.*`), made of lowercase letters, digits and `-`.
@@ -66,5 +60,9 @@ mod tests {
                 tool.id
             );
         }
+
+        // Function names are derived from ids, so they must not collide either.
+        let function_names: HashSet<_> = tools.iter().map(|tool| function_name(tool.id)).collect();
+        assert_eq!(function_names.len(), tools.len());
     }
 }

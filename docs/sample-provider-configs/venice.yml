@@ -6,8 +6,7 @@ text_generation:
   temperature: 1.0
   max_response_tokens: 4096
   max_context_tokens: 128000
-  # Lets the model call the bot's own tools (e.g. reading the room's recent messages).
-  # Function calling is model-specific on Venice; models which reject requests with tools are detected and get no tools.
+  # Bot tools (see docs/bot-tools.md). Set to false to turn them off for this agent.
   bot_tools: true
   # Prompt caching: how long Venice keeps the prompt prefix cached. "default", "extended", or "24h".
   # "24h" (shipped by default) makes a long, stable system prompt cheap across a day of conversations.

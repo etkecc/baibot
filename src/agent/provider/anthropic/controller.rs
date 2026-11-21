@@ -1,3 +1,4 @@
+use crate::agent::provider::entity::{PreparedConversation, prepare_conversation};
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -12,7 +13,7 @@ use crate::agent::provider::{
 };
 use crate::conversation::llm::{
     Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
-    MessageContent as LLMMessageContent, TokenEstimate, shorten_messages_list_to_context_size,
+    MessageContent as LLMMessageContent, TokenEstimate,
 };
 use crate::strings;
 use crate::tools::ProviderState;
@@ -211,7 +212,13 @@ impl ControllerTrait for Controller {
             tracing::debug!(continuation, "Continuing a paused Anthropic turn");
         }
 
-        let calls = if stop_reason.as_deref() == Some("tool_use") && !params.tools.is_empty() {
+        // Functions may have been left out of the request (see `prepare_conversation`), so it's what counts.
+        let functions_sent = request
+            .tools
+            .iter()
+            .any(|tool| matches!(tool, super::wire::Tool::Client { .. }));
+
+        let calls = if stop_reason.as_deref() == Some("tool_use") && functions_sent {
             super::utils::tool_calls(&content)
         } else {
             vec![]
@@ -230,9 +237,22 @@ impl ControllerTrait for Controller {
         }
         request.messages.push(assistant_message(&content));
 
+        // Thinking goes back as it was received.
+        let reasoning_bytes = content
+            .iter()
+            .filter(|block| {
+                matches!(
+                    block.get("type").and_then(serde_json::Value::as_str),
+                    Some("thinking" | "redacted_thinking")
+                )
+            })
+            .map(crate::tools::json_bytes)
+            .sum();
+
         Ok(TextGenerationResult::ToolCalls {
             text: super::utils::response_text(&content, stop_reason.as_deref()).ok(),
             calls,
+            reasoning_bytes,
             continuation: ProviderState::new(request),
         })
     }
@@ -302,6 +322,13 @@ impl ControllerTrait for Controller {
             .map(|config| config.max_context_tokens)
     }
 
+    fn text_generation_bot_tools_enabled(&self) -> bool {
+        self.config
+            .text_generation
+            .as_ref()
+            .is_some_and(|config| config.bot_tools)
+    }
+
     fn text_generation_temperature(&self) -> Option<f32> {
         None
     }
@@ -321,34 +348,21 @@ fn create_request(
     conversation: LLMConversation,
     params: &TextGenerationParams,
 ) -> MessagesRequest {
-    let prompt_text = params.system_prompt(config.prompt.clone());
-
-    let prompt_message = if prompt_text.is_empty() {
-        None
-    } else {
-        Some(LLMMessage {
-            author: LLMAuthor::Prompt,
-            sender_id: None,
-            content: LLMMessageContent::Text(prompt_text),
-            timestamp: chrono::Utc::now(),
-        })
-    };
-
-    let mut conversation_messages = conversation.messages;
-
-    if params.context_management_enabled {
-        tracing::trace!("Shortening messages list to context size");
-
-        conversation_messages = shorten_messages_list_to_context_size(
-            TokenEstimate::Approximate,
-            &prompt_message,
-            conversation_messages,
-            Some(config.max_response_tokens + params.reserved_context_tokens),
-            config.max_context_tokens,
-        );
-
-        tracing::trace!("Finished shortening messages list to context size");
-    };
+    // Trimmed with a copy of the parameters, as the tools may be dropped (see `prepare_conversation`).
+    let mut params = params.clone();
+    let PreparedConversation {
+        prompt_text: _,
+        prompt_message,
+        messages: conversation_messages,
+    } = prepare_conversation(
+        &mut params,
+        config.prompt.clone(),
+        conversation.messages,
+        TokenEstimate::Approximate,
+        config.max_response_tokens,
+        config.max_context_tokens,
+    );
+    let params = &params;
 
     let messages_count = conversation_messages.len();
 

@@ -2,6 +2,9 @@ mod prompt_variables;
 
 pub use prompt_variables::TextGenerationPromptVariables;
 
+use crate::conversation::llm::{
+    Author, Message, MessageContent, TokenEstimate, shorten_messages_list_to_context_size,
+};
 use crate::tools::{ToolCall, ToolContinuation, ToolDefinition};
 
 #[derive(Default, Clone)]
@@ -63,9 +66,108 @@ pub enum TextGenerationResult {
         /// Text the model wrote before calling the tools, if any.
         text: Option<String>,
         calls: Vec<ToolCall>,
+        /// Bytes the provider sends back along with the text and calls (e.g. the model's reasoning),
+        /// which take from the tool transcript budget too.
+        reasoning_bytes: usize,
         /// Provider-specific state (the transcript so far), needed for continuing the turn.
         continuation: crate::tools::ProviderState,
     },
+}
+
+/// The system prompt (as text and as a message, if not empty) and the conversation's messages for the first request
+/// of a turn, trimmed to the context size (with context management).
+pub struct PreparedConversation {
+    pub prompt_text: String,
+    pub prompt_message: Option<Message>,
+    pub messages: Vec<Message>,
+}
+
+/// Builds the system prompt and trims the conversation (with context management) for the first request of a turn.
+///
+/// Context is kept free for tools (`params.reserved_context_tokens`) only when tools are offered.
+/// When even the latest message wouldn't fit next to that, the tools are dropped from `params`
+/// (the model answers without them), rather than the message.
+pub fn prepare_conversation(
+    params: &mut TextGenerationParams,
+    agent_prompt: Option<String>,
+    messages: Vec<Message>,
+    estimate: TokenEstimate<'_>,
+    max_response_tokens: u32,
+    max_context_tokens: u32,
+) -> PreparedConversation {
+    let prompt = |params: &TextGenerationParams| {
+        let prompt_text = params.system_prompt(agent_prompt.clone());
+
+        let prompt_message = (!prompt_text.is_empty()).then(|| Message {
+            author: Author::Prompt,
+            sender_id: None,
+            content: MessageContent::Text(prompt_text.clone()),
+            timestamp: chrono::Utc::now(),
+        });
+
+        (prompt_text, prompt_message)
+    };
+
+    let (prompt_text, prompt_message) = prompt(params);
+
+    if !params.context_management_enabled {
+        return PreparedConversation {
+            prompt_text,
+            prompt_message,
+            messages,
+        };
+    }
+
+    let reserved_context_tokens = if params.tools.is_empty() {
+        0
+    } else {
+        params.reserved_context_tokens
+    };
+
+    // Kept for trimming again without the tools, if needed.
+    let all_messages = (reserved_context_tokens > 0).then(|| messages.clone());
+
+    let trimmed = shorten_messages_list_to_context_size(
+        estimate,
+        &prompt_message,
+        messages,
+        Some(max_response_tokens + reserved_context_tokens),
+        max_context_tokens,
+    );
+
+    if let Some(all_messages) = all_messages
+        && trimmed.is_empty()
+        && !all_messages.is_empty()
+    {
+        tracing::warn!(
+            reserved_context_tokens,
+            "Not enough context for the latest message and tools - answering without tools"
+        );
+
+        params.tools.clear();
+
+        let (prompt_text, prompt_message) = prompt(params);
+
+        let messages = shorten_messages_list_to_context_size(
+            estimate,
+            &prompt_message,
+            all_messages,
+            Some(max_response_tokens),
+            max_context_tokens,
+        );
+
+        return PreparedConversation {
+            prompt_text,
+            prompt_message,
+            messages,
+        };
+    }
+
+    PreparedConversation {
+        prompt_text,
+        prompt_message,
+        messages: trimmed,
+    }
 }
 
 impl TextGenerationResult {
@@ -76,8 +178,77 @@ impl TextGenerationResult {
 
 #[cfg(test)]
 mod tests {
-    use super::TextGenerationParams;
+    use super::{TextGenerationParams, prepare_conversation};
+    use crate::conversation::llm::{Author, Message, MessageContent, TokenEstimate};
     use crate::tools::ToolDefinition;
+
+    /// A user message of about `tokens` tokens (4 ASCII characters per token).
+    fn message(tokens: usize) -> Message {
+        Message {
+            author: Author::User,
+            sender_id: None,
+            content: MessageContent::Text("a".repeat(tokens * 4)),
+            timestamp: chrono::Utc::now(),
+        }
+    }
+
+    fn tool_params(reserved_context_tokens: u32) -> TextGenerationParams {
+        TextGenerationParams {
+            context_management_enabled: true,
+            reserved_context_tokens,
+            tools: vec![tool()],
+            tool_instructions: Some("About tools".to_owned()),
+            ..Default::default()
+        }
+    }
+
+    fn prepare(params: &mut TextGenerationParams, messages: Vec<Message>) -> usize {
+        prepare_conversation(
+            params,
+            None,
+            messages,
+            TokenEstimate::Approximate,
+            100,
+            1000,
+        )
+        .messages
+        .len()
+    }
+
+    #[test]
+    fn context_is_kept_for_tools_only_when_they_are_offered() {
+        // With tools, only one of the two messages fits next to the reservation.
+        let mut params = tool_params(500);
+        assert_eq!(prepare(&mut params, vec![message(300), message(300)]), 1);
+        assert_eq!(params.tools.len(), 1);
+
+        // Without tools, nothing is kept for them.
+        let mut params = TextGenerationParams {
+            tools: vec![],
+            ..tool_params(500)
+        };
+        assert_eq!(prepare(&mut params, vec![message(300), message(300)]), 2);
+    }
+
+    #[test]
+    fn tools_are_dropped_rather_than_the_latest_message() {
+        let mut params = tool_params(500);
+
+        let prepared = prepare_conversation(
+            &mut params,
+            None,
+            vec![message(600)],
+            TokenEstimate::Approximate,
+            100,
+            1000,
+        );
+
+        assert_eq!(prepared.messages.len(), 1);
+        assert!(params.tools.is_empty());
+        // The prompt no longer mentions tools.
+        assert_eq!(prepared.prompt_text, "");
+        assert!(prepared.prompt_message.is_none());
+    }
 
     fn tool() -> ToolDefinition {
         ToolDefinition {

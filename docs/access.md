@@ -18,8 +18,9 @@ Send `!bai access` to see this help in chat, and `!bai access explain` to see yo
 | 🤖 `manage-agents` | Creating, inspecting and deleting [🤖 agents](./agents.md) in the room |
 | 🔒 `manage-access` | Viewing and changing the room's access rules |
 | 👋 `invite` | Inviting the bot into rooms. Only global rules can grant it |
+| 🧰 `tool:ID` | Letting the bot use a bot tool while chatting. See [🧰 Bot Tools / 🔒 Tool permissions](./bot-tools.md#-tool-permissions) |
 
-Anyone with any permission in a room (other than `invite`) can talk to the bot there, see help and list agents. Messages from everyone else are ignored.
+Anyone with any permission in a room (other than `invite` and tools) can talk to the bot there, see help and list agents. Messages from everyone else are ignored.
 
 The bot's voice flow (transcribe, reply, read the reply aloud) checks each step separately. For example, someone with only `speech-to-text` gets transcriptions, but no replies.
 
@@ -38,7 +39,7 @@ Rules are either:
 - **global**: they apply in every room. Only administrators can change them.
 - **room rules**: they apply in one room.
 
-A user has a permission in a room if some rule (global or of that room) allows it and **no rule denies it**. Rules have no order: a deny always wins, and a room rule cannot undo a global deny. To make exceptions, leave people out of broad allow rules, rather than denying broadly and allowing again.
+A user has a permission in a room if some rule (global or of that room) allows it and **no rule denies it**. Built-in bot tools need no allow rule: they come with the features they use (see [🧰 Bot Tools / 🔒 Tool permissions](./bot-tools.md#-tool-permissions)). Rules have no order: a deny always wins, and a room rule cannot undo a global deny. To make exceptions, leave people out of broad allow rules, rather than denying broadly and allowing again.
 
 Each rule has a short identifier (like `k3vq`), used to remove it.
 
@@ -58,7 +59,7 @@ Examples:
 - Let the room's moderators change its settings: `!bai access room allow manage-config @*:example.com min-power-level=50`
 - Keep someone from generating images in this room: `!bai access room deny image-generation @someone:example.com`
 
-People with `manage-access` who are not administrators can only add or remove room rules made of feature permissions (`use`, `text-generation`, `speech-to-text`, `text-to-speech`, `image-generation`) which they have themselves. Rules with other permissions are managed by administrators.
+People with `manage-access` who are not administrators can only add or remove room rules made of feature permissions (`use`, `text-generation`, `speech-to-text`, `text-to-speech`, `image-generation`) which they have themselves. Rules with other permissions (including tools) are managed by administrators.
 
 
 ### 🌱 Initial rules
@@ -84,7 +85,7 @@ initial_global_config:
 
 Without initial rules, only administrators (see below) can use the bot until they add rules.
 
-The bot refuses to start if a rule is invalid (an unknown permission or key, no users, or `invite` with `min_power_level`).
+The bot refuses to start if a rule is invalid (an unknown permission or key, a malformed tool permission, no users, or `invite` with `min_power_level`). Unknown tools only cause a warning in the log.
 
 After the first run, rules are only managed with the commands above. Changing `initial_global_config.access_rules` later has no effect.
 
@@ -116,7 +117,7 @@ The bot automatically joins rooms when invited by someone with the `invite` perm
 
 ### 👮‍♂️ Administrators
 
-Administrators can **do anything**, in any room, regardless of rules. Only they can manage the global configuration, global agents and global rules.
+Administrators can **do anything**, in any room, regardless of rules (but tool rules apply to them too, see [🧰 Bot Tools / 🔒 Tool permissions](./bot-tools.md#-tool-permissions)). Only they can manage the global configuration, global agents and global rules.
 
 The bot can be administrated by users that match some [statically](./configuration/README.md#static-configuration) configured [Matrix user ID](https://spec.matrix.org/v1.11/#users) patterns.
 

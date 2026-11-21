@@ -44,17 +44,17 @@ You may also wish to see:
 - [📖 Usage / 💬 Text Generation](./usage.md#-text-generation) section for more details on how to use the bot for Text Generation in a room
 
 
-#### 🛠️ Built-in Tools
+#### 🛠️ Provider Tools
 
 
 
-The [OpenAI provider](./providers.md#openai) supports built-in tools that extend the model's capabilities:
+The [OpenAI provider](./providers.md#openai) supports provider tools that extend the model's capabilities:
 
 - [🔍 Web Search](https://platform.openai.com/docs/guides/tools-web-search) (`web_search`): allows the model to search the web for up-to-date information. [🖼️ Screenshot](./screenshots/text-generation-tools-web-search.webp)
 
 - [💻 Code Interpreter](https://platform.openai.com/docs/guides/tools-code-interpreter) (`code_interpreter`): allows the model to write and execute Python code in a sandbox
 
-The [Anthropic provider](./providers.md#anthropic) supports these built-in tools:
+The [Anthropic provider](./providers.md#anthropic) supports these provider tools:
 
 - [🔍 Web Search](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool) (`web_search`): allows the model to search the web for up-to-date information
 
@@ -71,6 +71,11 @@ To enable tools on an existing dynamically-created agent, you need to [update th
 ⚠️ **Warning**: With web fetch enabled, anyone who can talk to the bot can make it fetch URLs posted in the room, and text on a fetched page could steer the model into fetching further URLs that carry data from the conversation. Only enable it for agents used in rooms whose members you trust.
 
 
+#### 🧰 Bot Tools
+
+With models which support function calling, the bot can use its own tools while answering, like reading the room's recent messages. See [🧰 Bot Tools](./bot-tools.md).
+
+
 #### On-demand involvement
 
 In the following 2 cases, it's useful to involve the bot in conversations on-demand:
@@ -85,6 +90,8 @@ In these instances, an [allowed](./access.md#-permissions) user can also provoke
 - [🖼️ On-demand involvement in a reply chain](./screenshots/text-generation-on-demand-reply-involvement.webp) (the Alice user in this example is not an allowed user, yet her messages are still considered as part of the conversation context)
 
 💡 **NOTE**: Normally, the bot **only considers messages from [allowed](./access.md#-permissions) users** and ignores all other messages when responding. However, **when the bot is explicitly invoked (via mention)** in a thread or reply chain, **it will consider all messages** in the thread and reply chain (even those from foreign users, except users denied text generation) as part of the conversation context.
+
+💡 The bot can also read the room's recent messages outside the thread or reply chain. Just ask (e.g. "@baibot what do you think about the discussion above?"), thanks to the `builtin.room.history` tool (see [🧰 Bot Tools / 📜 Room history](./bot-tools.md#-room-history)).
 
 
 ### 🗣️ Text-to-Speech

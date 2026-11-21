@@ -151,6 +151,13 @@ impl ControllerTrait for Controller {
             .map(|config| config.max_context_tokens)
     }
 
+    fn text_generation_bot_tools_enabled(&self) -> bool {
+        self.config
+            .text_generation
+            .as_ref()
+            .is_some_and(|config| config.bot_tools)
+    }
+
     fn text_generation_temperature(&self) -> Option<f32> {
         self.config
             .text_generation

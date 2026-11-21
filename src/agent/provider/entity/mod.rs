@@ -12,6 +12,7 @@ pub use image::{
 pub use ping::PingResult;
 pub use speech_to_text::{SpeechToTextParams, SpeechToTextResult};
 pub use text_generation::{
-    TextGenerationParams, TextGenerationPromptVariables, TextGenerationResult,
+    PreparedConversation, TextGenerationParams, TextGenerationPromptVariables,
+    TextGenerationResult, prepare_conversation,
 };
 pub use text_to_speech::{TextToSpeechParams, TextToSpeechResult};

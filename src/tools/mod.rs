@@ -6,14 +6,7 @@
 //! Provider adapters only translate between their wire format and the types here.
 
 pub mod catalog;
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "used by the builtin.room.history tool, once it's registered"
-    )
-)]
-#[cfg_attr(test, allow(dead_code))]
+pub mod registry;
 pub mod room_history;
 mod run;
 
@@ -21,6 +14,14 @@ pub use run::{ToolExecutor, run_text_generation, tool_budget};
 
 use std::any::Any;
 use std::sync::Arc;
+
+/// The size of a value as JSON (0 for nothing, or if it can't be serialized), for budgeting what's sent back.
+pub fn json_bytes(value: &impl serde::Serialize) -> usize {
+    match serde_json::to_vec(value) {
+        Ok(bytes) if bytes != b"null" => bytes.len(),
+        _ => 0,
+    }
+}
 
 /// A tool as offered to the model.
 #[derive(Clone, Debug, PartialEq)]
@@ -64,10 +65,6 @@ pub struct ToolResult {
 }
 
 impl ToolResult {
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "tools use this once there are some")
-    )]
     pub fn success(call: &ToolCall, content: String) -> Self {
         Self {
             call_id: call.id.clone(),
@@ -122,13 +119,4 @@ pub struct ToolContinuation {
 
     /// One result per call, in the order of the calls.
     pub results: Vec<ToolResult>,
-}
-
-/// An executor for replies without tools, which rejects every call.
-pub struct NoTools;
-
-impl ToolExecutor for NoTools {
-    async fn execute(&self, call: &ToolCall, _max_output_bytes: usize) -> ToolResult {
-        ToolResult::error(call, format!("Unknown tool: {}", call.name))
-    }
 }

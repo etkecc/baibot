@@ -158,6 +158,7 @@ fn notes(collector: &Collector<'_>, end_reason: EndReason, shown: usize, omitted
             skipped.excluded_senders,
             "messages from people the bot may not read",
         ),
+        (skipped.secrets, "messages containing secrets"),
     ] {
         if count > 0 {
             skipped_parts.push(format!("{count} {what}"));

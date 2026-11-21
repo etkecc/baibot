@@ -765,3 +765,83 @@ fn left_out_messages_get_a_continuation_hint() {
     );
     assert!(output.contains("Reached the beginning"), "{output}");
 }
+
+#[test]
+fn skips_messages_containing_secrets() {
+    let context = context();
+    let query = query(DEFAULT_LIMIT);
+    let mut collector = Collector::new(&query, None, &context, 500);
+
+    let mut secret = text("$secret", BOT, 3, "api_key: sk-123");
+    secret["content"][crate::conversation::matrix::CONTAINS_SECRETS_FIELD] = json!(true);
+
+    // From an earlier bot account.
+    let mut marked_by_someone = text("$marked", "@oldbot:example.com", 2, "api_key: sk-456");
+    marked_by_someone["content"][crate::conversation::matrix::CONTAINS_SECRETS_FIELD] = json!(true);
+
+    // Shown by an older version, without the mark.
+    let legacy = text(
+        "$legacy",
+        BOT,
+        2,
+        "Configuration for agent `static/openai` (powered by the `openai` provider):\n```yml\napi_key: sk-123\n```",
+    );
+
+    collect(
+        &mut collector,
+        vec![
+            secret,
+            marked_by_someone,
+            legacy,
+            text("$plain", BOT, 1, "hi"),
+        ],
+    );
+
+    let ids: Vec<_> = collector
+        .messages
+        .iter()
+        .map(|message| message.event_id.as_str())
+        .collect();
+    assert_eq!(ids, ["$plain"]);
+    assert_eq!(collector.skipped.secrets, 3);
+
+    // Secrets added by an edit (bundled by the server).
+    let mut edited = text("$edited", BOT, 1, "status: ok");
+    edited["unsigned"] = json!({"m.relations": {"m.replace": {
+        "type": "m.room.message",
+        "event_id": "$edit",
+        "sender": BOT,
+        "origin_server_ts": 1_767_225_700_000_i64,
+        "content": {
+            "msgtype": "m.text",
+            "body": "* api_key: sk-789",
+            "m.new_content": {"msgtype": "m.text", "body": "api_key: sk-789", crate::conversation::matrix::CONTAINS_SECRETS_FIELD: true},
+            "m.relates_to": {"rel_type": "m.replace", "event_id": "$edited"},
+        },
+    }}});
+    // The standalone edit (newer) isn't counted separately.
+    let mut edit = message(
+        "$edit",
+        BOT,
+        2,
+        json!({
+            "msgtype": "m.text",
+            "body": "* api_key: sk-789",
+            "m.new_content": {"msgtype": "m.text", "body": "api_key: sk-789", crate::conversation::matrix::CONTAINS_SECRETS_FIELD: true},
+            "m.relates_to": {"rel_type": "m.replace", "event_id": "$edited"},
+        }),
+    );
+    edit["content"][crate::conversation::matrix::CONTAINS_SECRETS_FIELD] = json!(true);
+    let mut collector = Collector::new(&query, None, &context, 500);
+    collect(&mut collector, vec![edit, edited]);
+    assert!(collector.messages.is_empty());
+    assert_eq!(collector.skipped.secrets, 1);
+
+    // Not counted when the bot's messages weren't asked for.
+    let mut secret = text("$secret", BOT, 3, "api_key: sk-123");
+    secret["content"][crate::conversation::matrix::CONTAINS_SECRETS_FIELD] = json!(true);
+    let senders = Some(HashSet::from([user("@alice:example.com")]));
+    let mut collector = Collector::new(&query, senders, &context, 500);
+    collect(&mut collector, vec![secret]);
+    assert_eq!(collector.skipped.secrets, 0);
+}

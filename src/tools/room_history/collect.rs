@@ -17,7 +17,9 @@ use super::{HistoryContext, HistoryQuery};
 /// Servers may return events in an order that doesn't quite match their timestamps (e.g. after clock skew),
 /// so a single older event doesn't end the read.
 const MAX_CONSECUTIVE_EVENTS_BEFORE_SINCE: usize = 20;
-use crate::conversation::matrix::latest_room_message_content;
+use crate::conversation::matrix::{
+    AGENT_CONFIGURATION_MESSAGE_PREFIX, CONTAINS_SECRETS_FIELD, latest_room_message_content,
+};
 
 /// Why reading stopped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -57,6 +59,7 @@ pub struct SkipCounts {
     pub undecryptable: usize,
     pub deleted: usize,
     pub excluded_senders: usize,
+    pub secrets: usize,
 }
 
 /// Collects messages from events fed newest first, applying the query and the context's filters.
@@ -150,6 +153,18 @@ impl<'a> Collector<'a> {
             return None;
         }
 
+        // Edits are applied to the messages they edit (bundled by the server), not shown separately.
+        if is_replacement(raw) {
+            return self.done();
+        }
+
+        // Messages with secrets (like an agent's API key) are never passed on. Not only the bot's:
+        // an earlier bot account may have posted them. Others can only hide their own messages this way.
+        if contains_secrets(raw) {
+            self.skipped.secrets += 1;
+            return self.done();
+        }
+
         match &event {
             AnySyncMessageLikeEvent::RoomEncrypted(SyncMessageLikeEvent::Redacted(_)) => {
                 self.skipped.deleted += 1;
@@ -221,6 +236,46 @@ impl<'a> Collector<'a> {
     fn may_include(&self, sender: &OwnedUserId) -> bool {
         *sender == self.context.bot_user_id || self.context.sender_filter.allows(sender)
     }
+}
+
+/// Tells whether a message may contain secrets: marked as such (see [`CONTAINS_SECRETS_FIELD`]),
+/// or showing an agent's configuration (older versions didn't mark those).
+fn contains_secrets(raw: &Raw<AnySyncTimelineEvent>) -> bool {
+    let marked = |content: &serde_json::Value| {
+        content.get(CONTAINS_SECRETS_FIELD).is_some()
+            || content
+                .get("body")
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|body| body.starts_with(AGENT_CONFIGURATION_MESSAGE_PREFIX))
+    };
+
+    let content = raw.get_field::<serde_json::Value>("content").ok().flatten();
+
+    // An edit (bundled by the server, and shown instead of the original) may add secrets too.
+    let edit = raw
+        .get_field::<serde_json::Value>("unsigned")
+        .ok()
+        .flatten()
+        .and_then(|unsigned| unsigned.pointer("/m.relations/m.replace/content").cloned());
+
+    [content.as_ref(), edit.as_ref()]
+        .into_iter()
+        .flatten()
+        .any(|content| marked(content) || content.get("m.new_content").is_some_and(&marked))
+}
+
+/// Tells whether an event is an edit (also when encrypted, as relations stay unencrypted).
+fn is_replacement(raw: &Raw<AnySyncTimelineEvent>) -> bool {
+    raw.get_field::<serde_json::Value>("content")
+        .ok()
+        .flatten()
+        .and_then(|content| {
+            content
+                .pointer("/m.relates_to/rel_type")
+                .and_then(serde_json::Value::as_str)
+                .map(|rel_type| rel_type == "m.replace")
+        })
+        .unwrap_or(false)
 }
 
 fn timestamp(event: &AnySyncMessageLikeEvent) -> DateTime<Utc> {

@@ -131,13 +131,14 @@ pub async fn run_text_generation(
             .generate_text(round_conversation, round_params)
             .await?;
 
-        let (text, calls, state) = match result {
+        let (text, calls, reasoning_bytes, state) = match result {
             TextGenerationResult::Final { text } => return Ok(text),
             TextGenerationResult::ToolCalls {
                 text,
                 calls,
+                reasoning_bytes,
                 continuation,
-            } => (text, calls, continuation),
+            } => (text, calls, reasoning_bytes, continuation),
         };
 
         // A batch this large is a model gone astray. Its error results alone could overflow the context.
@@ -161,8 +162,10 @@ pub async fn run_text_generation(
 
         rounds += 1;
 
-        // What the model wrote is sent back along with the results (each call's id twice: in the call and in its result), so it takes from the same budget.
-        transcript_bytes += text.as_deref().map_or(0, str::len)
+        // What the model wrote (and its reasoning) is sent back along with the results (each call's id twice: in the call
+        // and in its result), so it takes from the same budget.
+        transcript_bytes += reasoning_bytes
+            + text.as_deref().map_or(0, str::len)
             + calls
                 .iter()
                 .map(|call| 2 * call.id.len() + call.name.len() + call.arguments.len())

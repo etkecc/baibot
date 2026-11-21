@@ -22,6 +22,9 @@ pub trait ControllerTrait {
     /// The context size (in tokens) of the text-generation model, if known.
     fn text_generation_max_context_tokens(&self) -> Option<u32>;
 
+    /// Tells whether the agent's text-generation model may be offered tools (`text_generation.bot_tools`).
+    fn text_generation_bot_tools_enabled(&self) -> bool;
+
     fn text_to_speech_voice(&self) -> Option<String>;
 
     fn text_to_speech_speed(&self) -> Option<f32>;
@@ -105,6 +108,17 @@ impl ControllerTrait for ControllerType {
                 controller.text_generation_max_context_tokens()
             }
             ControllerType::Venice(controller) => controller.text_generation_max_context_tokens(),
+        }
+    }
+
+    fn text_generation_bot_tools_enabled(&self) -> bool {
+        match &self {
+            ControllerType::OpenAI(controller) => controller.text_generation_bot_tools_enabled(),
+            ControllerType::OpenAICompat(controller) => {
+                controller.text_generation_bot_tools_enabled()
+            }
+            ControllerType::Anthropic(controller) => controller.text_generation_bot_tools_enabled(),
+            ControllerType::Venice(controller) => controller.text_generation_bot_tools_enabled(),
         }
     }
 

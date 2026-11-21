@@ -13,6 +13,8 @@ If there's a text-generation handler agent configured, the bot **may** respond t
 
 Some models also support vision and document understanding, so you may be able to mix text, images, and files (PDFs, text documents, etc.) in the same conversation.
 
+While chatting, you can also ask the bot to read the room's recent messages. See [🧰 Bot Tools](./bot-tools.md).
+
 See screenshots of:
 
 - 🖼️ [the default Text Generation flow](./screenshots/text-generation.webp) in 1:1 rooms

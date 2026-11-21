@@ -1,3 +1,4 @@
+use crate::agent::provider::entity::{PreparedConversation, prepare_conversation};
 use std::ops::Deref;
 
 use async_openai::{
@@ -28,7 +29,7 @@ use crate::{
     },
     conversation::llm::{
         Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
-        MessageContent as LLMMessageContent, TokenEstimate, shorten_messages_list_to_context_size,
+        MessageContent as LLMMessageContent, TokenEstimate,
     },
     utils::base64::base64_decode,
 };
@@ -166,8 +167,15 @@ impl ControllerTrait for Controller {
             None => create_request(text_generation_config, conversation, &params)?,
         };
 
+        // Functions may have been left out of the request (see `prepare_conversation`), so it's what counts.
+        let functions_sent = request.tools.as_ref().is_some_and(|tools| {
+            tools
+                .iter()
+                .any(|tool| matches!(tool, async_openai::types::responses::Tool::Function(_)))
+        });
+
         // Without functions, the request isn't needed afterwards, so it isn't copied.
-        let response = if params.tools.is_empty() {
+        let response = if !functions_sent {
             self.client.responses().create(request).await?
         } else {
             let response = self.client.responses().create(request.clone()).await?;
@@ -190,6 +198,21 @@ impl ControllerTrait for Controller {
             if !calls.is_empty() {
                 let text = super::utils::output_text(&response.output);
 
+                // All messages (also ones besides the text above, like earlier commentary) and the reasoning go back.
+                let reasoning_bytes = response
+                    .output
+                    .iter()
+                    .filter(|item| {
+                        matches!(
+                            item,
+                            async_openai::types::responses::OutputItem::Reasoning(_)
+                                | async_openai::types::responses::OutputItem::Message(_)
+                        )
+                    })
+                    .map(crate::tools::json_bytes)
+                    .sum::<usize>()
+                    .saturating_sub(text.as_deref().map_or(0, str::len));
+
                 // Everything the model output (reasoning included) goes back along with the results.
                 super::utils::input_items(&mut request.input)
                     .extend(super::utils::replay_items(response.output));
@@ -197,6 +220,7 @@ impl ControllerTrait for Controller {
                 return Ok(TextGenerationResult::ToolCalls {
                     text,
                     calls,
+                    reasoning_bytes,
                     continuation: ProviderState::new(request),
                 });
             }
@@ -462,6 +486,13 @@ impl ControllerTrait for Controller {
             .map(|config| config.max_context_tokens)
     }
 
+    fn text_generation_bot_tools_enabled(&self) -> bool {
+        self.config
+            .text_generation
+            .as_ref()
+            .is_some_and(|config| config.bot_tools)
+    }
+
     fn text_generation_temperature(&self) -> Option<f32> {
         self.config
             .text_generation
@@ -615,37 +646,21 @@ fn create_request(
     conversation: LLMConversation,
     params: &TextGenerationParams,
 ) -> anyhow::Result<CreateResponse> {
-    let prompt_text = params.system_prompt(text_generation_config.prompt.clone());
-
-    let prompt_message = if prompt_text.is_empty() {
-        None
-    } else {
-        Some(LLMMessage {
-            author: LLMAuthor::Prompt,
-            sender_id: None,
-            content: LLMMessageContent::Text(prompt_text),
-            timestamp: chrono::Utc::now(),
-        })
-    };
-
-    let mut conversation_messages = conversation.messages;
-
-    if params.context_management_enabled {
-        tracing::trace!("Shortening messages list to context size");
-
-        conversation_messages = shorten_messages_list_to_context_size(
-            TokenEstimate::Tiktoken(&text_generation_config.model_id),
-            &prompt_message,
-            conversation_messages,
-            Some(
-                text_generation_config.max_response_tokens.unwrap_or(0)
-                    + params.reserved_context_tokens,
-            ),
-            text_generation_config.max_context_tokens,
-        );
-
-        tracing::trace!("Finished shortening messages list to context size");
-    };
+    // Trimmed with a copy of the parameters, as the tools may be dropped (see `prepare_conversation`).
+    let mut params = params.clone();
+    let PreparedConversation {
+        prompt_text: _,
+        prompt_message,
+        messages: mut conversation_messages,
+    } = prepare_conversation(
+        &mut params,
+        text_generation_config.prompt.clone(),
+        conversation.messages,
+        TokenEstimate::Tiktoken(&text_generation_config.model_id),
+        text_generation_config.max_response_tokens.unwrap_or(0),
+        text_generation_config.max_context_tokens,
+    );
+    let params = &params;
 
     if let Some(prompt_message) = prompt_message {
         conversation_messages.insert(0, prompt_message);

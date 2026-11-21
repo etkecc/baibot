@@ -222,6 +222,13 @@ impl Authorizer {
         }
     }
 
+    /// Tells whether any rule has a power-level condition (which can't be evaluated without the room's power levels).
+    pub fn has_power_level_rules(&self) -> bool {
+        self.rules
+            .iter()
+            .any(|compiled| compiled.rule.min_power_level.is_some())
+    }
+
     pub fn is_admin(&self, user_id: &UserId) -> bool {
         mxidwc::match_user_id(user_id.as_str(), &self.admin_regexes)
     }
@@ -286,10 +293,6 @@ impl Authorizer {
     ///
     /// This is only about the tool itself: whoever offers tools to the model also checks that the user
     /// may chat (see [`Permission::TextGeneration`]) and that the agent supports tools.
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "used when offering tools, once there are some")
-    )]
     pub fn allows_tool(&self, user_id: &UserId, tool: &ToolInfo) -> bool {
         (tool.default_enabled
             || !self

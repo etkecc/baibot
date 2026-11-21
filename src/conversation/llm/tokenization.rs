@@ -5,6 +5,7 @@ use tiktoken_rs::tokenizer;
 use super::{Author, Message, MessageContent};
 
 /// How to count the tokens in a conversation when trimming it to fit the context window.
+#[derive(Clone, Copy)]
 pub enum TokenEstimate<'a> {
     /// Count via the [tiktoken-rs](https://github.com/zurawiki/tiktoken-rs) library.
     /// Accurate for OpenAI models; every other model falls back to the gpt-4

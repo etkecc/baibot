@@ -76,6 +76,8 @@ The bot also supports ♻️ **context management**, which automatically trims t
 
 Counting tokens precisely needs the model's own tokenizer. For [OpenAI](../providers.md#openai) models, the bot counts them with the [tiktoken-rs](https://github.com/zurawiki/tiktoken-rs) library. For every other provider, including the recommended [Venice](../providers.md#venice), the bot falls back to a provider-neutral **approximation** that needs no per-model tokenizer: it counts ASCII text at about four characters per token and other scripts (Cyrillic, CJK, and so on) at about two. Treat it as rough, within roughly 10-20% of the real count for typical text, which is plenty for keeping a long conversation inside the context window.
 
+When [🧰 Bot Tools](../bot-tools.md) are available, context management keeps part of the context window free for their results.
+
 This setting is **disabled by default**, but can be enabled via `!bai config room text-generation set-context-management-enabled true` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings)).
 
 
@@ -84,6 +86,8 @@ This setting is **disabled by default**, but can be enabled via `!bai config roo
 The bot can post a 💭 **"thinking…" notice** while text generation is running, useful for slow models (for example, reasoning models that may run for minutes) where the response would otherwise look stuck.
 
 When enabled, a placeholder message appears only after a short delay (so fast responses get no notice), updates periodically with varying status text, and is then edited in place to become the final answer.
+
+When the model uses [🧰 Bot Tools](../bot-tools.md), the notice also shows what they are doing (e.g. "📜 Reading up to 10 messages").
 
 This setting is **disabled by default**, but can be enabled via `!bai config room text-generation set-thinking-notice-enabled true` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings)).
 

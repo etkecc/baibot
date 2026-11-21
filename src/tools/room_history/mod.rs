@@ -10,6 +10,7 @@ mod collect;
 mod format;
 pub mod query;
 mod senders;
+mod tool;
 
 #[cfg(test)]
 mod tests;
@@ -29,6 +30,7 @@ use mxlink::matrix_sdk::ruma::{EventId, OwnedEventId, OwnedUserId, UInt};
 use crate::conversation::matrix::SenderFilter;
 
 pub use query::HistoryQuery;
+pub use tool::RoomHistoryTool;
 
 use collect::{Collector, EndReason};
 

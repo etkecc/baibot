@@ -1,3 +1,4 @@
+use crate::agent::provider::entity::{PreparedConversation, prepare_conversation};
 const SMALLEST_IMAGE_SIZE: &str = "256x256";
 
 use super::super::ControllerTrait;
@@ -10,7 +11,7 @@ use crate::{
     },
     conversation::llm::{
         Author as LLMAuthor, Conversation as LLMConversation, Message as LLMMessage,
-        MessageContent as LLMMessageContent, TokenEstimate, shorten_messages_list_to_context_size,
+        MessageContent as LLMMessageContent, TokenEstimate,
     },
 };
 use crate::{
@@ -111,6 +112,10 @@ impl ControllerTrait for Controller {
 
         let first_round = params.continuation.is_none();
 
+        // Kept for building the request again without tools, if the model rejects them.
+        let mut retry_conversation =
+            (first_round && !params.tools.is_empty()).then(|| conversation.clone());
+
         let mut request = match params.continuation.take() {
             // The request so far already has everything else (system prompt, tools, the conversation and
             // the model's tool calls), so only the results are added.
@@ -149,7 +154,12 @@ impl ControllerTrait for Controller {
                 "The model rejected a request with tools - retrying without them"
             );
 
-            without_tools(&mut request, &mut params, text_generation_config);
+            without_tools(
+                &mut request,
+                &mut params,
+                text_generation_config,
+                retry_conversation.take().unwrap_or_default(),
+            );
             response = self.post("chat/completions").json(&request).send().await?;
 
             // Only when it works without them, it's really about the tools.
@@ -199,11 +209,17 @@ impl ControllerTrait for Controller {
             let text = message.text().filter(|text| !text.trim().is_empty());
 
             let (calls, assistant_message) = super::utils::tool_calls(message);
+            // Besides the text, the content may carry thinking (e.g. Mistral's chunks), which goes back too.
+            let reasoning_bytes = crate::tools::json_bytes(&assistant_message.content)
+                .saturating_sub(text.as_deref().map_or(0, str::len))
+                + crate::tools::json_bytes(&assistant_message.reasoning_content)
+                + crate::tools::json_bytes(&assistant_message.reasoning_details);
             request.messages.push(assistant_message);
 
             return Ok(TextGenerationResult::ToolCalls {
                 text,
                 calls,
+                reasoning_bytes,
                 continuation: ProviderState::new(request),
             });
         }
@@ -430,6 +446,13 @@ impl ControllerTrait for Controller {
             .map(|config| config.max_context_tokens)
     }
 
+    fn text_generation_bot_tools_enabled(&self) -> bool {
+        self.config
+            .text_generation
+            .as_ref()
+            .is_some_and(|config| config.bot_tools)
+    }
+
     fn text_generation_temperature(&self) -> Option<f32> {
         self.config
             .text_generation
@@ -459,37 +482,21 @@ fn create_request(
     conversation: LLMConversation,
     params: &TextGenerationParams,
 ) -> ChatCompletionRequest {
-    let prompt_text = params.system_prompt(text_generation_config.prompt.clone());
-
-    let prompt_message = if prompt_text.is_empty() {
-        None
-    } else {
-        Some(LLMMessage {
-            author: LLMAuthor::Prompt,
-            sender_id: None,
-            content: LLMMessageContent::Text(prompt_text),
-            timestamp: chrono::Utc::now(),
-        })
-    };
-
-    let mut conversation_messages = conversation.messages;
-
-    if params.context_management_enabled {
-        tracing::trace!("Shortening messages list to context size");
-
-        conversation_messages = shorten_messages_list_to_context_size(
-            TokenEstimate::Approximate,
-            &prompt_message,
-            conversation_messages,
-            Some(
-                text_generation_config.max_response_tokens.unwrap_or(0)
-                    + params.reserved_context_tokens,
-            ),
-            text_generation_config.max_context_tokens,
-        );
-
-        tracing::trace!("Finished shortening messages list to context size");
-    };
+    // Trimmed with a copy of the parameters, as the tools may be dropped (see `prepare_conversation`).
+    let mut params = params.clone();
+    let PreparedConversation {
+        prompt_text: _,
+        prompt_message,
+        messages: mut conversation_messages,
+    } = prepare_conversation(
+        &mut params,
+        text_generation_config.prompt.clone(),
+        conversation.messages,
+        TokenEstimate::Approximate,
+        text_generation_config.max_response_tokens.unwrap_or(0),
+        text_generation_config.max_context_tokens,
+    );
+    let params = &params;
 
     if let Some(prompt_message) = prompt_message {
         conversation_messages.insert(0, prompt_message);
@@ -524,28 +531,16 @@ fn create_request(
     request
 }
 
-/// Takes the tools out of a first-round request, along with the tool instructions in its system prompt.
+/// Builds a first-round request again without tools (also leaving out their instructions from the system prompt,
+/// and the context kept free for them).
 fn without_tools(
     request: &mut ChatCompletionRequest,
     params: &mut TextGenerationParams,
     text_generation_config: &TextGenerationConfig,
+    conversation: LLMConversation,
 ) {
     params.tools.clear();
-    request.tools.clear();
-
-    if request
-        .messages
-        .first()
-        .is_some_and(|message| message.role == "system")
-    {
-        let prompt_text = params.system_prompt(text_generation_config.prompt.clone());
-
-        if prompt_text.is_empty() {
-            request.messages.remove(0);
-        } else {
-            request.messages[0].content = Some(serde_json::Value::String(prompt_text));
-        }
-    }
+    *request = create_request(text_generation_config, conversation, params);
 }
 
 #[cfg(test)]
@@ -591,7 +586,7 @@ mod tests {
             Some(serde_json::json!("Be brief.\n\nUse the tools."))
         );
 
-        without_tools(&mut request, &mut params, &config);
+        without_tools(&mut request, &mut params, &config, conversation());
 
         assert!(request.tools.is_empty());
         assert!(params.tools.is_empty());
@@ -613,9 +608,52 @@ mod tests {
         let mut request = create_request(&config, conversation(), &params);
         assert_eq!(request.messages[0].role, "system");
 
-        without_tools(&mut request, &mut params, &config);
+        without_tools(&mut request, &mut params, &config, conversation());
 
         assert_eq!(request.messages.len(), 1);
         assert_eq!(request.messages[0].role, "user");
+    }
+
+    #[test]
+    fn without_tools_the_context_kept_for_them_goes_too() {
+        let config = TextGenerationConfig {
+            prompt: None,
+            max_response_tokens: Some(100),
+            max_context_tokens: 1000,
+            ..Default::default()
+        };
+
+        // Two messages of about 200 tokens each: only one fits next to the reservation.
+        let message = |text: &str| LLMMessage {
+            author: LLMAuthor::User,
+            sender_id: None,
+            content: LLMMessageContent::Text(text.repeat(800)),
+            timestamp: chrono::Utc::now(),
+        };
+        let conversation = || LLMConversation {
+            messages: vec![message("a"), message("b")],
+        };
+
+        let mut params = TextGenerationParams {
+            context_management_enabled: true,
+            reserved_context_tokens: 600,
+            ..params("Use the tools.")
+        };
+
+        let user_messages = |request: &ChatCompletionRequest| {
+            request
+                .messages
+                .iter()
+                .filter(|message| message.role == "user")
+                .count()
+        };
+
+        let mut request = create_request(&config, conversation(), &params);
+        assert_eq!(request.tools.len(), 1);
+        assert_eq!(user_messages(&request), 1);
+
+        without_tools(&mut request, &mut params, &config, conversation());
+        assert!(request.tools.is_empty());
+        assert_eq!(user_messages(&request), 2);
     }
 }

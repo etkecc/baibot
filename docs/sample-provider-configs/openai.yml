@@ -9,12 +9,11 @@ text_generation:
   max_response_tokens: null
   max_completion_tokens: 128000
   max_context_tokens: 400000
-  # Built-in tools
+  # Provider tools (see docs/features.md)
   tools:
     web_search: false
     code_interpreter: false
-  # Lets the model call the bot's own tools (e.g. reading the room's recent messages).
-  # Turn it off for models which don't support function calling.
+  # Bot tools (see docs/bot-tools.md). Set to false to turn them off for this agent.
   bot_tools: true
 speech_to_text:
   model_id: gpt-transcribe

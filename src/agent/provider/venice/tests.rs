@@ -636,7 +636,8 @@ fn without_tools_the_tool_instructions_and_their_cache_key_go_too() {
     let plain_request = create_request(&config, user_conversation(), &Default::default())
         .expect("request should build");
 
-    without_tools(&mut request, &mut params, &config);
+    without_tools(&mut request, &mut params, &config, user_conversation())
+        .expect("request should build");
 
     assert!(request.tools.is_empty());
     assert!(params.tools.is_empty());
@@ -660,7 +661,8 @@ fn without_tools_a_system_prompt_of_only_tool_instructions_goes() {
         create_request(&config, user_conversation(), &params).expect("request should build");
     assert_eq!(request.messages[0].role, "system");
 
-    without_tools(&mut request, &mut params, &config);
+    without_tools(&mut request, &mut params, &config, user_conversation())
+        .expect("request should build");
 
     assert_eq!(request.messages.len(), 1);
     assert_eq!(request.messages[0].role, "user");
@@ -1013,7 +1015,9 @@ async fn unsupported_fields_and_tools_are_dropped_and_remembered() {
     assert!(requests[1].get("reasoning_effort").is_none());
     assert!(requests[1]["tools"].is_array());
 
+    // Rebuilt without the tools, still without what the model rejected.
     assert!(requests[2].get("tools").is_none());
+    assert!(requests[2].get("reasoning_effort").is_none());
     assert_eq!(requests[2]["messages"][0]["content"], "Be brief.");
     assert_ne!(
         requests[2]["prompt_cache_key"],
@@ -1119,7 +1123,8 @@ fn thinking_is_kept_in_requests_with_tools_only() {
     assert_eq!(strip_flag(&request), Some(false));
 
     // Without tools (also after the model rejected them), Venice strips it as configured.
-    without_tools(&mut request, &mut params, &config);
+    without_tools(&mut request, &mut params, &config, user_conversation())
+        .expect("request should build");
     assert_eq!(strip_flag(&request), Some(true));
 
     let request = create_request(&config, user_conversation(), &Default::default())
@@ -1140,7 +1145,8 @@ fn thinking_is_kept_in_requests_with_tools_only() {
         "some-model:enable_web_search=on&strip_thinking_response=false"
     );
 
-    without_tools(&mut request, &mut params, &config);
+    without_tools(&mut request, &mut params, &config, user_conversation())
+        .expect("request should build");
     assert_eq!(request.model, config.model_id);
 
     // A suffix turning it off wins over the field.
@@ -1272,6 +1278,7 @@ async fn a_turn_with_web_search_and_tool_calls_keeps_the_search_results_and_cita
         text,
         calls,
         continuation,
+        ..
     } = result
     else {
         panic!("expected tool calls");

@@ -96,7 +96,7 @@ impl PartialEq for MessageContent {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone, Default)]
 pub struct Conversation {
     pub messages: Vec<Message>,
 }
