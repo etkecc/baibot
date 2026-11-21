@@ -234,9 +234,56 @@ pub(crate) fn latest_room_message_content(
     (content, false)
 }
 
+/// Tells whether a message's text is an agent's configuration, as shown by the bot (see `agent details`),
+/// which may contain secrets (like API keys), so it must never become part of a conversation.
+///
+/// The [`super::CONTAINS_SECRETS_FIELD`] mark can't be checked for conversations (messages come deserialized,
+/// without unknown fields), but the bot only marks such configuration messages.
+pub(crate) fn is_agent_configuration(text: &str) -> bool {
+    // "Configuration for agent `ID` (powered by the `PROVIDER` provider):\n```yml\n...".
+    // The agent's id may span lines, but the provider's name (and what follows it) doesn't.
+    let Some(rest) = text.strip_prefix(super::AGENT_CONFIGURATION_MESSAGE_PREFIX) else {
+        return false;
+    };
+
+    rest.split_once("` (powered by the `")
+        .and_then(|(_, rest)| rest.split_once("` provider):\n```yml\n"))
+        .is_some_and(|(provider, _)| {
+            !provider.is_empty()
+                && provider
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        })
+}
+
+/// Returns what a conversation gets of a message: its content (with the latest edit applied), text and whether
+/// it's a notice, or `None` if it's left out (unsupported message types, and agent configurations).
+///
+/// A standalone edit (e.g. when someone replies to the edit itself) is taken for the content it sets.
+pub(crate) fn conversation_message_content(
+    event: &OriginalSyncRoomMessageEvent,
+) -> Option<(RoomMessageEventContent, String, bool)> {
+    let (content, is_edited) = match &event.content.relates_to {
+        Some(Relation::Replacement(replacement)) => {
+            let mut content = event.content.clone();
+            content.apply_replacement(replacement.new_content.clone());
+            (content, true)
+        }
+        _ => latest_room_message_content(event),
+    };
+
+    let (text, is_notice) = message_text(&content, is_edited)?;
+
+    if is_agent_configuration(&text) {
+        return None;
+    }
+
+    Some((content, text, is_notice))
+}
+
 /// Returns the message's text and whether it's a notice, or `None` for unsupported message types.
 ///
-/// The fallback for rich replies is stripped from the original body of replies.
+/// The fallback for rich replies is stripped from the original body of replies (also within threads).
 /// Edited content (`m.new_content`) carries no such fallback, so it's left as is.
 fn message_text(room_message: &RoomMessageEventContent, is_edited: bool) -> Option<(String, bool)> {
     let (text, is_notice) = match &room_message.msgtype {
@@ -247,7 +294,14 @@ fn message_text(room_message: &RoomMessageEventContent, is_edited: bool) -> Opti
         _ => return None,
     };
 
-    let is_reply = matches!(room_message.relates_to, Some(Relation::Reply { .. }));
+    // Replies (also within threads) may carry a fallback: a quote of the message replied to, in the form
+    // `> <@sender:server> ...` (`> * <@sender:server> ...` for emotes). Clients may also leave it out, and a thread
+    // message's `m.in_reply_to` may just be a fallback for clients without threads, so only a quote in that form is
+    // taken for one, not text that merely starts like a quote.
+    let is_reply = matches!(room_message.relates_to, Some(Relation::Reply { .. }))
+        || matches!(&room_message.relates_to, Some(Relation::Thread(thread)) if thread.in_reply_to.is_some());
+
+    let is_reply = is_reply && (text.starts_with("> <@") || text.starts_with("> * <@"));
 
     let text = if is_reply && !is_edited {
         // For regular replies, we need to strip the fallback-for-rich replies part.
@@ -271,9 +325,7 @@ pub async fn convert_matrix_native_event_to_matrix_message(
         return Ok(None);
     };
 
-    let (room_message, is_edited) = latest_room_message_content(original);
-
-    let Some((text, is_notice)) = message_text(&room_message, is_edited) else {
+    let Some((room_message, text, is_notice)) = conversation_message_content(original) else {
         return Ok(None);
     };
 
@@ -298,7 +350,8 @@ pub async fn convert_matrix_native_event_to_matrix_message(
         let file_name = image_content
             .filename
             .clone()
-            .unwrap_or(image_content.body.clone());
+            // The body may quote the message replied to (stripped from `text`).
+            .unwrap_or(text.clone());
 
         let mime_type = get_mime_type_from_file_name(&file_name);
 
@@ -315,7 +368,11 @@ pub async fn convert_matrix_native_event_to_matrix_message(
 
         return Ok(Some(MatrixMessage {
             sender_id: matrix_native_event.sender().to_owned(),
-            content: MatrixMessageContent::Image(image_content.clone(), mime_type, media_bytes),
+            content: MatrixMessageContent::Image(
+                with_file_name(image_content, |content| &mut content.filename, &file_name),
+                mime_type,
+                media_bytes,
+            ),
             mentioned_users,
             timestamp,
         }));
@@ -330,7 +387,8 @@ pub async fn convert_matrix_native_event_to_matrix_message(
         let file_name = file_content
             .filename
             .clone()
-            .unwrap_or(file_content.body.clone());
+            // The body may quote the message replied to (stripped from `text`).
+            .unwrap_or(text.clone());
 
         let mime_type = file_content
             .info
@@ -376,7 +434,11 @@ pub async fn convert_matrix_native_event_to_matrix_message(
 
         return Ok(Some(MatrixMessage {
             sender_id: matrix_native_event.sender().to_owned(),
-            content: MatrixMessageContent::File(file_content.clone(), mime_type, media_bytes),
+            content: MatrixMessageContent::File(
+                with_file_name(file_content, |content| &mut content.filename, &file_name),
+                mime_type,
+                media_bytes,
+            ),
             mentioned_users,
             timestamp,
         }));
@@ -392,6 +454,18 @@ pub async fn convert_matrix_native_event_to_matrix_message(
         mentioned_users,
         timestamp,
     }))
+}
+
+/// Returns a copy of an attachment's content with its file name set, so that providers use it (and not the body,
+/// which may quote the message replied to).
+fn with_file_name<T: Clone>(
+    content: &T,
+    file_name_field: impl Fn(&mut T) -> &mut Option<String>,
+    file_name: &str,
+) -> T {
+    let mut content = content.clone();
+    *file_name_field(&mut content) = Some(file_name.to_owned());
+    content
 }
 
 /// Determines the interaction context for an incoming (new) room event.

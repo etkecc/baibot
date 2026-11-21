@@ -416,3 +416,152 @@ fn message_text_strips_reply_fallback_only_from_unedited_replies() {
         ))
     );
 }
+
+const CONFIGURATION: &str = "Configuration for agent `static/openai` (powered by the `openai` provider):\n```yml\napi_key: sk-123\n```";
+
+fn message_event(
+    content: serde_json::Value,
+    edited_body: Option<&str>,
+) -> mxlink::matrix_sdk::ruma::events::room::message::OriginalSyncRoomMessageEvent {
+    let mut event = serde_json::json!({
+        "type": "m.room.message",
+        "event_id": "$original:example.com",
+        "sender": "@bot:example.com",
+        "origin_server_ts": 1,
+        "content": content,
+    });
+
+    if let Some(edited_body) = edited_body {
+        event["unsigned"] = serde_json::json!({"m.relations": {"m.replace": {
+            "type": "m.room.message",
+            "event_id": "$edit:example.com",
+            "sender": "@bot:example.com",
+            "origin_server_ts": 2,
+            "content": {
+                "msgtype": "m.text",
+                "body": format!("* {edited_body}"),
+                "m.new_content": {"msgtype": "m.text", "body": edited_body},
+                "m.relates_to": {"rel_type": "m.replace", "event_id": "$original:example.com"},
+            },
+        }}});
+    }
+
+    serde_json::from_value(event).unwrap()
+}
+
+fn conversation_text(
+    event: &mxlink::matrix_sdk::ruma::events::room::message::OriginalSyncRoomMessageEvent,
+) -> Option<String> {
+    super::conversation_message_content(event).map(|(_, text, _)| text)
+}
+
+#[test]
+fn agent_configurations_are_left_out_of_conversations() {
+    let text = |body: &str| serde_json::json!({"msgtype": "m.text", "body": body});
+
+    assert_eq!(
+        conversation_text(&message_event(text(CONFIGURATION), None)),
+        None
+    );
+
+    // Edited into one, or out of one: the latest edit counts.
+    assert_eq!(
+        conversation_text(&message_event(text("hello"), Some(CONFIGURATION))),
+        None
+    );
+    assert_eq!(
+        conversation_text(&message_event(text(CONFIGURATION), Some("hello"))).as_deref(),
+        Some("hello")
+    );
+
+    // A standalone edit (e.g. replied to directly) is taken for the content it sets.
+    let edit = serde_json::json!({
+        "msgtype": "m.text",
+        "body": format!("* {CONFIGURATION}"),
+        "m.new_content": {"msgtype": "m.text", "body": CONFIGURATION},
+        "m.relates_to": {"rel_type": "m.replace", "event_id": "$other:example.com"},
+    });
+    assert_eq!(conversation_text(&message_event(edit, None)), None);
+
+    // A reply within a thread, quoting one in its fallback, keeps only the reply.
+    let quoted = CONFIGURATION
+        .lines()
+        .enumerate()
+        .map(|(index, line)| {
+            if index == 0 {
+                format!("> <@bot:example.com> {line}")
+            } else {
+                format!("> {line}")
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    let thread_reply = serde_json::json!({
+        "msgtype": "m.text",
+        "body": format!("{quoted}\n\nWhat does this agent do?"),
+        "m.relates_to": {
+            "rel_type": "m.thread",
+            "event_id": "$root:example.com",
+            "is_falling_back": false,
+            "m.in_reply_to": {"event_id": "$root:example.com"},
+        },
+    });
+    assert_eq!(
+        conversation_text(&message_event(thread_reply, None)).as_deref(),
+        Some("What does this agent do?")
+    );
+
+    // An agent id spanning lines doesn't hide one.
+    let multiline_id = CONFIGURATION.replacen("static/openai", "static/open\nai", 1);
+    assert_eq!(
+        conversation_text(&message_event(text(&multiline_id), None)),
+        None
+    );
+
+    // Thread metadata alone (falling back) doesn't make text starting like a quote a fallback.
+    let falling_back = serde_json::json!({
+        "msgtype": "m.text",
+        "body": "> < 5 ms\n\nIs that threshold reasonable?",
+        "m.relates_to": {
+            "rel_type": "m.thread",
+            "event_id": "$root:example.com",
+            "is_falling_back": true,
+            "m.in_reply_to": {"event_id": "$root:example.com"},
+        },
+    });
+    assert_eq!(
+        conversation_text(&message_event(falling_back, None)).as_deref(),
+        Some("> < 5 ms\n\nIs that threshold reasonable?")
+    );
+
+    // Neither does a genuine reply without a fallback.
+    let genuine_reply = serde_json::json!({
+        "msgtype": "m.text",
+        "body": "> < 5 ms\n\nIs that threshold reasonable?",
+        "m.relates_to": {
+            "rel_type": "m.thread",
+            "event_id": "$root:example.com",
+            "is_falling_back": false,
+            "m.in_reply_to": {"event_id": "$other:example.com"},
+        },
+    });
+    assert_eq!(
+        conversation_text(&message_event(genuine_reply, None)).as_deref(),
+        Some("> < 5 ms\n\nIs that threshold reasonable?")
+    );
+
+    // People talking about configurations are not left out.
+    let question = "Configuration for agent `demo` keeps failing. I tried this (using the `openai` provider):\n```yml\nmodel_id: x\n```";
+    assert_eq!(
+        conversation_text(&message_event(text(question), None)).as_deref(),
+        Some(question)
+    );
+    assert_eq!(
+        conversation_text(&message_event(
+            text("Configuration for agent `static/openai`: what does temperature do?"),
+            None
+        ))
+        .as_deref(),
+        Some("Configuration for agent `static/openai`: what does temperature do?")
+    );
+}
