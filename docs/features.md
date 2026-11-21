@@ -11,7 +11,7 @@ The bot supports the following use-purposes:
 - [💬 text-generation](#-text-generation): communicating with you via text (though certain models may also process images and files)
 - [🦻 speech-to-text](#-speech-to-text): turning your voice messages into text
 - [🗣️ text-to-speech](#%EF%B8%8F-text-to-speech): turning bot or users text messages into voice messages
-- [🖌️ image-generation](#%EF%B8%8F-image-generation): generating images based on instructions
+- [🖌️ image-generation](#image-generation): generating images based on instructions
 
 In a given room, each different purpose can be served by a different [☁️ provider](./providers.md) and model. This combination of provider and model configuration is called an [🤖 agent](./agents.md). Each purpose can be served by a different **handler** agent.
 
@@ -80,16 +80,16 @@ With models which support function calling, the bot can use its own tools while 
 
 In the following 2 cases, it's useful to involve the bot in conversations on-demand:
 
-1. In multi-user rooms (with the [🗟 Prefix Requirement](./configuration/text-generation.md#-prefix-requirement-type) setting set to "required")
-2. In rooms with foreign users (users without [permissions](./access.md#-permissions))
+1. In multi-user rooms (with the [🗟 Prefix Requirement](./configuration/text-generation.md#-prefix-requirement-type) setting set to `command_prefix`)
+2. In rooms with foreign users (users without permissions, see [🔒 Access / 🔑 Permissions](./access.md#-permissions))
 
-In these instances, an [allowed](./access.md#-permissions) user can also provoke the bot to respond to **any** thread or reply chain by [mentioning](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) the bot (e.g. `@baibot Hello!`). The following screenshots demonstrate this behavior:
+In these instances, a user allowed `text-generation` can also provoke the bot to respond to **any** thread or reply chain by [mentioning](https://spec.matrix.org/latest/client-server-api/#user-and-room-mentions) the bot (e.g. `@baibot Hello!`). The following screenshots demonstrate this behavior:
 
 - [🖼️ On-demand involvement in the room](./screenshots/text-generation-prefix-requirement.webp)
-- [🖼️ On-demand involvement in a thread](./screenshots/text-generation-on-demand-thread-involvement.webp) (the Alice user in this example is not an allowed user, yet her messages are still considered as part of the conversation context)
-- [🖼️ On-demand involvement in a reply chain](./screenshots/text-generation-on-demand-reply-involvement.webp) (the Alice user in this example is not an allowed user, yet her messages are still considered as part of the conversation context)
+- [🖼️ On-demand involvement in a thread](./screenshots/text-generation-on-demand-thread-involvement.webp) (the Alice user in this example has no `text-generation` permission, yet her messages are still considered as part of the conversation context)
+- [🖼️ On-demand involvement in a reply chain](./screenshots/text-generation-on-demand-reply-involvement.webp) (the Alice user in this example has no `text-generation` permission, yet her messages are still considered as part of the conversation context)
 
-💡 **NOTE**: Normally, the bot **only considers messages from [allowed](./access.md#-permissions) users** and ignores all other messages when responding. However, **when the bot is explicitly invoked (via mention)** in a thread or reply chain, **it will consider all messages** in the thread and reply chain (even those from foreign users, except users denied text generation) as part of the conversation context.
+💡 **NOTE**: Normally, the bot **only considers messages from users allowed `text-generation`** and ignores all other messages when responding. However, **when the bot is explicitly invoked (via mention)** in a thread or reply chain, **it will consider all messages** in the thread and reply chain (even those from foreign users, except users explicitly denied `text-generation` by a deny rule) as part of the conversation context.
 
 💡 The bot can also read the room's recent messages outside the thread or reply chain. Just ask (e.g. "@baibot what do you think about the discussion above?"), thanks to the `builtin.room.history` tool (see [🧰 Bot Tools / 📜 Room history](./bot-tools.md#-room-history)).
 
@@ -109,7 +109,7 @@ Another use-case is to have the bot operate in [Text-to-Speech-only mode](#text-
 You may also wish to see:
 
 - [🛠️ Configuration / 🗣️ Text-to-Speech](./configuration/text-to-speech.md) for configuration options related to Text-to-Speech
-- [📖 Usage / 🗣️ Text-to-Speech](./usage.md#-text-to-speech) section for more details on how to use the bot for Text-to-Speech in a room
+- [📖 Usage / 🗣️ Text-to-Speech](./usage.md#%EF%B8%8F-text-to-speech) section for more details on how to use the bot for Text-to-Speech in a room
 
 
 #### Text-to-Speech-only mode
@@ -192,7 +192,7 @@ See a [🖼️ Screenshot of the Image Creation feature](./screenshots/image-cre
 You may also wish to see:
 
 - [🛠️ Configuration / 🖌️ Image Generation](./configuration/image-generation.md) for configuration options related to Image Generation
-- [📖 Usage / Image Generation / 🖌️ Creating Images](./usage.md#-creating-images) section for more details on how to use the bot for Image Creation in a room
+- [📖 Usage / Image Generation / 🖌️ Creating Images](./usage.md#%EF%B8%8F-creating-images) section for more details on how to use the bot for Image Creation in a room
 - [🖌️ Image Editing](#-image-editing) - another image generation feature
 - [🫵 Sticker Creation](#-sticker-creation) - a special case of Image Creation
 

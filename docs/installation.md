@@ -4,9 +4,9 @@
 
 💻 If you're managing your Matrix server with the help of the [matrix-docker-ansible-deploy](https://github.com/spantaleev/matrix-docker-ansible-deploy) Ansible playbook, you can easily **install the bot via the Ansible playbook**. See the playbook's [Setting up baibot](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-bot-baibot.md) documentation page.
 
-🐋 In other cases, we **recommend using our [prebuilt container images](https://github.com/etkecc/baibot/pkgs/container/baibot) and [running in a container](#-running-in-a-container)**. You can also [build a container image](#building-a-container-image) yourself.
+🐋 In other cases, we **recommend using our [prebuilt container images](https://github.com/etkecc/baibot/pkgs/container/baibot) and [running in a container](#-running-in-a-container)**. You can also build a container image yourself (see [🐋 Building a container image](#-building-a-container-image)).
 
-🔨 If containers are not your thing, you can [build a binary](#-building-a-binary) yourself and [run it](#-running-a-binary).
+🔨 If containers are not your thing, you can build a binary yourself and run it (see [🔨 Building a binary](#-building-a-binary) and [🖥️ Running a binary](#%EF%B8%8F-running-a-binary)).
 
 🗲 For a quick experiment, you can refer to the [🧑‍💻 development documentation](./development.md) which contains information on how to build and run the bot (and its various dependency services) locally.
 
@@ -39,7 +39,7 @@ The images are tagged:
 
 You should:
 
-- [🛠️ prepare a configuration file](#-preparing-a-configuration-file) (e.g. `cp etc/app/config.yml.dist /path/to/config.yml` & edit it)
+- [🛠️ prepare a configuration file](#%EF%B8%8F-preparing-a-configuration-file) (e.g. `cp etc/app/config.yml.dist /path/to/config.yml` & edit it)
 - prepare a data directory (`mkdir /path/to/data`)
 
 The example below uses [🐋 Docker](https://www.docker.com/) to run the container, but other container runtimes like [Podman](https://podman.io/) should work as well.
@@ -110,7 +110,7 @@ You can build a binary from the current project's source code:
 
 ### 🖥️ Running a binary
 
-Once you've [🔨 built a binary](#-building-a-binary) and [🛠️ prepared a configuration file](#-preparing-a-configuration-file), you can run it.
+Once you've [🔨 built a binary](#-building-a-binary) and [🛠️ prepared a configuration file](#%EF%B8%8F-preparing-a-configuration-file), you can run it.
 
 Consult the [Dockerfile](../Dockerfile) file to learn what some of the runtime dependencies are (e.g. `ca-certificates`, `sqlite3`, etc., on Debian-based distros).
 

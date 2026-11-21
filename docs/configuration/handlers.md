@@ -4,7 +4,7 @@
 
 You can use **different models in different rooms** (e.g. [OpenAI](../providers.md#openai) GPT-4o alongside [Llama](https://en.wikipedia.org/wiki/Llama_(language_model)) running on [Groq](../providers.md#groq), etc.)
 
-You can also use **different models within the same room** (e.g. [💬 text-generation](#-text-generation) handled by one [agent](./agents.md), [🦻 speech-to-text](#-speech-to-text) handled by another, [🗣️ text-to-speech](#️-text-to-speech) by a 3rd, etc.)
+You can also use **different models within the same room** (e.g. [💬 text-generation](../features.md#-text-generation) handled by one agent (see [🤖 Agents](../agents.md)), [🦻 speech-to-text](../features.md#-speech-to-text) handled by another, [🗣️ text-to-speech](../features.md#%EF%B8%8F-text-to-speech) by a 3rd, etc.)
 
 The bot supports the following use-purposes:
 
@@ -15,7 +15,7 @@ The bot supports the following use-purposes:
 
 In a given room, each different purpose can be served by a different [provider](../providers.md) and model. This combination of provider and model configuration is called an [🤖 agent](../agents.md). Each purpose can be served by a different **handler** agent.
 
-See a [🖼️ Screenshot of an example room configuration](./screenshots/config-status-handlers.webp).
+See a [🖼️ Screenshot of an example room configuration](../screenshots/config-status-handlers.webp).
 
 
 ### Configuring

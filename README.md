@@ -48,7 +48,7 @@ You can find more screenshots on the [🌟 Features](./docs/features.md) and oth
 
 🗲 For a quick experiment, you can refer to the [🧑‍💻 development documentation](./docs/development.md) which contains information on how to build and run the bot (and its various dependency services) locally.
 
-For a real installation, see the [🚀 Installation](./docs/installation.md) documentation which contains information on [🐋 Running in a container](./docs/installation.md#-running-in-a-container) and [🖥️️️️️ Running a binary](./docs/installation.md#-running-a-binary).
+For a real installation, see the [🚀 Installation](./docs/installation.md) documentation which contains information on [🐋 Running in a container](./docs/installation.md#-running-in-a-container) and [🖥️️️️️ Running a binary](./docs/installation.md#%EF%B8%8F-running-a-binary).
 
 
 ## 📚 Documentation

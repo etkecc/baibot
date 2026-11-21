@@ -11,7 +11,7 @@ Send `!bai access` to see this help in chat, and `!bai access explain` to see yo
 | --- | --- |
 | 💬 `text-generation` | Chatting with the bot ([💬 Text Generation](./features.md#-text-generation)), including sending it images and files |
 | 🦻 `speech-to-text` | Having voice messages transcribed ([🦻 Speech-to-Text](./features.md#-speech-to-text)) |
-| 🗣️ `text-to-speech` | Having messages read aloud ([🗣️ Text-to-Speech](./features.md#-text-to-speech)), including via the 🗣️ reaction |
+| 🗣️ `text-to-speech` | Having messages read aloud ([🗣️ Text-to-Speech](./features.md#%EF%B8%8F-text-to-speech)), including via the 🗣️ reaction |
 | 🖌️ `image-generation` | Generating and editing images, and generating stickers ([Image Generation](./features.md#image-generation)) |
 | 🌟 `use` | All of the above. Features added to the bot later may also be added to `use` (release notes say so) |
 | 🛠️ `manage-config` | Viewing and changing the room's settings (`!bai config room ...`, `!bai config status`) |
@@ -24,7 +24,7 @@ Anyone with any permission in a room (other than `invite` and tools) can talk to
 
 The bot's voice flow (transcribe, reply, read the reply aloud) checks each step separately. For example, someone with only `speech-to-text` gets transcriptions, but no replies.
 
-When the bot builds conversation context, it includes messages from people who may use the feature in that room. When someone mentions the bot in a thread or a reply chain, it includes everyone's messages there, except from people denied the feature. An image thread started by someone without `image-generation` cannot be continued.
+When the bot builds conversation context, it includes messages from people who may use the feature in that room. When someone allowed `text-generation` mentions the bot in a thread or a reply chain, it includes everyone's messages there, except from people explicitly denied `text-generation` by a deny rule. An image thread started by someone without `image-generation` cannot be continued.
 
 > [!WARNING]
 > Letting regular users create agents (`manage-agents`) which contact arbitrary network services **may be a security issue**.
