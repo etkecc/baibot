@@ -134,6 +134,98 @@ pub(super) fn strip_droppable_field(request: &mut ChatCompletionRequest, field: 
     }
 }
 
+/// The name under which [`UnsupportedFieldsCache`] remembers a model which rejected a request with tools. Unlike the
+/// droppable fields, tools are taken out of the request (and their instructions out of the system prompt) by the caller,
+/// and only remembered once the request works without them.
+pub(super) const TOOLS_FIELD: &str = "tools";
+
+/// Whether a 400 for a request with tools looks like the model not supporting them. Function calling is model-specific
+/// on Venice (`supportsFunctionCalling`), and requests with `tools` for other models are rejected before inference,
+/// with the reason in `issues[]` (e.g. `{"error": "Invalid request parameters", "issues": [...]}`). An older form names
+/// the field (`field: 'tools'`).
+///
+/// Only the error message and the issues count, not the rest of the body. Other complaints about the tools (e.g. a
+/// schema keyword Venice doesn't take) don't count, as the model may well support tools.
+pub(super) fn is_tools_rejection(body: &str) -> bool {
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(body.trim()) else {
+        return false;
+    };
+
+    // The older form: the whole field is rejected, said in the top-level message.
+    if let Some(message) = value["error"].as_str()
+        && !message.to_lowercase().contains("schema")
+        && parse_rejected_field(message).as_deref() == Some(TOOLS_FIELD)
+    {
+        return true;
+    }
+
+    // The top-level message, and each issue's message with the field it's about (if said).
+    let mut complaints: Vec<(String, Option<String>)> = [
+        &value["error"]["message"],
+        &value["error"],
+        &value["message"],
+    ]
+    .into_iter()
+    .filter_map(|value| value.as_str())
+    .take(1)
+    .map(|message| (message.to_owned(), None))
+    .collect();
+
+    if let Some(issues) = value["issues"].as_array() {
+        for issue in issues {
+            let message = issue
+                .as_str()
+                .or_else(|| issue["message"].as_str())
+                .unwrap_or_default();
+
+            let field = match &issue["path"] {
+                // An issue deeper inside a field (e.g. `["tools", 0, "function", "parameters"]`) is about its content
+                // (e.g. a schema keyword), not about the model supporting the field.
+                serde_json::Value::Array(path) if path.len() > 1 => continue,
+                serde_json::Value::Array(path) => path
+                    .first()
+                    .and_then(|first| first.as_str())
+                    .map(str::to_owned),
+                serde_json::Value::String(path) if path.contains(['.', '[']) => continue,
+                serde_json::Value::String(path) => Some(path.clone()),
+                _ => issue["field"].as_str().map(str::to_owned),
+            };
+
+            complaints.push((message.to_owned(), field));
+        }
+    }
+
+    complaints.into_iter().any(|(message, field)| {
+        let message = message.to_lowercase();
+
+        // About the tools' schemas, not about the model.
+        if message.contains("schema") {
+            return false;
+        }
+
+        let about_tools = message.contains("tool")
+            || message.contains("function calling")
+            || field.is_some_and(|field| {
+                matches!(
+                    field.as_str(),
+                    "tools" | "tool_choice" | "parallel_tool_calls"
+                )
+            });
+
+        let unsupported = [
+            "not supported",
+            "does not support",
+            "doesn't support",
+            "not enabled",
+            "not available",
+        ]
+        .iter()
+        .any(|phrase| message.contains(phrase));
+
+        about_tools && unsupported
+    })
+}
+
 /// Pulls a human-readable message out of a Venice error body for surfacing in the room. Venice's
 /// usual envelope is `{"error": "..."}`; some OpenAI-compatible paths nest `{"error": {"message":
 /// "..."}}`. Falls back to the trimmed raw body (length-capped so a large body cannot flood the
@@ -184,6 +276,7 @@ mod tests {
             prompt_cache_key: Some("cafef00d".to_owned()),
             prompt_cache_retention: Some("24h".to_owned()),
             venice_parameters: None,
+            tools: vec![],
         }
     }
 
@@ -287,6 +380,68 @@ mod tests {
             other_deployment.known_for("model-x").is_empty(),
             "rejections must not leak across deployments"
         );
+    }
+
+    #[test]
+    fn tool_rejections_are_recognized() {
+        assert!(is_tools_rejection(
+            r#"{"error":"Extra inputs are not permitted, field: 'tools', value: '[...]'"}"#
+        ));
+        assert!(is_tools_rejection(
+            r#"{"error":"Model venice-uncensored does not support function calling"}"#
+        ));
+        assert!(is_tools_rejection(
+            r#"{"error":{"message":"Tools are not supported for this model"}}"#
+        ));
+
+        // Capability gates: a generic error, with the reason in the issues.
+        assert!(is_tools_rejection(
+            r#"{"error":"Invalid request parameters","issues":[{"code":"custom","path":["tools"],"message":"tools is not supported by this model"}]}"#
+        ));
+        assert!(is_tools_rejection(
+            r#"{"error":"Invalid request parameters","issues":[{"path":["parallel_tool_calls"],"message":"This model does not support it"}]}"#
+        ));
+        assert!(is_tools_rejection(
+            r#"{"error":"Invalid request parameters","issues":["Function calling is not supported by this model"]}"#
+        ));
+    }
+
+    #[test]
+    fn other_complaints_are_no_tool_rejections() {
+        // About tools, but not about support for them.
+        assert!(!is_tools_rejection(
+            r#"{"error":"Invalid tool call: missing tool_call_id"}"#
+        ));
+        assert!(!is_tools_rejection(
+            r#"{"error":"Invalid request parameters","issues":[{"path":["tools",0,"function","parameters"],"message":"Unsupported JSON Schema keyword"}]}"#
+        ));
+        assert!(!is_tools_rejection(
+            r#"{"error":"Invalid request parameters","issues":[{"path":["tools",0,"function","parameters"],"message":"This JSON Schema keyword is not supported"}]}"#
+        ));
+        assert!(!is_tools_rejection(
+            r#"{"error":"Invalid request parameters","issues":[{"path":"tools.0.function.parameters","message":"Tool parameters: keyword not supported"}]}"#
+        ));
+        assert!(!is_tools_rejection(
+            r#"{"error":"Unsupported JSON Schema keyword in tools[0]"}"#
+        ));
+        assert!(!is_tools_rejection(
+            r#"{"error":"The JSON schema keyword in tools[0] is not supported"}"#
+        ));
+        assert!(!is_tools_rejection(
+            r#"{"error":"Invalid schema, field: 'tools'","issues":[{"path":["tools",0,"function","parameters"],"message":"Invalid"}]}"#
+        ));
+        assert!(!is_tools_rejection(
+            r#"{"error":"Invalid request parameters","issues":[{"path":["tools",0],"message":"Bad item, field: 'tools'"}]}"#
+        ));
+        // Another field.
+        assert!(!is_tools_rejection(
+            r#"{"error":"Extra inputs are not permitted, field: 'reasoning_effort', value: 'high'"}"#
+        ));
+        assert!(!is_tools_rejection(
+            r#"{"error":"Invalid request parameters","issues":[{"path":["seed"],"message":"seed is not supported by this model"}]}"#
+        ));
+        // Not a JSON error message.
+        assert!(!is_tools_rejection("tools are not supported"));
     }
 
     #[test]

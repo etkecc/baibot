@@ -98,6 +98,11 @@ pub struct TextGenerationConfig {
     /// wire. Any unset field is omitted, so Venice applies its own server-side default.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub venice_parameters: Option<VeniceParameters>,
+
+    /// Whether the model may call the bot's tools (e.g. reading the room's recent messages).
+    /// Models which reject requests with tools get none, even when this is on.
+    #[serde(default = "default_bot_tools")]
+    pub bot_tools: bool,
 }
 
 impl Default for TextGenerationConfig {
@@ -130,8 +135,13 @@ impl Default for TextGenerationConfig {
                 enable_e2ee: Some(false),
                 ..Default::default()
             }),
+            bot_tools: default_bot_tools(),
         }
     }
+}
+
+fn default_bot_tools() -> bool {
+    true
 }
 
 fn default_text_model_id() -> String {

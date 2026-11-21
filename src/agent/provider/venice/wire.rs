@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use super::config::VeniceParameters;
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ChatCompletionRequest {
     pub model: String,
 
@@ -48,39 +48,116 @@ pub struct ChatCompletionRequest {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub venice_parameters: Option<VeniceParameters>,
+
+    /// Functions the model may call (the bot's tools). Venice's own web search is not one of them:
+    /// it is turned on via `venice_parameters`.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub tools: Vec<Tool>,
 }
 
-#[derive(Debug, Serialize)]
+/// A function the model may call (`{"type": "function", "function": {...}}`).
+#[derive(Clone, Debug, Serialize)]
+pub struct Tool {
+    #[serde(rename = "type")]
+    pub kind: &'static str,
+
+    pub function: FunctionDefinition,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct FunctionDefinition {
+    pub name: String,
+
+    pub description: String,
+
+    pub parameters: serde_json::Value,
+}
+
+#[derive(Clone, Debug, Serialize)]
 pub struct ChatMessage {
     pub role: String,
 
-    pub content: MessageContent,
+    /// Only missing for an assistant message which just calls tools.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<MessageContent>,
+
+    /// The calls of an assistant message.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub tool_calls: Vec<ToolCall>,
+
+    /// The call a `tool` message is the result of.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_call_id: Option<String>,
+
+    /// The reasoning of an assistant message which calls tools, sent back as received, as some
+    /// models require it to continue (e.g. DeepSeek's thinking mode, Gemini's thought signatures).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning_content: Option<serde_json::Value>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning_details: Option<serde_json::Value>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thought_signature: Option<serde_json::Value>,
+}
+
+impl ChatMessage {
+    pub fn new(role: &str, content: MessageContent) -> Self {
+        Self {
+            role: role.to_owned(),
+            content: Some(content),
+            tool_calls: vec![],
+            tool_call_id: None,
+            reasoning_content: None,
+            reasoning_details: None,
+            thought_signature: None,
+        }
+    }
+}
+
+/// A tool call of an assistant message, as sent back.
+#[derive(Clone, Debug, Serialize)]
+pub struct ToolCall {
+    pub id: String,
+
+    #[serde(rename = "type")]
+    pub kind: &'static str,
+
+    pub function: FunctionCall,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct FunctionCall {
+    pub name: String,
+
+    /// A JSON text.
+    pub arguments: String,
 }
 
 /// A message body is either a bare string or a list of content parts. Venice accepts both; we
 /// send the parts form when a message carries an image or a file (baibot keeps text, images, and
 /// files in separate messages, so a parts list holds a single image part or file part).
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(untagged)]
 pub enum MessageContent {
     Text(String),
     Parts(Vec<ContentPart>),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ContentPart {
     ImageUrl { image_url: ImageUrl },
     File { file: FilePart },
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ImageUrl {
     /// A `data:<mime>;base64,<data>` URI for inline images.
     pub url: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct FilePart {
     /// A `data:<mime>;base64,<data>` URI carrying the file bytes inline.
     pub file_data: String,
@@ -105,6 +182,9 @@ pub struct ChatCompletionResponse {
 #[derive(Debug, Deserialize)]
 pub struct ChatChoice {
     pub message: ResponseMessage,
+
+    #[serde(default)]
+    pub finish_reason: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -112,8 +192,62 @@ pub struct ResponseMessage {
     #[serde(default)]
     pub content: Option<String>,
 
+    /// Kept as received (usually text), so it can be sent back as is with tool calls.
     #[serde(default)]
-    pub reasoning_content: Option<String>,
+    pub reasoning_content: Option<serde_json::Value>,
+
+    #[serde(default)]
+    pub reasoning_details: Option<serde_json::Value>,
+
+    #[serde(default)]
+    pub thought_signature: Option<serde_json::Value>,
+
+    /// Calls of the bot's tools, but possibly also Venice's own (a `web_search` call carrying web search results). The
+    /// schema leaves the items open, so they are read leniently (see [`Self::tool_calls`]) and an odd one can't make an
+    /// ordinary reply unreadable.
+    #[serde(default)]
+    pub tool_calls: Option<serde_json::Value>,
+}
+
+impl ResponseMessage {
+    /// The reasoning as text, for showing it (see `show_reasoning`).
+    pub fn reasoning_text(&self) -> Option<String> {
+        self.reasoning_content
+            .as_ref()
+            .and_then(|value| value.as_str())
+            .map(str::to_owned)
+    }
+
+    /// The tool calls which could be read. Items of another shape are skipped.
+    pub fn tool_calls(&self) -> Vec<ResponseToolCall> {
+        let Some(serde_json::Value::Array(items)) = &self.tool_calls else {
+            return vec![];
+        };
+
+        items
+            .iter()
+            .filter_map(|item| serde_json::from_value(item.clone()).ok())
+            .collect()
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ResponseToolCall {
+    #[serde(default)]
+    pub id: Option<String>,
+
+    #[serde(default)]
+    pub function: Option<ResponseFunctionCall>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ResponseFunctionCall {
+    #[serde(default)]
+    pub name: Option<String>,
+
+    /// Usually a JSON text, but possibly an object.
+    #[serde(default)]
+    pub arguments: serde_json::Value,
 }
 
 /// The `venice_parameters` envelope on a chat-completion *response*, distinct from the request-side
@@ -129,7 +263,7 @@ pub struct ResponseVeniceParameters {
 /// ignore the response fields baibot does not use. Both fields default to empty so a single
 /// citation that arrives without one (schema drift on scraped results) degrades gracefully in the
 /// rendered list instead of failing the whole response deserialization.
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct WebSearchCitation {
     #[serde(default)]
     pub title: String,

@@ -13,16 +13,22 @@ use crate::conversation::llm::{
 use crate::strings;
 use crate::utils::text::render_sources_list;
 
-use super::config::{Config, WebSearchMode};
-use super::utils::convert_llm_messages_to_venice;
-use super::wire::{ChatCompletionRequest, ChatCompletionResponse, WebSearchCitation};
+use crate::tools::ProviderState;
+
+use super::config::{Config, TextGenerationConfig, WebSearchMode};
+use super::utils::{
+    convert_llm_messages_to_venice, has_tool_calls, tool_calls, tool_result_messages, tools,
+};
+use super::wire::{
+    ChatCompletionRequest, ChatCompletionResponse, MessageContent, WebSearchCitation,
+};
 
 pub async fn generate_text(
     config: &Config,
     http: &reqwest::Client,
     unsupported: &super::recovery::UnsupportedFieldsCache,
     conversation: LLMConversation,
-    params: TextGenerationParams,
+    mut params: TextGenerationParams,
 ) -> anyhow::Result<TextGenerationResult> {
     let Some(text_generation_config) = &config.text_generation else {
         return Err(anyhow::anyhow!(
@@ -32,18 +38,329 @@ pub async fn generate_text(
         ));
     };
 
+    let model_id = text_generation_config.model_id.clone();
+
+    let known_unsupported = unsupported.known_for(&model_id);
+
+    if !text_generation_config.bot_tools || known_unsupported.contains(super::recovery::TOOLS_FIELD)
+    {
+        params.tools.clear();
+    }
+
+    let first_round = params.continuation.is_none();
+
+    let (mut request, earlier_citations) = match params.continuation.take() {
+        // The request so far already has everything else (system prompt, tools, the conversation, the model's tool
+        // calls and Venice's web search results), so only the results are added. Web search stays on, though Venice
+        // doesn't seem to search again in continued turns.
+        Some(continuation) => {
+            let Continuation {
+                mut request,
+                citations,
+            } = continuation.state.into_inner()?;
+            request
+                .messages
+                .extend(tool_result_messages(continuation.results));
+            (request, citations)
+        }
+        None => (
+            create_request(text_generation_config, conversation, &params)?,
+            vec![],
+        ),
+    };
+
+    let url = format!("{}/chat/completions", config.base_url.trim_end_matches('/'));
+
+    // Proactively drop fields this model has already rejected earlier in this process, so a known
+    // mismatch costs zero wasted round-trips after the first discovery. Venice's body is
+    // `additionalProperties: false`, so sending a known-unsupported field would 400 again.
+    for field in known_unsupported {
+        super::recovery::strip_droppable_field(&mut request, &field);
+    }
+
+    // Set when the model rejected the tools, until the request works without them.
+    let mut tools_dropped = false;
+
+    // Send with bounded auto-recovery. When Venice 400s because a model does not support an optional
+    // knob, it names the field (`field: '...'`); if that field is one we may safely drop, we strip
+    // it, remember the rejection for this model, and retry. The loop is bounded: each retry clears a
+    // distinct droppable field (strip returns false once it is gone), so after at most
+    // `DROPPABLE_FIELDS.len()` retries (plus one for the tools) the request either succeeds or surfaces the error.
+    let response = loop {
+        if first_round {
+            tracing::trace!(
+                model = model_id,
+                messages_count = request.messages.len(),
+                tools_count = request.tools.len(),
+                "Sending Venice chat completion API request"
+            );
+        } else {
+            tracing::trace!(
+                model = model_id,
+                "Continuing a Venice chat completion with tool results"
+            );
+        }
+
+        let response = http
+            .post(&url)
+            .bearer_auth(&config.api_key)
+            .json(&request)
+            .send()
+            .await?;
+
+        let status = response.status();
+        if status.is_success() {
+            break response;
+        }
+
+        // Always log the body server-side: Venice explains a rejected strict body there.
+        let body = response.text().await.unwrap_or_default();
+        tracing::warn!(%status, body, "Venice chat completion request failed");
+
+        // Recover from a strict-body 400 over an unsupported optional knob: strip the named field
+        // and retry. Only fields in `DROPPABLE_FIELDS` are eligible, so a meaning-bearing knob (a
+        // sampling parameter) is never silently dropped; that case falls through to surface below.
+        if status == reqwest::StatusCode::BAD_REQUEST
+            && let Some(field) = super::recovery::parse_rejected_field(&body)
+            && super::recovery::strip_droppable_field(&mut request, &field)
+        {
+            unsupported.record(&model_id, &field);
+            tracing::info!(
+                model = model_id,
+                field,
+                "Venice rejected an unsupported field; dropping it and retrying"
+            );
+            continue;
+        }
+
+        // Function calling is model-specific, so a model may reject the tools. It is answered without them then.
+        if status == reqwest::StatusCode::BAD_REQUEST
+            && first_round
+            && !request.tools.is_empty()
+            && super::recovery::is_tools_rejection(&body)
+        {
+            tracing::warn!(
+                model = model_id,
+                "The model rejected a request with tools - retrying without them"
+            );
+            without_tools(&mut request, &mut params, text_generation_config);
+            tools_dropped = true;
+            continue;
+        }
+
+        // A 413 almost always means an attached file pushed the request past Venice's size limit.
+        if status == reqwest::StatusCode::PAYLOAD_TOO_LARGE {
+            return Err(anyhow::anyhow!(
+                "The request was too large for Venice, most likely an attached file over the 25MB limit."
+            ));
+        }
+
+        // A 400 is a complaint about the request baibot built, so the body is safe and useful to
+        // surface: it tells the operator (e.g. at agent-create time) exactly which field or value
+        // Venice rejected, instead of an opaque status. Other statuses keep the body OUT of the
+        // returned error, since it can carry account / rate-limit details that shouldn't reach the
+        // room.
+        if status == reqwest::StatusCode::BAD_REQUEST {
+            return Err(anyhow::anyhow!(
+                "Venice rejected the request (400 Bad Request): {}",
+                super::recovery::extract_error_message(&body)
+            ));
+        }
+
+        return Err(anyhow::anyhow!(
+            "Venice chat completion request failed with status {status}"
+        ));
+    };
+
+    let response: ChatCompletionResponse = response.json().await?;
+
+    let (result, answered) =
+        read_response(response, request, earlier_citations, text_generation_config)?;
+
+    // Only when it works without them (an answer, not an error or nothing), it's really about the tools.
+    if tools_dropped && answered {
+        tracing::warn!(model = model_id, "Not offering tools to this model anymore");
+        unsupported.record(&model_id, super::recovery::TOOLS_FIELD);
+    }
+
+    Ok(result)
+}
+
+/// What a turn with tool calls continues with: the request so far, and the citations of the web search done in an
+/// earlier round (Venice reports them only in the response of the round which searched).
+#[derive(Clone)]
+struct Continuation {
+    request: ChatCompletionRequest,
+    citations: Vec<WebSearchCitation>,
+}
+
+/// Turns a response into an answer, or into tool calls to continue `request` with. `earlier_citations` are those of
+/// the turn's earlier rounds, used when this response has none of its own.
+/// Also tells whether the model answered (wrote something besides thinking, before sources and reasoning are added).
+fn read_response(
+    response: ChatCompletionResponse,
+    mut request: ChatCompletionRequest,
+    earlier_citations: Vec<WebSearchCitation>,
+    text_generation_config: &TextGenerationConfig,
+) -> anyhow::Result<(TextGenerationResult, bool)> {
+    let own_citations = response
+        .venice_parameters
+        .map(|vp| vp.web_search_citations)
+        .unwrap_or_default();
+
+    let citations = if own_citations.is_empty() {
+        earlier_citations
+    } else {
+        own_citations.clone()
+    };
+
+    let Some(choice) = response.choices.into_iter().next() else {
+        return Err(anyhow::anyhow!(
+            "No choices were returned from the Venice chat completion API"
+        ));
+    };
+
+    // Only needed when Venice was asked not to strip the thinking, which is when tools are offered (see
+    // `create_request`), so that literal tags in ordinary replies stay alone.
+    let strip_thinking =
+        wants_thinking_stripped(text_generation_config) && !request.tools.is_empty();
+
+    // Venice's finish reason for tool calls is `tool_calls`, but whether there are any is what counts.
+    if has_tool_calls(&choice.message, &request.tools) {
+        // A call cut off by the response limit can't run, and the text before it isn't an answer.
+        if choice.finish_reason.as_deref() == Some("length") {
+            return Err(anyhow::anyhow!(
+                "The model used up all response tokens (`max_response_tokens`) while calling a tool"
+            ));
+        }
+
+        let text = choice
+            .message
+            .content
+            .clone()
+            .map(|text| {
+                if strip_thinking {
+                    strip_thinking_blocks(&text)
+                } else {
+                    text
+                }
+            })
+            .filter(|text| !text.trim().is_empty());
+
+        // It's the reply if the model may not call more tools, so it gets its sources too. Only those of this round's
+        // search, as the text counts against the tool budget, and earlier sources would be counted again each round.
+        let text = text.map(|text| render_with_citations(text, &own_citations));
+
+        // Sent back as received (thinking included), as models may need it to continue.
+        // Venice's own calls (web search results) are sent back with their results, which aren't counted, like those of
+        // other providers' hosted tools.
+        let (calls, assistant_message, venice_results) = tool_calls(choice.message, &request.tools);
+        request.messages.push(assistant_message);
+        request.messages.extend(venice_results);
+
+        return Ok((
+            TextGenerationResult::ToolCalls {
+                text,
+                calls,
+                continuation: ProviderState::new(Continuation { request, citations }),
+            },
+            false,
+        ));
+    }
+
+    let reasoning = choice.message.reasoning_text();
+
+    let Some(mut content) = choice.message.content else {
+        return Err(anyhow::anyhow!(
+            "No message content was returned from the Venice chat completion API"
+        ));
+    };
+
+    if strip_thinking {
+        content = strip_thinking_blocks(&content);
+    }
+
+    // Thinking alone is no answer, however it's shown.
+    let answered = !strip_thinking_blocks(&content).trim().is_empty();
+
+    let text = render_with_citations(content, &citations);
+    let text = append_reasoning(text, reasoning, text_generation_config.show_reasoning);
+
+    Ok((TextGenerationResult::text(text), answered))
+}
+
+/// The model ID suffix (e.g. `some-model:strip_thinking_response=true`) which turns stripping the thinking on or off.
+/// It takes precedence over the `venice_parameters` field.
+const STRIP_THINKING_SUFFIX: &str = "strip_thinking_response";
+
+/// Whether the agent asks Venice to strip the model's thinking from responses (`strip_thinking_response`, as a model ID
+/// suffix or in `venice_parameters`).
+fn wants_thinking_stripped(text_generation_config: &TextGenerationConfig) -> bool {
+    model_id_strips_thinking(&text_generation_config.model_id).unwrap_or_else(|| {
+        text_generation_config
+            .venice_parameters
+            .as_ref()
+            .is_some_and(|vp| vp.strip_thinking_response == Some(true))
+    })
+}
+
+/// What a model ID suffix says about stripping the thinking, if anything.
+fn model_id_strips_thinking(model_id: &str) -> Option<bool> {
+    let (_, suffixes) = model_id.split_once(':')?;
+
+    suffixes
+        .split('&')
+        .filter_map(|suffix| suffix.split_once('='))
+        .find(|(name, _)| *name == STRIP_THINKING_SUFFIX)
+        .and_then(|(_, value)| value.parse().ok())
+}
+
+/// Asks Venice to keep the thinking in responses (see `create_request`).
+fn keep_thinking(request: &mut ChatCompletionRequest) {
+    if let Some(vp) = request.venice_parameters.as_mut()
+        && vp.strip_thinking_response == Some(true)
+    {
+        vp.strip_thinking_response = Some(false);
+    }
+
+    if model_id_strips_thinking(&request.model) == Some(true)
+        && let Some((model, suffixes)) = request.model.split_once(':')
+    {
+        let suffixes: Vec<String> = suffixes
+            .split('&')
+            .map(|suffix| match suffix.split_once('=') {
+                Some((STRIP_THINKING_SUFFIX, _)) => format!("{STRIP_THINKING_SUFFIX}=false"),
+                _ => suffix.to_owned(),
+            })
+            .collect();
+
+        request.model = format!("{model}:{}", suffixes.join("&"));
+    }
+}
+
+/// Removes the thinking (a `<think>...</think>` block) from the start of a response's text, as Venice's
+/// `strip_thinking_response` would. An unclosed block (cut off by the response limit) goes entirely.
+pub(super) fn strip_thinking_blocks(text: &str) -> String {
+    static THINK: OnceLock<Regex> = OnceLock::new();
+    let think = THINK.get_or_init(|| {
+        Regex::new(r"(?s)\A\s*<think>.*?(?:</think>|\z)").expect("thinking block regex is valid")
+    });
+
+    match think.find(text) {
+        Some(found) => text[found.end()..].trim_start().to_owned(),
+        None => text.to_owned(),
+    }
+}
+
+/// Builds the request for the first round of a turn.
+pub(super) fn create_request(
+    text_generation_config: &TextGenerationConfig,
+    conversation: LLMConversation,
+    params: &TextGenerationParams,
+) -> anyhow::Result<ChatCompletionRequest> {
     let prompt_text = params.system_prompt(text_generation_config.prompt.clone());
 
-    // Prompt-cache routing key. Hash ONLY conversation-stable inputs: the rendered system prompt
-    // and the conversation start time. Folding in anything per-turn (message content, the current
-    // time, the message count) would mint a fresh key every turn, miss the cache every lookup, and
-    // pay full price plus the hashing cost. The start time is rendered explicitly here so the key
-    // stays stable even when the user's prompt template never mentions the time variable; an
-    // unknown start time renders "unknown" and simply keys on the prompt alone.
-    let conversation_start_time = params
-        .prompt_variables
-        .format("{{ baibot_conversation_start_time_utc }}");
-    let prompt_cache_key = derive_prompt_cache_key(&prompt_text, &conversation_start_time);
+    let prompt_cache_key = prompt_cache_key(&prompt_text, params);
 
     let prompt_message = if prompt_text.is_empty() {
         None
@@ -102,7 +419,7 @@ pub async fn generate_text(
         model: text_generation_config.model_id.clone(),
         messages,
         temperature: Some(temperature),
-        // Web search rides entirely inside `venice_parameters`; there is no `tools` array here.
+        // Web search rides entirely inside `venice_parameters`; `tools` only has the bot's tools.
         // `max_tokens` is deprecated on Venice in favor of `max_completion_tokens`.
         max_completion_tokens: text_generation_config.max_response_tokens,
         top_p: text_generation_config.top_p,
@@ -113,114 +430,68 @@ pub async fn generate_text(
         prompt_cache_key: Some(prompt_cache_key),
         prompt_cache_retention: text_generation_config.prompt_cache_retention.clone(),
         venice_parameters,
+        tools: tools(&params.tools),
     };
 
-    let url = format!("{}/chat/completions", config.base_url.trim_end_matches('/'));
-
-    let model_id = text_generation_config.model_id.clone();
-
-    // Proactively drop fields this model has already rejected earlier in this process, so a known
-    // mismatch costs zero wasted round-trips after the first discovery. Venice's body is
-    // `additionalProperties: false`, so sending a known-unsupported field would 400 again.
-    for field in unsupported.known_for(&model_id) {
-        super::recovery::strip_droppable_field(&mut request, &field);
+    // `strip_thinking_response` also strips `reasoning_content`, which models may need to get back to continue after
+    // tool calls (Venice: "pass them back verbatim ... especially in tool loops"). So when tools are offered, the
+    // thinking is kept in the transcript and stripped from the answer by the bot instead (see `read_response`).
+    if !request.tools.is_empty() {
+        keep_thinking(&mut request);
     }
 
-    // Send with bounded auto-recovery. When Venice 400s because a model does not support an optional
-    // knob, it names the field (`field: '...'`); if that field is one we may safely drop, we strip
-    // it, remember the rejection for this model, and retry. The loop is bounded: each retry clears a
-    // distinct droppable field (strip returns false once it is gone), so after at most
-    // `DROPPABLE_FIELDS.len()` retries the request either succeeds or surfaces the error.
-    let response = loop {
-        tracing::trace!(
-            model = model_id,
-            messages_count = request.messages.len(),
-            "Sending Venice chat completion API request"
-        );
+    Ok(request)
+}
 
-        let response = http
-            .post(&url)
-            .bearer_auth(&config.api_key)
-            .json(&request)
-            .send()
-            .await?;
+/// Prompt-cache routing key. Hash ONLY conversation-stable inputs: the rendered system prompt
+/// and the conversation start time. Folding in anything per-turn (message content, the current
+/// time, the message count) would mint a fresh key every turn, miss the cache every lookup, and
+/// pay full price plus the hashing cost. The start time is rendered explicitly here so the key
+/// stays stable even when the user's prompt template never mentions the time variable; an
+/// unknown start time renders "unknown" and simply keys on the prompt alone.
+fn prompt_cache_key(prompt_text: &str, params: &TextGenerationParams) -> String {
+    let conversation_start_time = params
+        .prompt_variables
+        .format("{{ baibot_conversation_start_time_utc }}");
 
-        let status = response.status();
-        if status.is_success() {
-            break response;
+    derive_prompt_cache_key(prompt_text, &conversation_start_time)
+}
+
+/// Takes the tools out of a first-round request, along with the tool instructions in its system prompt.
+pub(super) fn without_tools(
+    request: &mut ChatCompletionRequest,
+    params: &mut TextGenerationParams,
+    text_generation_config: &TextGenerationConfig,
+) {
+    params.tools.clear();
+    request.tools.clear();
+
+    // Without tools, Venice may strip the thinking again, as configured (see `create_request`).
+    request.model = text_generation_config.model_id.clone();
+    if let Some(vp) = request.venice_parameters.as_mut()
+        && let Some(configured) = &text_generation_config.venice_parameters
+    {
+        vp.strip_thinking_response = configured.strip_thinking_response;
+    }
+
+    let prompt_text = params.system_prompt(text_generation_config.prompt.clone());
+
+    // The key follows the prompt, so that later requests (which get no tools) hit the same cache.
+    if request.prompt_cache_key.is_some() {
+        request.prompt_cache_key = Some(prompt_cache_key(&prompt_text, params));
+    }
+
+    if request
+        .messages
+        .first()
+        .is_some_and(|message| message.role == "system")
+    {
+        if prompt_text.is_empty() {
+            request.messages.remove(0);
+        } else {
+            request.messages[0].content = Some(MessageContent::Text(prompt_text));
         }
-
-        // Always log the body server-side: Venice explains a rejected strict body there.
-        let body = response.text().await.unwrap_or_default();
-        tracing::warn!(%status, body, "Venice chat completion request failed");
-
-        // Recover from a strict-body 400 over an unsupported optional knob: strip the named field
-        // and retry. Only fields in `DROPPABLE_FIELDS` are eligible, so a meaning-bearing knob (a
-        // sampling parameter) is never silently dropped; that case falls through to surface below.
-        if status == reqwest::StatusCode::BAD_REQUEST
-            && let Some(field) = super::recovery::parse_rejected_field(&body)
-            && super::recovery::strip_droppable_field(&mut request, &field)
-        {
-            unsupported.record(&model_id, &field);
-            tracing::info!(
-                model = model_id,
-                field,
-                "Venice rejected an unsupported field; dropping it and retrying"
-            );
-            continue;
-        }
-
-        // A 413 almost always means an attached file pushed the request past Venice's size limit.
-        if status == reqwest::StatusCode::PAYLOAD_TOO_LARGE {
-            return Err(anyhow::anyhow!(
-                "The request was too large for Venice, most likely an attached file over the 25MB limit."
-            ));
-        }
-
-        // A 400 is a complaint about the request baibot built, so the body is safe and useful to
-        // surface: it tells the operator (e.g. at agent-create time) exactly which field or value
-        // Venice rejected, instead of an opaque status. Other statuses keep the body OUT of the
-        // returned error, since it can carry account / rate-limit details that shouldn't reach the
-        // room.
-        if status == reqwest::StatusCode::BAD_REQUEST {
-            return Err(anyhow::anyhow!(
-                "Venice rejected the request (400 Bad Request): {}",
-                super::recovery::extract_error_message(&body)
-            ));
-        }
-
-        return Err(anyhow::anyhow!(
-            "Venice chat completion request failed with status {status}"
-        ));
-    };
-
-    let response: ChatCompletionResponse = response.json().await?;
-
-    let citations = response
-        .venice_parameters
-        .map(|vp| vp.web_search_citations)
-        .unwrap_or_default();
-
-    let Some(choice) = response.choices.into_iter().next() else {
-        return Err(anyhow::anyhow!(
-            "No choices were returned from the Venice chat completion API"
-        ));
-    };
-
-    let Some(content) = choice.message.content else {
-        return Err(anyhow::anyhow!(
-            "No message content was returned from the Venice chat completion API"
-        ));
-    };
-
-    let text = render_with_citations(content, &citations);
-    let text = append_reasoning(
-        text,
-        choice.message.reasoning_content,
-        text_generation_config.show_reasoning,
-    );
-
-    Ok(TextGenerationResult::text(text))
+    }
 }
 
 /// Builds the prompt-cache routing key from conversation-stable inputs. `DefaultHasher::new()` is a
