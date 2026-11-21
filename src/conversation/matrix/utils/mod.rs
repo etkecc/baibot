@@ -216,7 +216,7 @@ fn is_message_from_allowed_sender(
 ///
 /// This matters for messages edited after being sent, such as the bot's "thinking…" notices,
 /// which only become the actual answer via an edit.
-fn latest_room_message_content(
+pub(crate) fn latest_room_message_content(
     event: &OriginalSyncRoomMessageEvent,
 ) -> (RoomMessageEventContent, bool) {
     let mut content = event.content.clone();

@@ -6,6 +6,15 @@
 //! Provider adapters only translate between their wire format and the types here.
 
 pub mod catalog;
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "used by the builtin.room.history tool, once it's registered"
+    )
+)]
+#[cfg_attr(test, allow(dead_code))]
+pub mod room_history;
 mod run;
 
 pub use run::{ToolExecutor, run_text_generation, tool_budget};
