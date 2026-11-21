@@ -302,6 +302,33 @@ async fn generate_text_generation_section(
         ),
     );
 
+    // Reply style
+
+    let effective_reply_style = room_config_context.text_generation_reply_style();
+    let room_config_reply_style = room_config_context
+        .room_config
+        .settings
+        .text_generation
+        .reply_style;
+    let global_config_reply_style = room_config_context
+        .global_config
+        .fallback_room_settings
+        .text_generation
+        .reply_style;
+
+    let reply_style_set_where = if room_config_reply_style.is_some() {
+        strings::cfg::status_badge_set_in_room_config()
+    } else if global_config_reply_style.is_some() {
+        strings::cfg::status_badge_set_in_global_config()
+    } else {
+        strings::cfg::status_badge_using_hardcoded_default()
+    };
+
+    message.push_str(&strings::cfg::status_text_generation_entry_reply_style(
+        effective_reply_style,
+        reply_style_set_where,
+    ));
+
     // Auto usage
 
     let effective_auto_usage = room_config_context.auto_text_generation_usage();

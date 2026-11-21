@@ -3,9 +3,9 @@ use super::roomconfig::RoomConfig;
 
 use crate::entity::roomconfig::{
     SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
-    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextGenerationSenderContextMode,
-    TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType,
-    defaults as roomconfig_defaults,
+    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextGenerationReplyStyle,
+    TextGenerationSenderContextMode, TextToSpeechBotMessagesFlowType,
+    TextToSpeechUserMessagesFlowType, defaults as roomconfig_defaults,
 };
 
 #[derive(Debug)]
@@ -174,6 +174,20 @@ impl RoomConfigContext {
                     .prefix_requirement_type
             })
             .unwrap_or(roomconfig_defaults::TEXT_GENERATION_PREFIX_REQUIREMENT_TYPE)
+    }
+
+    pub fn text_generation_reply_style(&self) -> TextGenerationReplyStyle {
+        self.room_config
+            .settings
+            .text_generation
+            .reply_style
+            .or({
+                self.global_config
+                    .fallback_room_settings
+                    .text_generation
+                    .reply_style
+            })
+            .unwrap_or(roomconfig_defaults::TEXT_GENERATION_REPLY_STYLE)
     }
 
     pub fn text_to_speech_bot_messages_flow_type(&self) -> TextToSpeechBotMessagesFlowType {

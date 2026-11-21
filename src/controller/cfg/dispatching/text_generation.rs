@@ -1,6 +1,6 @@
 use crate::entity::roomconfig::{
     RoomSettings, TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
-    TextGenerationSenderContextMode,
+    TextGenerationReplyStyle, TextGenerationSenderContextMode,
 };
 use crate::{Bot, entity::MessageContext};
 
@@ -197,6 +197,39 @@ pub(super) async fn dispatch(
                 }
                 SettingsStorageSource::Global => {
                     global_setting_set::<TextGenerationSenderContextMode>(
+                        bot,
+                        message_context,
+                        &value,
+                        setter_callback,
+                    )
+                    .await
+                }
+            }
+        }
+
+        ConfigTextGenerationSettingRelatedControllerType::GetReplyStyle => {
+            let value = &room_settings.text_generation.reply_style;
+            setting_get::<TextGenerationReplyStyle>(bot, message_context, value).await
+        }
+        ConfigTextGenerationSettingRelatedControllerType::SetReplyStyle(value) => {
+            let value = value.to_owned();
+
+            let setter_callback = Box::new(move |room_settings: &mut RoomSettings| {
+                room_settings.text_generation.reply_style = value;
+            });
+
+            match config_type {
+                SettingsStorageSource::Room => {
+                    room_setting_set::<TextGenerationReplyStyle>(
+                        bot,
+                        message_context,
+                        &value,
+                        setter_callback,
+                    )
+                    .await
+                }
+                SettingsStorageSource::Global => {
+                    global_setting_set::<TextGenerationReplyStyle>(
                         bot,
                         message_context,
                         &value,

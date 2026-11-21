@@ -18,7 +18,8 @@ pub use speech_to_text::{
     SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
 };
 pub use text_generation::{
-    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextGenerationSenderContextMode,
+    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextGenerationReplyStyle,
+    TextGenerationSenderContextMode,
 };
 pub use text_to_speech::{TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType};
 

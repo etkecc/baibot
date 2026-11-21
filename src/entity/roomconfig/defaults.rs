@@ -1,6 +1,7 @@
 use super::{SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages};
 use super::{
-    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextGenerationSenderContextMode,
+    TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextGenerationReplyStyle,
+    TextGenerationSenderContextMode,
 };
 use super::{TextToSpeechBotMessagesFlowType, TextToSpeechUserMessagesFlowType};
 
@@ -11,6 +12,8 @@ pub const TEXT_GENERATION_AUTO_USAGE: TextGenerationAutoUsage = TextGenerationAu
 
 pub const TEXT_GENERATION_SENDER_CONTEXT_MODE: TextGenerationSenderContextMode =
     TextGenerationSenderContextMode::Disabled;
+
+pub const TEXT_GENERATION_REPLY_STYLE: TextGenerationReplyStyle = TextGenerationReplyStyle::Thread;
 
 pub const TEXT_TO_SPEECH_BOT_MESSAGES_FLOW_TYPE: TextToSpeechBotMessagesFlowType =
     TextToSpeechBotMessagesFlowType::OnDemandForVoice;

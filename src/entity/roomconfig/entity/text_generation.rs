@@ -21,6 +21,9 @@ pub struct RoomSettingsTextGeneration {
     /// Controls how each message in the conversation context is annotated with sender metadata.
     pub sender_context_mode: Option<TextGenerationSenderContextMode>,
 
+    /// Controls whether the bot answers in threads or with in-room replies.
+    pub reply_style: Option<TextGenerationReplyStyle>,
+
     /// Allows customizing the system prompt that the agent would use
     pub prompt_override: Option<String>,
 
@@ -158,6 +161,40 @@ impl std::fmt::Display for TextGenerationSenderContextMode {
             TextGenerationSenderContextMode::MatrixUserIdAndTimestamp => {
                 write!(f, "matrix_user_id_and_timestamp")
             }
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
+pub enum TextGenerationReplyStyle {
+    /// Answers start (or continue) a thread
+    #[serde(rename = "thread")]
+    Thread,
+
+    /// Answers are in-room replies. Replying to one of the bot's messages continues the conversation.
+    #[serde(rename = "reply")]
+    Reply,
+}
+
+impl TextGenerationReplyStyle {
+    pub fn choices() -> Vec<Self> {
+        vec![Self::Thread, Self::Reply]
+    }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "thread" => Some(Self::Thread),
+            "reply" => Some(Self::Reply),
+            _ => None,
+        }
+    }
+}
+
+impl std::fmt::Display for TextGenerationReplyStyle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TextGenerationReplyStyle::Thread => write!(f, "thread"),
+            TextGenerationReplyStyle::Reply => write!(f, "reply"),
         }
     }
 }

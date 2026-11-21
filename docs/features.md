@@ -30,6 +30,8 @@ Some models also support vision and document understanding, so you may be able t
 
 In multi-user (group) rooms, to avoid disturbing the normal conversation between people, the bot is auto-configured to only respond to messages starting with the command prefix (`!bai`) or direct mentions via the [💬 Text Generation / 🗟 Prefix Requirement Type](./configuration/text-generation.md#-prefix-requirement-type) setting.
 
+By default, each conversation happens in its own thread. In rooms where threads are inconvenient (for example, rooms bridged to networks without good thread support), the bot can answer with in-room replies instead and continue the conversation whenever someone replies to it. See [🛠️ Configuration / 💬 Text Generation / 💬 Reply Style](./configuration/text-generation.md#-reply-style).
+
 Normally, the bot only includes messages from people [allowed](./access.md#-permissions) to use text generation. In certain cases, it's useful for an allowed user to provoke the bot to respond even in foreign threads or reply chains. You can learn more about this feature in the [On-demand involvement](./features.md#on-demand-involvement) section below.
 
 If needed, the bot can also attach sender metadata to conversation messages before sending them to the model, which can help the model distinguish between participants in multi-user rooms. See [🛠️ Configuration / 💬 Text Generation / 👤 Sender Context Mode](./configuration/text-generation.md#-sender-context-mode).

@@ -112,6 +112,18 @@ pub fn text_generation_prefix_requirement_type_outro(bot_username: &str) -> Stri
     )
 }
 
+pub fn text_generation_reply_style_heading() -> &'static str {
+    "💬 Reply Style"
+}
+
+pub fn text_generation_reply_style_intro() -> String {
+    format!(
+        "{}\n{}",
+        "Controls whether the bot answers in **threads** (`thread`, the default) or with **in-room replies** (`reply`).",
+        "With `reply`, replying to one of the bot's messages continues the conversation (no mention needed) and the reply chain is used as context. Voice replies continue the conversation only when they mention the bot, and conversations started by a voice message (as well as image generation) keep using threads. Useful in rooms bridged to networks without thread support.",
+    )
+}
+
 pub fn text_generation_auto_usage_heading() -> &'static str {
     "🪄 Auto usage"
 }

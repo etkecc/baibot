@@ -260,6 +260,13 @@ pub fn status_text_generation_entry_sender_context(
     format!("- 👤 Sender context mode: `{}` ({})\n", value, set_where)
 }
 
+pub fn status_text_generation_entry_reply_style(
+    value: impl std::fmt::Display,
+    set_where: &str,
+) -> String {
+    format!("- 💬 Reply style: `{}` ({})\n", value, set_where)
+}
+
 pub fn status_text_generation_entry_prompt(value: &str, set_where: &str) -> String {
     let value = value.trim();
 

@@ -1,6 +1,6 @@
 use mxlink::matrix_sdk::ruma::OwnedEventId;
 use mxlink::matrix_sdk::ruma::events::room::message::AudioMessageEventContent;
-use mxlink::{MatrixLink, MessageResponseType};
+use mxlink::{MatrixLink, MessageResponseType, ThreadInfo};
 
 use tracing::Instrument;
 
@@ -16,7 +16,7 @@ use crate::conversation::matrix::MatrixMessageProcessingParams;
 use crate::entity::MessagePayload;
 use crate::entity::roomconfig::{
     SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
-    TextGenerationSenderContextMode, TextToSpeechBotMessagesFlowType,
+    TextGenerationReplyStyle, TextGenerationSenderContextMode, TextToSpeechBotMessagesFlowType,
     TextToSpeechUserMessagesFlowType,
 };
 use crate::strings;
@@ -219,15 +219,13 @@ pub async fn handle(
                     None
                 };
 
-            let response_type = match controller_type {
-                // When we're triggered via a reply mention, we reply to the message that triggered us.
-                ChatCompletionControllerType::ReplyMention => {
-                    MessageResponseType::Reply(message_context.thread_info().last_event_id.clone())
-                }
-
-                // In all other cases, we're dealing with a threaded conversation, so we reply in the thread.
-                _ => MessageResponseType::InThread(message_context.thread_info().clone()),
-            };
+            let response_type = determine_text_generation_response_type(
+                controller_type,
+                message_context.thread_info(),
+                message_context
+                    .room_config_context()
+                    .text_generation_reply_style(),
+            );
 
             let text_to_speech_eligible_payload = handle_stage_text_generation(
                 bot,
@@ -253,6 +251,20 @@ pub async fn handle(
             // If no text was generated (due to some issue), there's no point in continuing.
             let Some(text_to_speech_eligible_payload) = text_to_speech_eligible_payload else {
                 return Ok(());
+            };
+
+            // In rooms preferring replies, the audio replies to the generated answer (not to the user's message),
+            // so that the reply chain (and thus the conversation context) keeps the answer when someone replies to the audio.
+            let response_type = match response_type {
+                MessageResponseType::Reply(_)
+                    if message_context
+                        .room_config_context()
+                        .text_generation_reply_style()
+                        == TextGenerationReplyStyle::Reply =>
+                {
+                    MessageResponseType::Reply(text_to_speech_eligible_payload.event_id.clone())
+                }
+                other => other,
             };
 
             match message_context
@@ -374,6 +386,34 @@ pub async fn handle(
     }
 
     Ok(())
+}
+
+/// Determines where the text-generation response goes.
+fn determine_text_generation_response_type(
+    controller_type: &ChatCompletionControllerType,
+    thread_info: &ThreadInfo,
+    reply_style: TextGenerationReplyStyle,
+) -> MessageResponseType {
+    match controller_type {
+        // When we're triggered via a reply mention, we reply to the message that triggered us.
+        ChatCompletionControllerType::ReplyMention => {
+            MessageResponseType::Reply(thread_info.last_event_id.clone())
+        }
+
+        // Audio is excluded, because its transcription has already been posted in a thread.
+        ChatCompletionControllerType::Audio => MessageResponseType::InThread(thread_info.clone()),
+
+        // A top-level message in a room preferring replies gets an in-room reply instead of a new thread.
+        // Messages in existing threads (e.g. started before the setting changed) are still answered in the thread.
+        _ if reply_style == TextGenerationReplyStyle::Reply
+            && thread_info.is_thread_root_only() =>
+        {
+            MessageResponseType::Reply(thread_info.root_event_id.clone())
+        }
+
+        // In all other cases, we're dealing with a threaded conversation, so we reply in the thread.
+        _ => MessageResponseType::InThread(thread_info.clone()),
+    }
 }
 
 async fn handle_stage_speech_to_text(
@@ -516,9 +556,10 @@ async fn handle_stage_text_generation(
         .with_first_message_prefixes_to_strip(first_message_prefixes_to_strip)
         .with_bot_user_prefixes_to_strip(bot_user_prefixes_to_strip);
 
-    let conversation = match controller_type {
+    let conversation = match (controller_type, &response_type) {
         // When we're triggered via a reply mention, the context is the whole reply chain upward of the message that triggered us.
-        ChatCompletionControllerType::ReplyMention => {
+        // When we answer a new conversation with an in-room reply (see `TextGenerationReplyStyle::Reply`), the reply chain is just the triggering message.
+        (ChatCompletionControllerType::ReplyMention, _) | (_, MessageResponseType::Reply(_)) => {
             create_llm_conversation_for_matrix_reply_chain(
                 &matrix_link,
                 &bot.room_event_fetcher().clone(),
@@ -1004,6 +1045,111 @@ fn inject_sender_context(
         .collect();
 
     Conversation { messages }
+}
+
+#[cfg(test)]
+mod response_type_tests {
+    use super::{ChatCompletionControllerType, determine_text_generation_response_type};
+    use crate::entity::roomconfig::TextGenerationReplyStyle;
+    use mxlink::matrix_sdk::ruma::OwnedEventId;
+    use mxlink::{MessageResponseType, ThreadInfo};
+
+    fn event_id(id: &str) -> OwnedEventId {
+        OwnedEventId::try_from(id).unwrap()
+    }
+
+    fn top_level() -> ThreadInfo {
+        ThreadInfo::new(event_id("$root:example.com"), event_id("$root:example.com"))
+    }
+
+    fn in_thread() -> ThreadInfo {
+        ThreadInfo::new(event_id("$root:example.com"), event_id("$last:example.com"))
+    }
+
+    fn is_reply_to(response_type: &MessageResponseType, expected: &str) -> bool {
+        matches!(response_type, MessageResponseType::Reply(id) if id.as_str() == expected)
+    }
+
+    fn is_in_thread(response_type: &MessageResponseType) -> bool {
+        matches!(response_type, MessageResponseType::InThread(info) if info.root_event_id.as_str() == "$root:example.com")
+    }
+
+    #[test]
+    fn thread_style_answers_top_level_messages_in_a_thread() {
+        for controller_type in [
+            ChatCompletionControllerType::TextCommand,
+            ChatCompletionControllerType::TextMention,
+            ChatCompletionControllerType::TextDirect,
+            ChatCompletionControllerType::Image,
+            ChatCompletionControllerType::File,
+            ChatCompletionControllerType::Audio,
+        ] {
+            let result = determine_text_generation_response_type(
+                &controller_type,
+                &top_level(),
+                TextGenerationReplyStyle::Thread,
+            );
+            assert!(is_in_thread(&result), "{controller_type:?}");
+        }
+    }
+
+    #[test]
+    fn reply_style_answers_top_level_messages_with_a_reply() {
+        for controller_type in [
+            ChatCompletionControllerType::TextCommand,
+            ChatCompletionControllerType::TextMention,
+            ChatCompletionControllerType::TextDirect,
+            ChatCompletionControllerType::Image,
+            ChatCompletionControllerType::File,
+        ] {
+            let result = determine_text_generation_response_type(
+                &controller_type,
+                &top_level(),
+                TextGenerationReplyStyle::Reply,
+            );
+            assert!(
+                is_reply_to(&result, "$root:example.com"),
+                "{controller_type:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn reply_style_keeps_audio_in_a_thread() {
+        let result = determine_text_generation_response_type(
+            &ChatCompletionControllerType::Audio,
+            &top_level(),
+            TextGenerationReplyStyle::Reply,
+        );
+        assert!(is_in_thread(&result));
+    }
+
+    #[test]
+    fn reply_style_keeps_existing_threads() {
+        for controller_type in [
+            ChatCompletionControllerType::TextDirect,
+            ChatCompletionControllerType::ThreadMention,
+        ] {
+            let result = determine_text_generation_response_type(
+                &controller_type,
+                &in_thread(),
+                TextGenerationReplyStyle::Reply,
+            );
+            assert!(is_in_thread(&result), "{controller_type:?}");
+        }
+    }
+
+    #[test]
+    fn reply_mention_replies_to_the_triggering_message_in_both_styles() {
+        for reply_style in TextGenerationReplyStyle::choices() {
+            let result = determine_text_generation_response_type(
+                &ChatCompletionControllerType::ReplyMention,
+                &in_thread(),
+                reply_style,
+            );
+            assert!(is_reply_to(&result, "$last:example.com"), "{reply_style}");
+        }
+    }
 }
 
 #[cfg(test)]

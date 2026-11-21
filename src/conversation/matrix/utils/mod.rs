@@ -357,8 +357,9 @@ pub async fn convert_matrix_native_event_to_matrix_message(
 ///     - if the thread root event is not found, is redacted, or is of some unsupported MessagePayload type, this function will return `None`
 ///
 /// - or an in-room (non-threaded) reply to a room message, which may or may not be mentioning the bot
-///     - replies that do not mention the bot cause this function to return `None`
-///     - other replies create a interaction context which points to a "first message" which is synthetic
+///     - replies that mention the bot create a interaction context which points to a "first message" which is synthetic
+///     - when `continue_replies_to_bot` is set (the `reply` reply style), non-audio replies to the bot's own messages are handled the same way, even without a mention
+///     - other replies cause this function to return `None`
 #[tracing::instrument(name = "determine_interaction_context_for_room_event", skip_all, fields(room_id = room.room_id().as_str(), event_id = current_event.event_id.as_str()))]
 pub async fn determine_interaction_context_for_room_event(
     bot_user_id: &OwnedUserId,
@@ -367,6 +368,7 @@ pub async fn determine_interaction_context_for_room_event(
     current_event: &OriginalSyncRoomMessageEvent,
     current_event_payload: &MessagePayload,
     event_fetcher: &Arc<RoomEventFetcher>,
+    continue_replies_to_bot: bool,
 ) -> anyhow::Result<Option<InteractionContext>> {
     let current_event_is_mentioning_bot =
         is_event_mentioning_bot(&current_event.content, bot_user_id, bot_display_name);
@@ -401,9 +403,22 @@ pub async fn determine_interaction_context_for_room_event(
             .await
         }
         Relation::Reply(reply) => {
+            // In the `reply` reply style, replying to one of our own messages continues the conversation,
+            // the same way a reply mentioning us does. Audio is excluded, as its speech-to-text flow is thread-based.
+            let is_continuing_reply_to_bot = continue_replies_to_bot
+                && !current_event_is_mentioning_bot
+                && !matches!(current_event_payload, MessagePayload::Audio(_))
+                && is_event_sent_by(
+                    event_fetcher,
+                    room,
+                    &reply.in_reply_to.event_id,
+                    bot_user_id,
+                )
+                .await;
+
             determine_interaction_context_for_room_event_related_to_reply(
                 current_event,
-                current_event_is_mentioning_bot,
+                current_event_is_mentioning_bot || is_continuing_reply_to_bot,
                 reply.in_reply_to.event_id.clone(),
             )
             .await
@@ -495,14 +510,14 @@ async fn determine_interaction_context_for_room_event_related_to_thread(
 
 async fn determine_interaction_context_for_room_event_related_to_reply(
     current_event: &OriginalSyncRoomMessageEvent,
-    current_event_is_mentioning_bot: bool,
+    current_event_is_addressing_bot: bool,
     reply_to_event_id: OwnedEventId,
 ) -> anyhow::Result<Option<InteractionContext>> {
-    tracing::trace!(?current_event_is_mentioning_bot, "Dealing with a reply");
+    tracing::trace!(?current_event_is_addressing_bot, "Dealing with a reply");
 
-    if !current_event_is_mentioning_bot {
-        // If the current event is not mentioning the bot, we don't care about it.
-        tracing::trace!("Ignoring reply event which does not mention the bot");
+    if !current_event_is_addressing_bot {
+        // If the current event is not addressing the bot (via a mention or by replying to it), we don't care about it.
+        tracing::trace!("Ignoring reply event which does not address the bot");
         return Ok(None);
     }
 
@@ -515,6 +530,30 @@ async fn determine_interaction_context_for_room_event_related_to_reply(
             payload: MessagePayload::SynthethicChatCompletionTriggerForReply,
         },
     }))
+}
+
+/// Tells if the given event was sent by the given user.
+/// Failures to fetch the event are logged and treated as "no".
+async fn is_event_sent_by(
+    event_fetcher: &Arc<RoomEventFetcher>,
+    room: &Room,
+    event_id: &OwnedEventId,
+    user_id: &OwnedUserId,
+) -> bool {
+    let event = match event_fetcher.fetch_event_in_room(event_id, room).await {
+        Ok(event) => event,
+        Err(err) => {
+            tracing::warn!(?err, %event_id, "Failed to fetch replied-to event");
+            return false;
+        }
+    };
+
+    event
+        .raw()
+        .get_field::<OwnedUserId>("sender")
+        .ok()
+        .flatten()
+        .is_some_and(|sender| sender == *user_id)
 }
 
 fn is_event_mentioning_bot(

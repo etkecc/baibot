@@ -4,8 +4,11 @@ use mxlink::matrix_sdk::{
     ruma::{
         EventId, OwnedEventId,
         api::client::receipt::create_receipt::v3::ReceiptType,
-        events::room::message::{
-            OriginalSyncRoomMessageEvent, RoomMessageEventContentWithoutRelation,
+        events::{
+            receipt::ReceiptThread,
+            room::message::{
+                OriginalSyncRoomMessageEvent, Relation, RoomMessageEventContentWithoutRelation,
+            },
         },
     },
 };
@@ -17,7 +20,10 @@ use tracing::Instrument;
 use crate::authorization::authorizer_for_room;
 use crate::{
     conversation::matrix::determine_interaction_context_for_room_event,
-    entity::{MessageContext, MessagePayload, RoomConfigContext, TriggerEventInfo},
+    entity::{
+        MessageContext, MessagePayload, RoomConfigContext, TriggerEventInfo,
+        roomconfig::TextGenerationReplyStyle,
+    },
 };
 
 #[derive(Clone)]
@@ -316,6 +322,12 @@ impl Messaging {
 
         let bot_display_name = self.bot.user_display_name_in_room(&room).await;
 
+        let room_config_context =
+            RoomConfigContext::new(global_config.clone(), room_config.clone());
+
+        let is_reply_style =
+            room_config_context.text_generation_reply_style() == TextGenerationReplyStyle::Reply;
+
         let interaction_context = determine_interaction_context_for_room_event(
             self.bot.user_id(),
             &bot_display_name,
@@ -323,6 +335,7 @@ impl Messaging {
             &event,
             &payload,
             &self.bot.room_event_fetcher(),
+            is_reply_style,
         )
         .await;
 
@@ -340,9 +353,6 @@ impl Messaging {
             );
             return Ok(());
         };
-
-        let room_config_context =
-            RoomConfigContext::new(global_config.clone(), room_config.clone());
 
         let trigger_event_info =
             TriggerEventInfo::new(event.event_id.clone(), event.sender.clone(), payload);
@@ -364,12 +374,16 @@ impl Messaging {
 
         tracing::info!(?controller_type, "Determined controller");
 
+        // In rooms preferring replies, in-room replies (which carry a synthetic thread info) get a main-timeline receipt.
+        let receipt_thread =
+            if is_reply_style && !matches!(event.content.relates_to, Some(Relation::Thread(_))) {
+                ReceiptThread::Main
+            } else {
+                interaction_context.thread_info.clone().into()
+            };
+
         let _ = room
-            .send_single_receipt(
-                ReceiptType::Read,
-                interaction_context.thread_info.clone().into(),
-                event.event_id.clone(),
-            )
+            .send_single_receipt(ReceiptType::Read, receipt_thread, event.event_id.clone())
             .await;
 
         let start_time = std::time::Instant::now();

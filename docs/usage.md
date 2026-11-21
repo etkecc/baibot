@@ -29,7 +29,7 @@ Whether the bot responds depends on:
 
 - (the [🗟 Prefix Requirement](./configuration/text-generation.md#-prefix-requirement-type) setting) whether a prefix (e.g. `!bai`) or user mention (e.g. `@baibot`) is required for messages sent to the room. For multi-user rooms, this setting defaults to "required". See [🌟 Features / 💬 Text Generation / On-demand involvement](./features.md#on-demand-involvement) for details.
 
-Room messages start a threaded conversation where you can continue back-and-forth communication with the bot. Using [on-demand involvement](./features.md#on-demand-involvement), you can can also mention the bot to provoke it to get involved in any conversation thread or reply chain.
+Room messages start a threaded conversation where you can continue back-and-forth communication with the bot. If the room uses the `reply` [💬 Reply Style](./configuration/text-generation.md#-reply-style), the bot answers with in-room replies instead, and you continue the conversation by replying to the bot's messages. Using [on-demand involvement](./features.md#on-demand-involvement), you can can also mention the bot to provoke it to get involved in any conversation thread or reply chain.
 
 Unless you've enabled the [♻️ Context Management](./configuration/text-generation.md#️-context-management) feature, all messages will be sent to the agent's API each time. If the context management feature is enabled, older messages may be dropped.
 

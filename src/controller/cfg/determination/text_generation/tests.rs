@@ -398,3 +398,69 @@ fn determine_controller_temperature_override() {
         assert_eq!(result, test_case.expected, "Test case: {}", test_case.name);
     }
 }
+
+#[test]
+fn determine_controller_reply_style() {
+    use super::ConfigTextGenerationSettingRelatedControllerType;
+    use super::ControllerType;
+    use crate::entity::roomconfig::TextGenerationReplyStyle;
+
+    struct TestCase {
+        name: &'static str,
+        input: &'static str,
+        expected: Result<ConfigTextGenerationSettingRelatedControllerType, ControllerType>,
+    }
+
+    let test_cases = vec![
+        TestCase {
+            name: "reply-style getter ok",
+            input: "reply-style",
+            expected: Ok(ConfigTextGenerationSettingRelatedControllerType::GetReplyStyle),
+        },
+        TestCase {
+            name: "reply-style getter extra args",
+            input: "reply-style some values here",
+            expected: Err(ControllerType::Error(
+                crate::strings::cfg::configuration_getter_used_with_extra_text(
+                    "reply-style",
+                    "some values here",
+                ),
+            )),
+        },
+        TestCase {
+            name: "reply-style setter reply",
+            input: "set-reply-style reply",
+            expected: Ok(
+                ConfigTextGenerationSettingRelatedControllerType::SetReplyStyle(Some(
+                    TextGenerationReplyStyle::Reply,
+                )),
+            ),
+        },
+        TestCase {
+            name: "reply-style setter uppercase",
+            input: "set-reply-style THREAD",
+            expected: Ok(
+                ConfigTextGenerationSettingRelatedControllerType::SetReplyStyle(Some(
+                    TextGenerationReplyStyle::Thread,
+                )),
+            ),
+        },
+        TestCase {
+            name: "reply-style setter invalid",
+            input: "set-reply-style threads",
+            expected: Err(ControllerType::Error(
+                crate::strings::cfg::configuration_value_unrecognized("threads"),
+            )),
+        },
+        TestCase {
+            name: "reply-style unsetter",
+            input: "set-reply-style",
+            expected: Ok(ConfigTextGenerationSettingRelatedControllerType::SetReplyStyle(None)),
+        },
+    ];
+
+    for test_case in test_cases {
+        let result = super::determine(test_case.input);
+        assert_eq!(result, test_case.expected, "Test case: {}", test_case.name);
+    }
+}

@@ -6,7 +6,7 @@ use crate::{
         MessageContext,
         roomconfig::{
             SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
-            TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
+            TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextGenerationReplyStyle,
             TextGenerationSenderContextMode, TextToSpeechBotMessagesFlowType,
             TextToSpeechUserMessagesFlowType,
         },
@@ -155,6 +155,43 @@ fn build_section_text_generation(command_prefix: &str, bot_username: &str) -> St
         strings::help::cfg::current_setting_unset(
             command_prefix,
             "text-generation set-prefix-requirement-type"
+        )
+    ));
+    message.push_str("\n\n");
+
+    // Reply Style
+
+    message.push_str(&format!(
+        "#### {}",
+        strings::help::cfg::text_generation_reply_style_heading()
+    ));
+    message.push_str("\n\n");
+    message.push_str(&strings::help::cfg::text_generation_reply_style_intro());
+    message.push('\n');
+    message.push_str(
+        &strings::help::cfg::the_following_configuration_values_are_recognized(
+            TextGenerationReplyStyle::choices(),
+        ),
+    );
+    message.push_str("\n\n");
+    message.push_str(&format!(
+        "- {}",
+        strings::help::cfg::current_setting_show(command_prefix, "text-generation reply-style")
+    ));
+    message.push('\n');
+    message.push_str(&format!(
+        "- {}",
+        strings::help::cfg::current_setting_set(
+            command_prefix,
+            "text-generation set-reply-style VALUE"
+        )
+    ));
+    message.push('\n');
+    message.push_str(&format!(
+        "- {}",
+        strings::help::cfg::current_setting_unset(
+            command_prefix,
+            "text-generation set-reply-style"
         )
     ));
     message.push_str("\n\n");

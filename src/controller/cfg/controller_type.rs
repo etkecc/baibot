@@ -3,7 +3,7 @@ use crate::{
     authorization::Permission,
     entity::roomconfig::{
         SpeechToTextFlowType, SpeechToTextMessageTypeForNonThreadedOnlyTranscribedMessages,
-        TextGenerationAutoUsage, TextGenerationPrefixRequirementType,
+        TextGenerationAutoUsage, TextGenerationPrefixRequirementType, TextGenerationReplyStyle,
         TextGenerationSenderContextMode, TextToSpeechBotMessagesFlowType,
         TextToSpeechUserMessagesFlowType,
     },
@@ -56,6 +56,9 @@ pub enum ConfigTextGenerationSettingRelatedControllerType {
 
     GetSenderContextMode,
     SetSenderContextMode(Option<TextGenerationSenderContextMode>),
+
+    GetReplyStyle,
+    SetReplyStyle(Option<TextGenerationReplyStyle>),
 }
 
 #[derive(Debug, PartialEq)]

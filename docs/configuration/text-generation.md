@@ -33,6 +33,28 @@ Regardless of this configuration, **the bot will also respond to messages by [al
 - [🖼️ On-demand involvement in a reply chain](../screenshots/text-generation-on-demand-reply-involvement.webp)
 
 
+### 💬 Reply Style
+
+By default, the bot answers each new conversation in a **thread** and keeps the whole thread as the conversation context.
+
+Some setups work better without threads, for example rooms [bridged](https://matrix.org/ecosystem/bridges/) to networks that don't support them well. A [mautrix-discord](https://github.com/mautrix/discord) bridge in relay mode, for example, drops messages that start a new thread, so threaded answers never reach Discord.
+
+To support such use-cases, the bot has a `text-generation reply-style` setting, which can be set to:
+
+- (default) `thread`: new conversations are answered in a thread
+
+- `reply`: new conversations are answered with an in-room **reply** to the triggering message. Replying to one of the bot's messages continues the conversation **without needing to mention the bot**, and the reply chain (instead of a thread) is used as the conversation context.
+
+With `reply`:
+
+- what starts a conversation is unchanged (see [🗟 Prefix Requirement Type](#-prefix-requirement-type))
+- replying to the bot still requires the `text-generation` [permission](../access.md#-permissions); as with [on-demand involvement](../features.md#on-demand-involvement), the context includes everyone's messages in the reply chain, except those of users denied text generation
+- messages in existing threads are still answered in their thread
+- voice replies continue the conversation only when they mention the bot, and conversations started by a voice message (see [🦻 Speech-to-Text](../features.md#-speech-to-text)) and [image generation](../features.md#image-generation) still use threads
+
+Example: `!bai config room text-generation set-reply-style reply` (this can also be set globally, see [🛠️ Room Settings](./README.md#room-settings))
+
+
 ### 🪄 Auto Usage
 
 Text generation is enabled by default (the `text-generation auto-usage` setting being set to `always`), but can be set to:

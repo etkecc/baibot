@@ -184,6 +184,28 @@ fn determine_controller() {
             )),
         },
         TestCase {
+            name: "per-room text-generation/reply-style setter",
+            input: "room text-generation set-reply-style reply",
+            expected: super::ControllerType::Config(controller_type::ConfigControllerType::SettingsRelated(
+                controller_type::SettingsStorageSource::Room,
+                controller_type::ConfigSettingRelatedControllerType::TextGeneration(
+                    controller_type::ConfigTextGenerationSettingRelatedControllerType::SetReplyStyle(
+                        Some(crate::entity::roomconfig::TextGenerationReplyStyle::Reply),
+                    ),
+                ),
+            )),
+        },
+        TestCase {
+            name: "global text-generation/reply-style getter",
+            input: "global text-generation reply-style",
+            expected: super::ControllerType::Config(controller_type::ConfigControllerType::SettingsRelated(
+                controller_type::SettingsStorageSource::Global,
+                controller_type::ConfigSettingRelatedControllerType::TextGeneration(
+                    controller_type::ConfigTextGenerationSettingRelatedControllerType::GetReplyStyle,
+                ),
+            )),
+        },
+        TestCase {
             name: "per-room text-to-speech/speed-override getter",
             input: "room text-to-speech speed-override",
             expected: super::ControllerType::Config(controller_type::ConfigControllerType::SettingsRelated(
