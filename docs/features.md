@@ -187,6 +187,8 @@ Image creation is the bot's ability to **create images** based on text prompts.
 
 See a [🖼️ Screenshot of the Image Creation feature](./screenshots/image-creation.webp).
 
+💡 Besides using the `!bai image create` command, you can ask for an image while chatting (e.g. "draw a steaming bowl of ramen"), thanks to the `builtin.image.generate` tool (see [🧰 Bot Tools / 🖌️ Image creation](./bot-tools.md#️-image-creation)).
+
 You may also wish to see:
 
 - [🛠️ Configuration / 🖌️ Image Generation](./configuration/image-generation.md) for configuration options related to Image Generation

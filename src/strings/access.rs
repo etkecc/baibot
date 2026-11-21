@@ -141,6 +141,18 @@ pub fn explain_tool_not_allowed(emoji: &str, selector: &str, summary: &str) -> S
     format!("- ❌ {emoji} `{selector}` ({summary}): no rule allows it")
 }
 
+pub fn explain_tool_needs_permission_suffix(
+    emoji: &str,
+    permission: &str,
+    allowed: bool,
+) -> String {
+    if allowed {
+        format!(" (with {emoji} `{permission}`, which is allowed)")
+    } else {
+        format!(" (needs {emoji} `{permission}`, which is not allowed)")
+    }
+}
+
 pub fn inactive_tool_selector_suffix() -> &'static str {
     " (no such tool, ignored)"
 }

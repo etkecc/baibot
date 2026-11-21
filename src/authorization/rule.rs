@@ -349,6 +349,7 @@ mod tests {
 
         assert!(is_valid_permission_name("tool:builtin.room.history"));
         assert!(is_valid_permission_name("tool:builtin.room.*"));
+        assert!(is_valid_permission_name("tool:builtin.image.*"));
         assert!(!is_valid_permission_name("tool:holmes.*"));
         assert!(!is_valid_permission_name("tool:"));
 

@@ -223,7 +223,9 @@ pub async fn handle_explain(
 fn explain_tools(authorizer: &Authorizer, user_id: &UserId) -> String {
     let mut lines = vec![strings::access::explain_tools_heading().to_owned()];
 
-    for tool in crate::tools::catalog::known() {
+    for tool in crate::tools::registry::tools() {
+        let required_permission = tool.required_permission();
+        let tool = tool.info();
         let selector = format!("{TOOL_PREFIX}{}", tool.id);
 
         let denied_by = authorizer.matching_tool_rules(user_id, tool.id, RuleEffect::Deny);
@@ -248,6 +250,23 @@ fn explain_tools(authorizer: &Authorizer, user_id: &UserId) -> String {
         } else {
             strings::access::explain_tool_not_allowed(tool.emoji, &selector, tool.summary)
         });
+
+        if let Some(permission) = required_permission
+            && let Some(line) = lines.last_mut()
+        {
+            let allowed = authorizer.allows(user_id, permission);
+
+            // The tool can't be used without the permission, even when its own rules allow it.
+            if !allowed && let Some(rest) = line.strip_prefix("- ✅ ") {
+                *line = format!("- ❌ {rest}");
+            }
+
+            line.push_str(&strings::access::explain_tool_needs_permission_suffix(
+                permission.emoji(),
+                permission.name(),
+                allowed,
+            ));
+        }
     }
 
     lines.join("\n")

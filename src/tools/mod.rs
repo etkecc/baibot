@@ -6,6 +6,7 @@
 //! Provider adapters only translate between their wire format and the types here.
 
 pub mod catalog;
+pub mod image;
 pub mod registry;
 pub mod room_history;
 mod run;

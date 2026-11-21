@@ -16,7 +16,7 @@ For multi-user rooms, this setting defaults to "required".
 
 Room messages start a threaded conversation where you can continue back-and-forth communication with the bot.
 
-While chatting, you can also ask the bot to read the room's recent messages (🧰 Bot Tools).
+While chatting, you can also ask the bot to read the room's recent messages, or to create images (🧰 Bot Tools).
 
 ### 🗣️ Text-to-Speech
 

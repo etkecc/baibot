@@ -1,12 +1,13 @@
 ## 🧰 Bot Tools
 
-While answering, the model can ask the bot to do things for it, like reading the room's recent messages. You just ask in chat, and the model decides when to use a tool.
+While answering, the model can ask the bot to do things for it, like reading the room's recent messages or creating an image. You just ask in chat, and the model decides when to use a tool.
 
 Bot tools run in the bot, so they work with every supported provider (see [☁️ Providers](./providers.md)), as long as the model supports function calling (see [🤖 Agent settings](#-agent-settings)). They are separate from provider tools (like web search), which run on the provider's side (see [🌟 Features / 🛠️ Provider Tools](./features.md#️-provider-tools)).
 
 | Tool | What it does |
 | --- | --- |
 | [📜 Room history](#-room-history) (`builtin.room.history`) | Reads the room's recent messages |
+| [🖌️ Image creation](#️-image-creation) (`builtin.image.generate`) | Creates an image and posts it in the room |
 
 
 ### 📜 Room history
@@ -22,10 +23,19 @@ By default, it reads up to 10 messages before the one it's answering. You can as
 It includes everyone's messages, except from people explicitly denied `text-generation` by a deny rule (see [🔒 Access / 📜 Rules](./access.md#-rules)).
 
 
+### 🖌️ Image creation
+
+> Draw a steaming bowl of ramen.
+
+The bot creates the image and posts it in the room. It's like the `!bai image create` command, but you can ask while chatting.
+
+The room needs an agent for image creation (see [🌟 Features / 🖌️ Image Creation](./features.md#️-image-creation)). Your provider may charge for each image.
+
+
 ### 💡 Things to keep in mind
 
 - Tools act on behalf of the person whose message the bot is answering, but everyone in the room sees the answer.
-- Room history goes to the text-generation agent's provider.
+- Room history goes to the text-generation agent's provider. Image prompts go to the image generation agent's provider.
 - With the thinking notice on, it shows what the tools are doing, e.g. "📜 Reading up to 10 messages" (see [🛠️ Configuration / 💬 Text Generation / 💭 Thinking Notice](./configuration/text-generation.md#-thinking-notice)).
 - Text from tools (like other people's messages) could steer the model. With provider tools that reach the internet (like web fetch), that could leak room content to a website.
 
@@ -37,6 +47,7 @@ Each tool is also a permission in the [🔒 Access](./access.md) rules: `tool:` 
 | Tool permission | Comes with |
 | --- | --- |
 | 📜 `tool:builtin.room.history` | `text-generation` |
+| 🖌️ `tool:builtin.image.generate` | `text-generation` + `image-generation` |
 
 Each built-in tool is allowed by default for people who have the feature permissions listed above. A deny rule turns the tool off. For example, to turn off room history in a room:
 

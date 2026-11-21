@@ -255,15 +255,11 @@ pub async fn handle(
                 return Ok(());
             };
 
-            // In rooms preferring replies, the audio replies to the generated answer (not to the user's message),
-            // so that the reply chain (and thus the conversation context) keeps the answer when someone replies to the audio.
+            // When answering with a reply, the audio replies to the generated answer (not to the user's message),
+            // so that the reply chain (and thus the conversation context) keeps the answer (and anything tools posted
+            // before it, like images) when someone replies to the audio.
             let response_type = match response_type {
-                MessageResponseType::Reply(_)
-                    if message_context
-                        .room_config_context()
-                        .text_generation_reply_style()
-                        == TextGenerationReplyStyle::Reply =>
-                {
+                MessageResponseType::Reply(_) => {
                     MessageResponseType::Reply(text_to_speech_eligible_payload.event_id.clone())
                 }
                 other => other,
@@ -652,7 +648,11 @@ async fn handle_stage_text_generation(
         .text_generation_context_management_enabled();
 
     let tool_offer = if controller.text_generation_bot_tools_enabled() {
-        crate::tools::registry::offer(message_context.authorizer(), message_context.sender_id())
+        crate::tools::registry::offer(
+            message_context.authorizer(),
+            message_context.sender_id(),
+            tools::room_capabilities(bot, message_context.room_config_context()).await,
+        )
     } else {
         crate::tools::registry::ToolOffer::none()
     };
@@ -666,6 +666,7 @@ async fn handle_stage_text_generation(
         message_context.room().clone(),
         message_context.sender_id().clone(),
         message_context.event_id().clone(),
+        response_type.clone(),
         tool_offer.offered,
         activity_sender,
     );
@@ -801,6 +802,18 @@ async fn handle_stage_text_generation(
         "Done with LLM text generation"
     );
 
+    // With replies, when tools posted messages (like images) while answering, the answer (or error) replies to the
+    // last of them, so that replying to it gets the bot all of them as context. The placeholder (which replies to the
+    // triggering message) can't become the answer then, so it's removed once the answer is delivered.
+    let last_posted_message = executor.last_posted_message();
+    let (placeholder, placeholder_to_remove) =
+        match (&response_type, &last_posted_message, placeholder) {
+            (MessageResponseType::Reply(_), Some(_), placeholder) => (None, placeholder),
+            (_, _, placeholder) => (placeholder, None),
+        };
+    let response_type =
+        crate::tools::registry::response_type_after(&response_type, last_posted_message);
+
     let result = match result {
         Ok(result) => result,
         Err(err) => {
@@ -817,12 +830,21 @@ async fn handle_stage_text_generation(
                 &err,
             );
 
-            finalize_thinking_notice_with_error(
+            let delivered = finalize_thinking_notice_with_error(
                 bot,
                 message_context,
                 placeholder.as_ref(),
                 &error_text,
                 response_type,
+            )
+            .await;
+
+            remove_placeholder(
+                bot,
+                message_context,
+                placeholder_to_remove,
+                delivered,
+                &crate::utils::status::create_error_message_text(&error_text),
             )
             .await;
 
@@ -839,12 +861,21 @@ async fn handle_stage_text_generation(
 
         let empty_text = strings::agent::empty_response_returned(agent.identifier());
 
-        finalize_thinking_notice_with_error(
+        let delivered = finalize_thinking_notice_with_error(
             bot,
             message_context,
             placeholder.as_ref(),
             &empty_text,
             response_type,
+        )
+        .await;
+
+        remove_placeholder(
+            bot,
+            message_context,
+            placeholder_to_remove,
+            delivered,
+            &crate::utils::status::create_error_message_text(&empty_text),
         )
         .await;
 
@@ -865,14 +896,59 @@ async fn handle_stage_text_generation(
             event_id.clone()
         }
         _ => {
-            bot.messaging()
+            let sent = bot
+                .messaging()
                 .send_text_markdown_no_fail(message_context.room(), text.clone(), response_type)
-                .await?
-                .event_id
+                .await
+                .map(|response| response.event_id);
+
+            let placeholder_shows_answer = remove_placeholder(
+                bot,
+                message_context,
+                placeholder_to_remove.clone(),
+                sent.is_some(),
+                &text,
+            )
+            .await;
+
+            match (sent, placeholder_to_remove) {
+                (Some(event_id), _) => event_id,
+                (None, Some(placeholder)) if placeholder_shows_answer => placeholder,
+                _ => return None,
+            }
         }
     };
 
     Some(TextToSpeechEligiblePayload { text, event_id })
+}
+
+/// Removes a placeholder which couldn't become the answer, once the answer (or error) was delivered.
+///
+/// When delivering failed, the placeholder shows `text` instead, so the answer isn't lost.
+/// Returns whether the placeholder shows `text` now.
+async fn remove_placeholder(
+    bot: &Bot,
+    message_context: &MessageContext,
+    placeholder: Option<OwnedEventId>,
+    delivered: bool,
+    text: &str,
+) -> bool {
+    let Some(placeholder) = placeholder else {
+        return false;
+    };
+
+    if delivered {
+        bot.messaging()
+            .redact_event_no_fail(message_context.room(), placeholder, None)
+            .await;
+
+        return false;
+    }
+
+    bot.messaging()
+        .edit_text_markdown_no_fail(message_context.room(), &placeholder, text.to_owned())
+        .await
+        .is_some()
 }
 
 /// Combines the thinking notice's flavor line with what tools are doing (if anything).
@@ -885,29 +961,29 @@ fn thinking_notice(flavor: &str, activity: Option<&str>) -> String {
 
 /// Finalizes a thinking-notice placeholder (if one was posted) with error/notice text, so a
 /// failed or empty generation never leaves an orphaned "thinking…" message behind. With no
-/// placeholder, this is the original behavior: a fresh error notice.
+/// placeholder, this is the original behavior: a fresh error notice. Returns whether it was delivered.
 async fn finalize_thinking_notice_with_error(
     bot: &Bot,
     message_context: &MessageContext,
     placeholder: Option<&OwnedEventId>,
     text: &str,
     response_type: MessageResponseType,
-) {
+) -> bool {
     match placeholder {
-        Some(event_id) => {
-            bot.messaging()
-                .edit_text_markdown_no_fail(
-                    message_context.room(),
-                    event_id,
-                    crate::utils::status::create_error_message_text(text),
-                )
-                .await;
-        }
-        None => {
-            bot.messaging()
-                .send_error_markdown_no_fail(message_context.room(), text, response_type)
-                .await;
-        }
+        Some(event_id) => bot
+            .messaging()
+            .edit_text_markdown_no_fail(
+                message_context.room(),
+                event_id,
+                crate::utils::status::create_error_message_text(text),
+            )
+            .await
+            .is_some(),
+        None => bot
+            .messaging()
+            .send_error_markdown_no_fail(message_context.room(), text, response_type)
+            .await
+            .is_some(),
     }
 }
 

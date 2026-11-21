@@ -1,13 +1,32 @@
 //! Running the tools the model calls while answering a message.
 
+use mxlink::MessageResponseType;
 use mxlink::matrix_sdk::Room;
-use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId, UserId};
+use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId};
 
 use crate::Bot;
-use crate::authorization::{Authorizer, Permission, room_power_levels};
-use crate::tools::catalog::ToolInfo;
-use crate::tools::registry::{self, Tool, ToolContext};
+use crate::agent::{AgentPurpose, utils::get_effective_agent_for_purpose};
+use crate::authorization::{Authorizer, room_power_levels};
+use crate::entity::RoomConfigContext;
+use crate::tools::registry::{self, PostedMessages, RoomCapabilities, Tool, ToolContext};
 use crate::tools::{ToolCall, ToolExecutor, ToolResult};
+
+/// Determines what the room's agents can do for tools.
+pub async fn room_capabilities(
+    bot: &Bot,
+    room_config_context: &RoomConfigContext,
+) -> RoomCapabilities {
+    let image_agent = get_effective_agent_for_purpose(
+        bot.agent_manager(),
+        room_config_context,
+        AgentPurpose::ImageGeneration,
+    )
+    .await;
+
+    RoomCapabilities {
+        image_generation: image_agent.is_ok(),
+    }
+}
 
 const NOT_ALLOWED_MESSAGE: &str = "The person you are answering may no longer use this tool (access rules changed). Answer without it.";
 
@@ -20,7 +39,9 @@ pub struct BotToolExecutor<'a> {
     room: Room,
     requester: OwnedUserId,
     trigger_event_id: OwnedEventId,
+    response_type: MessageResponseType,
     tools: Vec<&'static dyn Tool>,
+    posted_messages: PostedMessages,
 
     /// Receives a line for people about the call being run (see [`Tool::activity`]).
     activity: tokio::sync::watch::Sender<Option<String>>,
@@ -32,6 +53,7 @@ impl<'a> BotToolExecutor<'a> {
         room: Room,
         requester: OwnedUserId,
         trigger_event_id: OwnedEventId,
+        response_type: MessageResponseType,
         tools: Vec<&'static dyn Tool>,
         activity: tokio::sync::watch::Sender<Option<String>>,
     ) -> Self {
@@ -40,13 +62,21 @@ impl<'a> BotToolExecutor<'a> {
             room,
             requester,
             trigger_event_id,
+            response_type,
             tools,
+            posted_messages: PostedMessages::default(),
             activity,
         }
     }
 
-    /// Builds an authorizer from the current configuration, which may have changed since the reply started.
-    async fn current_authorizer(&self) -> anyhow::Result<Authorizer> {
+    /// The last message tools posted while answering, if any.
+    pub fn last_posted_message(&self) -> Option<OwnedEventId> {
+        self.posted_messages.last()
+    }
+
+    /// Builds an authorizer (and the room's configuration) from the current configuration,
+    /// which may have changed since the reply started.
+    async fn current_authorizer(&self) -> anyhow::Result<(Authorizer, RoomConfigContext)> {
         let global_config = self.bot.global_config().await?;
 
         let room_config = self
@@ -68,15 +98,11 @@ impl<'a> BotToolExecutor<'a> {
             anyhow::bail!("The room's power levels are unknown");
         }
 
-        Ok(authorizer)
+        Ok((
+            authorizer,
+            RoomConfigContext::new(global_config, room_config),
+        ))
     }
-}
-
-/// Tells whether a tool may run for someone, according to the current access rules.
-///
-/// Tools are offered according to the rules when the reply started, which may have changed since.
-fn may_run(authorizer: &Authorizer, user_id: &UserId, tool: &ToolInfo) -> bool {
-    authorizer.allows(user_id, Permission::TextGeneration) && authorizer.allows_tool(user_id, tool)
 }
 
 impl ToolExecutor for BotToolExecutor<'_> {
@@ -112,15 +138,16 @@ impl ToolExecutor for BotToolExecutor<'_> {
             return timed_out();
         };
 
-        let authorizer = match authorizer {
-            Ok(authorizer) => authorizer,
+        let (authorizer, room_config_context) = match authorizer {
+            Ok(result) => result,
             Err(err) => {
                 tracing::warn!(tool = tool_id, ?err, "Failed to check tool access");
                 return ToolResult::error(call, ACCESS_CHECK_FAILED_MESSAGE);
             }
         };
 
-        if !may_run(&authorizer, &self.requester, tool.info()) {
+        // Tools are offered according to the rules when the reply started, which may have changed since.
+        if !registry::may_run(&authorizer, &self.requester, tool) {
             tracing::info!(
                 tool = tool_id,
                 "Not running a tool which the requester may no longer use"
@@ -132,10 +159,15 @@ impl ToolExecutor for BotToolExecutor<'_> {
             .send_replace(Some(tool.activity(&call.arguments)));
 
         let context = ToolContext {
+            bot: self.bot.clone(),
             room: self.room.clone(),
             bot_user_id: self.bot.user_id().to_owned(),
             trigger_event_id: self.trigger_event_id.clone(),
+            response_type: self.response_type.clone(),
+            posted_messages: self.posted_messages.clone(),
+            deadline,
             authorizer,
+            room_config_context,
         };
 
         let outcome = tokio::time::timeout_at(
@@ -152,59 +184,5 @@ impl ToolExecutor for BotToolExecutor<'_> {
             Ok(Err(message)) => ToolResult::error(call, message),
             Err(_) => timed_out(),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use mxlink::matrix_sdk::ruma::UserId;
-
-    use super::may_run;
-    use crate::authorization::{AccessRule, Authorizer, RuleEffect};
-    use crate::entity::globalconfig::GlobalConfig;
-    use crate::tools::registry;
-
-    fn authorizer(rules: &[(RuleEffect, &str)]) -> Authorizer {
-        let mut global_config = GlobalConfig::new(vec![]);
-        global_config.access.rules = Some(
-            rules
-                .iter()
-                .enumerate()
-                .map(|(index, (effect, permission))| AccessRule {
-                    id: format!("r{index}"),
-                    effect: effect.clone(),
-                    permissions: vec![permission.to_string()],
-                    users: vec!["@*:example.com".to_owned()],
-                    min_power_level: None,
-                })
-                .collect(),
-        );
-
-        Authorizer::new(&[], &global_config)
-    }
-
-    #[test]
-    fn rules_changed_after_offering_stop_the_tool() {
-        let alice = UserId::parse("@alice:example.com").unwrap();
-        let tool = registry::tools().next().unwrap().info();
-
-        // When the reply started.
-        let before = authorizer(&[(RuleEffect::Allow, "use")]);
-        assert_eq!(registry::offer(&before, &alice).offered.len(), 1);
-        assert!(may_run(&before, &alice, tool));
-
-        // A deny added while the model was working.
-        let tool_denied = authorizer(&[
-            (RuleEffect::Allow, "use"),
-            (RuleEffect::Deny, "tool:builtin.room.history"),
-        ]);
-        assert!(!may_run(&tool_denied, &alice, tool));
-
-        // No longer allowed to chat at all.
-        let chat_denied = authorizer(&[
-            (RuleEffect::Allow, "use"),
-            (RuleEffect::Deny, "text-generation"),
-        ]);
-        assert!(!may_run(&chat_denied, &alice, tool));
     }
 }
