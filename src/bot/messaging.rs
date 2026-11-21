@@ -11,6 +11,7 @@ use mxlink::matrix_sdk::{
                 OriginalSyncRoomMessageEvent, Relation, RoomMessageEventContent,
                 RoomMessageEventContentWithoutRelation,
             },
+            room::redaction::SyncRoomRedactionEvent,
         },
     },
 };
@@ -303,6 +304,27 @@ impl Messaging {
             move |event: OriginalSyncRoomMessageEvent, room: Room| async move {
                 if let Some(Relation::Replacement(replacement)) = &event.content.relates_to {
                     room_event_fetcher.forget(room.room_id(), &replacement.event_id);
+                }
+            },
+        );
+
+        // Redacted events change too (their content is gone), and so do events whose latest edit gets redacted.
+        let room_event_fetcher = self.bot.room_event_fetcher();
+        self.bot.matrix_link().client().add_event_handler(
+            move |event: SyncRoomRedactionEvent, room: Room| async move {
+                // The redacted event's ID is at the top level in room versions before 11, and in the content since.
+                // A redaction which got redacted itself still applies (and keeps the ID in the content, since v11).
+                let redacted_event_ids = match &event {
+                    SyncRoomRedactionEvent::Original(event) => {
+                        [event.redacts.as_ref(), event.content.redacts.as_ref()]
+                    }
+                    SyncRoomRedactionEvent::Redacted(event) => {
+                        [event.content.redacts.as_ref(), None]
+                    }
+                };
+
+                for redacted_event_id in redacted_event_ids.into_iter().flatten() {
+                    room_event_fetcher.forget_redacted(room.room_id(), redacted_event_id);
                 }
             },
         );
