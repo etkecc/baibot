@@ -87,44 +87,38 @@ pub(super) fn determine_text_controller(
 ) -> ControllerType {
     let text = text.trim();
 
-    if text.starts_with(&format!("{command_prefix} help")) || text == command_prefix {
+    if text == command_prefix {
         return ControllerType::Help;
     }
 
-    if text == format!("{command_prefix} room list") {
-        return ControllerType::RoomList;
-    }
-
+    // Remote commands (`in ROOM COMMAND`) have their own parsing.
     if let Some(controller_type) = super::remote::determine_controller(command_prefix, text) {
         return controller_type;
     }
 
-    if let Some(remaining) = text.strip_prefix(&format!("{command_prefix} access")) {
-        return super::access::determine_controller(command_prefix, remaining.trim());
-    }
-
-    if let Some(remaining) = text.strip_prefix(&format!("{command_prefix} provider")) {
-        return super::provider::determine_controller(remaining.trim());
-    }
-
-    if let Some(remaining) = text.strip_prefix(&format!("{command_prefix} agent")) {
-        return super::agent::determine_controller(command_prefix, remaining.trim());
-    }
-
-    if let Some(remaining) = text.strip_prefix(&format!("{command_prefix} config")) {
-        return super::cfg::determine_controller(remaining.trim());
-    }
-
-    if let Some(prompt) = text.strip_prefix(&format!("{command_prefix} image")) {
-        return super::image::determine_controller(prompt.trim());
-    }
-
-    if let Some(prompt) = text.strip_prefix(&format!("{command_prefix} sticker")) {
-        return ControllerType::StickerGeneration(prompt.trim().to_owned());
-    }
-
-    if let Some(remaining) = text.strip_prefix(&format!("{command_prefix} usage")) {
-        return super::usage::determine_controller(remaining.trim());
+    // Commands are matched by whole words, so that a prompt like `agentic AI is...` is not taken for
+    // the `agent` command. Plural forms are accepted too, since they are easy to type by mistake.
+    if let Some((word, rest)) = split_command_word(command_prefix, text) {
+        match word {
+            "help" => return ControllerType::Help,
+            "room" | "rooms" => {
+                return if rest.is_empty() || rest == "list" {
+                    ControllerType::RoomList
+                } else {
+                    ControllerType::Error(strings::remote::unknown_room_command(command_prefix))
+                };
+            }
+            "access" => return super::access::determine_controller(command_prefix, rest),
+            "provider" | "providers" => return super::provider::determine_controller(rest),
+            "agent" | "agents" => return super::agent::determine_controller(command_prefix, rest),
+            "config" => return super::cfg::determine_controller(rest),
+            "image" | "images" => return super::image::determine_controller(rest),
+            "sticker" | "stickers" => {
+                return ControllerType::StickerGeneration(rest.to_owned());
+            }
+            "usage" => return super::usage::determine_controller(rest),
+            _ => {}
+        }
     }
 
     // Regular text message that does not match any command.
@@ -154,4 +148,19 @@ pub(super) fn determine_text_controller(
             ControllerType::ChatCompletion(ChatCompletionControllerType::TextDirect)
         }
     }
+}
+
+/// Splits `PREFIX WORD REST` into the command word and the (trimmed) rest.
+fn split_command_word<'a>(command_prefix: &str, text: &'a str) -> Option<(&'a str, &'a str)> {
+    let remaining = text.strip_prefix(command_prefix)?;
+    if !remaining.starts_with(char::is_whitespace) {
+        return None;
+    }
+
+    let remaining = remaining.trim_start();
+
+    Some(match remaining.split_once(char::is_whitespace) {
+        Some((word, rest)) => (word, rest.trim()),
+        None => (remaining, ""),
+    })
 }

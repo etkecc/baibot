@@ -27,6 +27,12 @@ pub fn cannot_manage_room(room: &str) -> String {
     )
 }
 
+pub fn unknown_room_command(command_prefix: &str) -> String {
+    format!(
+        "Unknown room command. To list the rooms you can manage, send `{command_prefix} room list`."
+    )
+}
+
 pub fn room_list_none() -> &'static str {
     "There are no rooms you can manage."
 }

@@ -3,6 +3,7 @@ use super::super::agent::AgentControllerType;
 use super::super::chat_completion::ChatCompletionControllerType;
 use super::super::determination::determine_text_controller;
 use crate::entity::roomconfig::TextGenerationPrefixRequirementType;
+use crate::strings;
 
 fn determine(text: &str) -> ControllerType {
     determine_text_controller("!bai", text, TextGenerationPrefixRequirementType::No, false)
@@ -67,8 +68,19 @@ fn determine_controller() {
             "!bai information",
             ControllerType::ChatCompletion(ChatCompletionControllerType::TextCommand),
         ),
+        ("!bai room", ControllerType::RoomList),
+        ("!bai rooms", ControllerType::RoomList),
+        ("!bai rooms list", ControllerType::RoomList),
         (
             "!bai room list of mine",
+            ControllerType::Error(strings::remote::unknown_room_command("!bai")),
+        ),
+        (
+            "!bai rooms please",
+            ControllerType::Error(strings::remote::unknown_room_command("!bai")),
+        ),
+        (
+            "!bai roomba is cool",
             ControllerType::ChatCompletion(ChatCompletionControllerType::TextCommand),
         ),
     ];

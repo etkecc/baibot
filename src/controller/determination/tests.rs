@@ -169,3 +169,57 @@ fn determine_text_controller() {
         assert_eq!(result, test_case.expected, "Test case: {}", test_case.name);
     }
 }
+
+#[test]
+fn command_words_are_matched_whole() {
+    use super::super::agent::AgentControllerType;
+    use super::super::chat_completion::ChatCompletionControllerType;
+    use super::ControllerType;
+
+    let determine = |text: &str| {
+        super::determine_text_controller(
+            "!bai",
+            text,
+            super::TextGenerationPrefixRequirementType::No,
+            false,
+        )
+    };
+    let chat = || ControllerType::ChatCompletion(ChatCompletionControllerType::TextCommand);
+
+    let cases = vec![
+        ("!bai help me", ControllerType::Help),
+        ("!bai helpful tips", chat()),
+        (
+            "!bai agents",
+            ControllerType::Agent(AgentControllerType::Help),
+        ),
+        (
+            "!bai agents list",
+            ControllerType::Agent(AgentControllerType::List),
+        ),
+        ("!bai agentic AI is a trend", chat()),
+        ("!bai providers", ControllerType::ProviderHelp),
+        ("!bai configuration", chat()),
+        (
+            "!bai stickers cat",
+            ControllerType::StickerGeneration("cat".to_owned()),
+        ),
+        ("!bai stickerbook", chat()),
+        (
+            "!bai images create cat",
+            ControllerType::ImageGeneration("cat".to_owned()),
+        ),
+        ("!bai imagery", chat()),
+        ("!bai usages", chat()),
+        ("!bai accessibility tips", chat()),
+        (
+            "!bai\nagent list",
+            ControllerType::Agent(AgentControllerType::List),
+        ),
+        ("!baiagent list", chat()),
+    ];
+
+    for (text, expected) in cases {
+        assert_eq!(determine(text), expected, "{text}");
+    }
+}
