@@ -13,6 +13,12 @@ PASSWORD="$3"
 SERVER="http://$(grep '^SERVICE_CONTINUWUITY_BIND_PORT_CLIENT_API=' "${ENV_FILE}" | cut -d= -f2)"
 REGISTER_URL="${SERVER}/_matrix/client/v3/register"
 
+AVAILABILITY=$(curl -s "${SERVER}/_matrix/client/v3/register/available?username=${USERNAME}")
+if echo "${AVAILABILITY}" | grep -q '"M_USER_IN_USE"'; then
+	echo "User '${USERNAME}' already exists on ${SERVER}, skipping."
+	exit 0
+fi
+
 echo "Registering user '${USERNAME}' on ${SERVER}..."
 
 SESSION_RESPONSE=$(curl -s -X POST "${REGISTER_URL}" \
