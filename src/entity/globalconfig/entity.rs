@@ -36,14 +36,12 @@ pub struct GlobalConfig {
 }
 
 impl GlobalConfig {
-    pub fn new(user_patterns: Option<Vec<String>>) -> Self {
-        // `user_patterns` (from the initial configuration) seeds the rules.
-        let mut access = GlobalConfigAccess {
-            user_patterns,
+    pub fn new(rules: Vec<AccessRule>) -> Self {
+        let access = GlobalConfigAccess {
+            user_patterns: None,
             room_local_agent_manager_patterns: None,
-            rules: None,
+            rules: Some(rules),
         };
-        access.migrate_legacy_lists();
 
         Self {
             fallback_room_settings: RoomSettings::default(),

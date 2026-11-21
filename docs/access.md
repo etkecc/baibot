@@ -63,12 +63,32 @@ People with `manage-access` who are not administrators can only add or remove ro
 
 ### 🌱 Initial rules
 
-On its first run, the bot creates global rules from the `initial_global_config.user_patterns` [static configuration](./configuration/README.md#static-configuration) setting. Users matching these patterns:
+On its first run, the bot creates global rules from the `initial_global_config.access_rules` [static configuration](./configuration/README.md#static-configuration) setting. Each rule has the same parts as a rule added with a command: an `effect` (`allow` or `deny`), `permissions`, `users` (MXID patterns) and an optional `min_power_level`. The bot gives each rule a random id.
 
-- can **use** the bot's features and **invite** it into rooms
-- can **manage the configuration** of rooms where their power level is at least 50, so room moderators and admins
+The [sample configuration](../etc/app/config.yml.dist) lets everyone on the homeserver:
 
-After the first run, rules are only managed with the commands above. Changing `initial_global_config.user_patterns` later has no effect.
+- **use** the bot's features and **invite** it into rooms
+- **manage the configuration** of rooms where their power level is at least 50, so room moderators and admins
+
+```yaml
+initial_global_config:
+  access_rules:
+    - effect: allow
+      permissions: [use, invite]
+      users: ["@*:example.com"]
+    - effect: allow
+      permissions: [manage-config]
+      users: ["@*:example.com"]
+      min_power_level: 50
+```
+
+Without initial rules, only administrators (see below) can use the bot until they add rules.
+
+The bot refuses to start if a rule is invalid (an unknown permission or key, no users, or `invite` with `min_power_level`).
+
+After the first run, rules are only managed with the commands above. Changing `initial_global_config.access_rules` later has no effect.
+
+The `initial_global_config.user_patterns` setting (and its `BAIBOT_INITIAL_GLOBAL_CONFIG_USER_PATTERNS` environment variable) used by earlier versions is no longer supported, and the bot refuses to start while it is set. Replace it with `access_rules` as shown above. Rules have no environment variable.
 
 
 ### ⬆️ Upgrading from user lists

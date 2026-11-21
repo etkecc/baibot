@@ -408,7 +408,7 @@ mod tests {
     fn authorizer(room_rules: &[AccessRule]) -> Authorizer {
         let admin_regexes =
             mxidwc::parse_patterns_vector(&["@admin:example.com".to_owned()]).unwrap();
-        let mut global_config = GlobalConfig::new(None);
+        let mut global_config = GlobalConfig::new(vec![]);
         global_config.access.rules = Some(vec![rule(
             "r1",
             RuleEffect::Allow,

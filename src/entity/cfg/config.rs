@@ -6,6 +6,10 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     agent::{AgentDefinition, AgentPurpose, PublicIdentifier},
+    authorization::{
+        AccessRule, Permission, RuleEffect,
+        rule::{USE, is_valid_permission_name, new_rule_id},
+    },
     entity::{globalconfig::GlobalConfig, roomconfig::RoomSettingsHandler},
 };
 
@@ -435,34 +439,124 @@ impl ConfigAgents {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ConfigInitialGlobalConfig {
     #[serde(default)]
     pub handler: RoomSettingsHandler,
 
-    pub user_patterns: Option<Vec<String>>,
+    /// The global access rules created on the first run.
+    #[serde(default)]
+    pub access_rules: Vec<ConfigInitialAccessRule>,
+
+    /// Whether the removed `user_patterns` setting is present. It's replaced by `access_rules`.
+    /// Detected explicitly, because unknown keys are otherwise ignored and the bot would start
+    /// with no initial users.
+    #[serde(default, rename = "user_patterns", deserialize_with = "key_is_present")]
+    pub removed_user_patterns_present: bool,
+}
+
+/// An access rule in the initial global configuration.
+/// Like [`AccessRule`], but without an id (generated on the first run).
+///
+/// Unknown keys are rejected, so that a typo (e.g. in `min_power_level`)
+/// doesn't silently create a broader rule.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ConfigInitialAccessRule {
+    pub effect: ConfigInitialAccessRuleEffect,
+
+    pub permissions: Vec<String>,
+
+    pub users: Vec<String>,
+
+    #[serde(default)]
+    pub min_power_level: Option<i64>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ConfigInitialAccessRuleEffect {
+    Allow,
+    Deny,
+}
+
+impl From<ConfigInitialAccessRuleEffect> for RuleEffect {
+    fn from(value: ConfigInitialAccessRuleEffect) -> Self {
+        match value {
+            ConfigInitialAccessRuleEffect::Allow => RuleEffect::Allow,
+            ConfigInitialAccessRuleEffect::Deny => RuleEffect::Deny,
+        }
+    }
+}
+
+impl ConfigInitialAccessRule {
+    fn validate(&self, index: usize) -> anyhow::Result<()> {
+        let key = format!("initial_global_config.access_rules[{index}]");
+
+        if self.permissions.is_empty() {
+            return Err(anyhow::anyhow!("{key}.permissions must not be empty"));
+        }
+
+        for name in &self.permissions {
+            if !is_valid_permission_name(name) {
+                return Err(anyhow::anyhow!(
+                    "{key}.permissions contains an unknown permission: `{name}`. Known permissions: {}",
+                    known_permission_names().join(", "),
+                ));
+            }
+        }
+
+        if self.users.is_empty() {
+            return Err(anyhow::anyhow!("{key}.users must not be empty"));
+        }
+
+        mxidwc::parse_patterns_vector(&self.users)
+            .map_err(|err| anyhow::anyhow!("{key}.users could not be parsed: {err}"))?;
+
+        if let Some(min_power_level) = self.min_power_level {
+            if mxlink::matrix_sdk::ruma::Int::new(min_power_level).is_none() {
+                return Err(anyhow::anyhow!(
+                    "{key}.min_power_level is out of range: {min_power_level}"
+                ));
+            }
+
+            if self
+                .permissions
+                .iter()
+                .any(|name| name == Permission::Invite.name())
+            {
+                return Err(anyhow::anyhow!(
+                    "{key} combines `{}` with min_power_level, which is not supported, because invitations happen before the bot is in a room",
+                    Permission::Invite.name(),
+                ));
+            }
+        }
+
+        Ok(())
+    }
+}
+
+/// Deserializes any value, recording only that the key is present.
+fn key_is_present<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    serde::de::IgnoredAny::deserialize(deserializer)?;
+    Ok(true)
 }
 
 impl ConfigInitialGlobalConfig {
-    fn user_pattern_regexes(&self) -> anyhow::Result<Option<Vec<regex::Regex>>> {
-        match &self.user_patterns {
-            Some(user_patterns) => {
-                let user_patterns = mxidwc::parse_patterns_vector(user_patterns).map_err(|e| {
-                    anyhow::anyhow!(
-                        "Failed parsing initial_global_config.user_patterns ({}): {}",
-                        super::env::BAIBOT_INITIAL_GLOBAL_CONFIG_USER_PATTERNS,
-                        e
-                    )
-                })?;
-
-                Ok(Some(user_patterns))
-            }
-            None => Ok(None),
-        }
-    }
-
     pub fn validate(self) -> anyhow::Result<()> {
-        self.user_pattern_regexes()?;
+        if self.removed_user_patterns_present {
+            return Err(anyhow::anyhow!(
+                "The initial_global_config.user_patterns configuration key is no longer supported. Replace it with initial_global_config.access_rules (see docs/access.md). Example:\n{}",
+                INITIAL_ACCESS_RULES_EXAMPLE,
+            ));
+        }
+
+        for (index, rule) in self.access_rules.iter().enumerate() {
+            rule.validate(index)?;
+        }
 
         for purpose in AgentPurpose::choices() {
             let agent_id = self.handler.get_by_purpose(*purpose);
@@ -515,24 +609,19 @@ impl TryInto<GlobalConfig> for ConfigInitialGlobalConfig {
     type Error = anyhow::Error;
 
     fn try_into(self) -> anyhow::Result<GlobalConfig> {
-        let mut entity = GlobalConfig::default();
-
-        if let Some(user_patterns) = self.user_patterns {
-            // We'd rather fail parsing this during startup than at runtime
-            let _ = mxidwc::parse_patterns_vector(&user_patterns).map_err(|err| {
-                anyhow::anyhow!(
-                    "Bad initial_global_config.user_patterns ({}): {}",
-                    super::env::BAIBOT_INITIAL_GLOBAL_CONFIG_USER_PATTERNS,
-                    err
-                )
-            })?;
-
-            entity.access.user_patterns = if user_patterns.is_empty() {
-                None
-            } else {
-                Some(user_patterns)
-            };
+        let mut rules: Vec<AccessRule> = vec![];
+        for rule in self.access_rules {
+            let id = new_rule_id(&rules);
+            rules.push(AccessRule {
+                id,
+                effect: rule.effect.into(),
+                permissions: rule.permissions,
+                users: rule.users,
+                min_power_level: rule.min_power_level,
+            });
         }
+
+        let mut entity = GlobalConfig::new(rules);
 
         for purpose in AgentPurpose::choices() {
             let agent_id = self.handler.get_by_purpose(*purpose);
@@ -543,11 +632,26 @@ impl TryInto<GlobalConfig> for ConfigInitialGlobalConfig {
                 .set_by_purpose(*purpose, agent_id);
         }
 
-        // Turn the initial users into the initial rules.
-        entity.access.migrate_legacy_lists();
-
         Ok(entity)
     }
+}
+
+/// Shown when the removed `initial_global_config.user_patterns` setting is found.
+const INITIAL_ACCESS_RULES_EXAMPLE: &str = r#"initial_global_config:
+  access_rules:
+    - effect: allow
+      permissions: [use, invite]
+      users: ["@*:example.com"]
+    - effect: allow
+      permissions: [manage-config]
+      users: ["@*:example.com"]
+      min_power_level: 50"#;
+
+fn known_permission_names() -> Vec<&'static str> {
+    std::iter::once(USE)
+        .chain(Permission::ROOM.iter().map(|permission| permission.name()))
+        .chain([Permission::Invite.name()])
+        .collect()
 }
 
 #[cfg(test)]

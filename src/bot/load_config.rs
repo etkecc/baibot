@@ -23,8 +23,19 @@ pub fn load() -> anyhow::Result<Config> {
     let config_str = std::fs::read_to_string(config_file_path)?;
     let mut config: Config = serde_yaml_ng::from_str(&config_str)?;
 
-    // Allow environment variables to override some configuration keys
-    for (key, value) in env::vars() {
+    apply_env_overrides(&mut config, env::vars())?;
+
+    config.validate().map_err(|s| anyhow!(s))?;
+
+    Ok(config)
+}
+
+/// Lets environment variables override some configuration keys.
+fn apply_env_overrides(
+    config: &mut Config,
+    vars: impl IntoIterator<Item = (String, String)>,
+) -> anyhow::Result<()> {
+    for (key, value) in vars {
         match key.as_str() {
             cfg_env::BAIBOT_HOMESERVER_SERVER_NAME => config.homeserver.server_name = value,
             cfg_env::BAIBOT_HOMESERVER_URL => config.homeserver.url = value,
@@ -114,24 +125,56 @@ pub fn load() -> anyhow::Result<Config> {
                     .handler
                     .set_by_purpose(AgentPurpose::ImageGeneration, value);
             }
-            cfg_env::BAIBOT_INITIAL_GLOBAL_CONFIG_USER_PATTERNS => {
-                config.initial_global_config.user_patterns = Some(
-                    value
-                        .split(' ')
-                        .map(|s| s.trim().to_string())
-                        .filter(|s| !s.is_empty())
-                        .collect(),
-                );
+            cfg_env::BAIBOT_INITIAL_GLOBAL_CONFIG_USER_PATTERNS_REMOVED => {
+                return Err(anyhow!(
+                    "The {} environment variable is no longer supported. Remove it and define initial_global_config.access_rules in the configuration file instead (see docs/access.md).",
+                    cfg_env::BAIBOT_INITIAL_GLOBAL_CONFIG_USER_PATTERNS_REMOVED,
+                ));
             }
             _ => {}
         }
     }
 
-    config.validate().map_err(|s| anyhow!(s))?;
-
-    Ok(config)
+    Ok(())
 }
 
 fn optional_non_empty(value: String) -> Option<String> {
     if value.is_empty() { None } else { Some(value) }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Config, apply_env_overrides, cfg_env};
+
+    fn sample_config() -> Config {
+        serde_yaml_ng::from_str(include_str!("../../etc/app/config.yml.dist"))
+            .expect("the sample configuration should parse")
+    }
+
+    #[test]
+    fn removed_initial_user_patterns_env_var_is_rejected() {
+        for value in ["@*:example.com", ""] {
+            let mut config = sample_config();
+            let vars = [(
+                cfg_env::BAIBOT_INITIAL_GLOBAL_CONFIG_USER_PATTERNS_REMOVED.to_owned(),
+                value.to_owned(),
+            )];
+
+            let err = apply_env_overrides(&mut config, vars)
+                .expect_err(value)
+                .to_string();
+            assert!(err.contains("access_rules"), "{err}");
+        }
+    }
+
+    #[test]
+    fn sample_config_has_valid_initial_access_rules() {
+        let config = sample_config();
+        assert_eq!(config.initial_global_config.access_rules.len(), 2);
+        assert!(!config.initial_global_config.removed_user_patterns_present);
+        config
+            .initial_global_config
+            .validate()
+            .expect("the sample initial rules should be valid");
+    }
 }

@@ -36,7 +36,9 @@ pub const BAIBOT_INITIAL_GLOBAL_CONFIG_HANDLER_SPEECH_TO_TEXT: &str =
 pub const BAIBOT_INITIAL_GLOBAL_CONFIG_HANDLER_IMAGE_GENERATION: &str =
     "BAIBOT_INITIAL_GLOBAL_CONFIG_HANDLER_IMAGE_GENERATION";
 
-pub const BAIBOT_INITIAL_GLOBAL_CONFIG_USER_PATTERNS: &str =
+// Removed (replaced by `initial_global_config.access_rules`, which has no environment variable).
+// Still recognized, so that the bot refuses to start instead of silently ignoring it.
+pub const BAIBOT_INITIAL_GLOBAL_CONFIG_USER_PATTERNS_REMOVED: &str =
     "BAIBOT_INITIAL_GLOBAL_CONFIG_USER_PATTERNS";
 
 pub const BAIBOT_PERSISTENCE_DATA_DIR_PATH: &str = "BAIBOT_PERSISTENCE_DATA_DIR_PATH";

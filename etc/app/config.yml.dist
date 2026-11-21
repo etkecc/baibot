@@ -170,12 +170,18 @@ initial_global_config:
     speech_to_text: null
     image_generation: null
 
-  # MXID patterns of the initial users. On the first run, they get rules which let them use the bot,
-  # invite it into rooms, and manage the configuration of rooms where their power level is at least 50.
+  # Global access rules created on the first run (see docs/access.md).
   # Later, access is managed with access rules in chat (see `!bai access`).
-  # By default, we let anyone on the homeserver use the bot.
-  user_patterns:
-    - "@*:__HOMESERVER_SERVER_NAME__"
+  # By default, we let anyone on the homeserver use the bot and invite it into rooms,
+  # and manage the configuration of rooms where their power level is at least 50.
+  access_rules:
+    - effect: allow
+      permissions: [use, invite]
+      users: ["@*:__HOMESERVER_SERVER_NAME__"]
+    - effect: allow
+      permissions: [manage-config]
+      users: ["@*:__HOMESERVER_SERVER_NAME__"]
+      min_power_level: 50
 
 # Controls logging.
 #

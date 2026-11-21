@@ -56,7 +56,7 @@ fn legacy_global_config(
 }
 
 fn global_config_with_rules(rules: Vec<AccessRule>) -> GlobalConfig {
-    let mut global_config = GlobalConfig::new(None);
+    let mut global_config = GlobalConfig::new(vec![]);
     global_config.access.rules = Some(rules);
     global_config
 }
@@ -614,16 +614,20 @@ fn rules_round_trip_through_serialization() {
 }
 
 #[test]
-fn new_global_config_stores_rules_from_initial_user_patterns() {
-    let global_config = GlobalConfig::new(patterns(&["@*:example.com"]));
+fn new_global_config_stores_the_given_rules() {
+    let rules = vec![rule(
+        "a",
+        RuleEffect::Allow,
+        &[USE],
+        &["@*:example.com"],
+        None,
+    )];
+    let global_config = GlobalConfig::new(rules.clone());
 
     assert_eq!(global_config.access.user_patterns, None);
-    assert_eq!(
-        global_config.access.rules.as_ref().map(|rules| rules.len()),
-        Some(2)
-    );
+    assert_eq!(global_config.access.rules, Some(rules));
 
-    let global_config = GlobalConfig::new(None);
+    let global_config = GlobalConfig::new(vec![]);
     assert_eq!(global_config.access.rules, Some(vec![]));
 }
 
