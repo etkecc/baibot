@@ -14,7 +14,7 @@ use async_openai::{
         },
         responses::{
             CodeInterpreterContainerAuto, CodeInterpreterTool, CodeInterpreterToolContainer,
-            CreateResponseArgs, OutputItem, OutputMessageContent, Tool, WebSearchTool,
+            CreateResponse, CreateResponseArgs, Status, Tool, WebSearchTool,
         },
     },
 };
@@ -43,7 +43,8 @@ use crate::{
     strings,
 };
 
-use super::config::{Config, ImageGenerationConfig};
+use super::config::{Config, ImageGenerationConfig, TextGenerationConfig};
+use crate::tools::ProviderState;
 
 #[derive(Debug, Clone)]
 pub struct Controller {
@@ -133,7 +134,7 @@ impl ControllerTrait for Controller {
     async fn generate_text(
         &self,
         conversation: LLMConversation,
-        params: TextGenerationParams,
+        mut params: TextGenerationParams,
     ) -> anyhow::Result<TextGenerationResult> {
         let Some(text_generation_config) = &self.config.text_generation else {
             return Err(anyhow::anyhow!(
@@ -143,115 +144,75 @@ impl ControllerTrait for Controller {
             ));
         };
 
-        let prompt_text = params.system_prompt(self.text_generation_prompt());
+        if !text_generation_config.bot_tools {
+            params.tools.clear();
+        }
 
-        let prompt_message = if prompt_text.is_empty() {
-            None
+        let mut request = match params.continuation.take() {
+            // The request so far already has everything else (instructions, tools, the conversation and
+            // the model's output, reasoning included), so only the results are added.
+            Some(continuation) => {
+                let mut request: CreateResponse = continuation.state.into_inner()?;
+                super::utils::input_items(&mut request.input)
+                    .extend(super::utils::function_call_outputs(continuation.results));
+
+                tracing::trace!(
+                    model = format!("{:?}", request.model),
+                    "Continuing an OpenAI response with function call outputs"
+                );
+
+                request
+            }
+            None => create_request(text_generation_config, conversation, &params)?,
+        };
+
+        // Without functions, the request isn't needed afterwards, so it isn't copied.
+        let response = if params.tools.is_empty() {
+            self.client.responses().create(request).await?
         } else {
-            Some(LLMMessage {
-                author: LLMAuthor::Prompt,
-                sender_id: None,
-                content: LLMMessageContent::Text(prompt_text),
-                timestamp: chrono::Utc::now(),
-            })
+            let response = self.client.responses().create(request.clone()).await?;
+            tracing::trace!(?response, "Got response from the OpenAI response API");
+
+            let calls = super::utils::function_calls(&response.output);
+
+            // A cut-off call can't run, and the text before it isn't an answer.
+            if !calls.is_empty() && response.status == Status::Incomplete {
+                let reason = response
+                    .incomplete_details
+                    .map(|details| details.reason)
+                    .unwrap_or_else(|| "unknown".to_owned());
+
+                return Err(anyhow::anyhow!(
+                    "The model's response was cut off while calling a tool (reason: {reason})"
+                ));
+            }
+
+            if !calls.is_empty() {
+                let text = super::utils::output_text(&response.output);
+
+                // Everything the model output (reasoning included) goes back along with the results.
+                super::utils::input_items(&mut request.input)
+                    .extend(super::utils::replay_items(response.output));
+
+                return Ok(TextGenerationResult::ToolCalls {
+                    text,
+                    calls,
+                    continuation: ProviderState::new(request),
+                });
+            }
+
+            response
         };
-
-        let mut conversation_messages = conversation.messages;
-
-        if params.context_management_enabled {
-            tracing::trace!("Shortening messages list to context size");
-
-            conversation_messages = shorten_messages_list_to_context_size(
-                TokenEstimate::Tiktoken(&text_generation_config.model_id),
-                &prompt_message,
-                conversation_messages,
-                Some(
-                    text_generation_config.max_response_tokens.unwrap_or(0)
-                        + params.reserved_context_tokens,
-                ),
-                text_generation_config.max_context_tokens,
-            );
-
-            tracing::trace!("Finished shortening messages list to context size");
-        };
-
-        if let Some(prompt_message) = prompt_message {
-            conversation_messages.insert(0, prompt_message);
-        }
-
-        let input =
-            super::utils::convert_llm_messages_to_openai_response_input(conversation_messages);
-
-        let messages_count = match &input {
-            async_openai::types::responses::InputParam::Items(items) => items.len(),
-            _ => 1,
-        };
-
-        let temperature = params
-            .temperature_override
-            .or(text_generation_config.temperature);
-
-        let mut request_builder = CreateResponseArgs::default();
-
-        request_builder
-            .model(&text_generation_config.model_id)
-            .input(input);
-
-        if let Some(temperature) = temperature {
-            request_builder.temperature(temperature);
-        }
-
-        let mut tools = Vec::new();
-        if text_generation_config.tools.web_search {
-            tools.push(Tool::WebSearch(WebSearchTool::default()));
-        }
-        if text_generation_config.tools.code_interpreter {
-            tools.push(Tool::CodeInterpreter(CodeInterpreterTool {
-                container: CodeInterpreterToolContainer::Auto(
-                    CodeInterpreterContainerAuto::default(),
-                ),
-                allowed_callers: None,
-            }));
-        }
-
-        if !tools.is_empty() {
-            request_builder.tools(tools);
-        }
-
-        if let Some(max_response_tokens) = text_generation_config.max_response_tokens {
-            request_builder.max_output_tokens(max_response_tokens);
-        } else if let Some(max_completion_tokens) = text_generation_config.max_completion_tokens {
-            request_builder.max_output_tokens(max_completion_tokens);
-        }
-
-        let request = request_builder.build()?;
-
-        if let Ok(request_as_json) = serde_json::to_string(&request) {
-            tracing::trace!(
-                model = format!("{:?}", request.model),
-                ?messages_count,
-                request = request_as_json,
-                "Sending OpenAI response API request"
-            );
-        }
-
-        let response = self.client.responses().create(request).await?;
 
         tracing::trace!(?response, "Got response from the OpenAI response API");
 
-        for item in response.output {
-            if let OutputItem::Message(message) = item {
-                for content in message.content {
-                    if let OutputMessageContent::OutputText(text_content) = content {
-                        return Ok(TextGenerationResult::text(text_content.text));
-                    }
-                }
-            }
-        }
-
-        Err(anyhow::anyhow!(
-            "No response messages choices were returned from the OpenAI response API"
-        ))
+        super::utils::output_text(&response.output)
+            .map(TextGenerationResult::text)
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "No response messages choices were returned from the OpenAI response API"
+                )
+            })
     }
 
     async fn speech_to_text(
@@ -646,6 +607,106 @@ fn build_image_edit_request(
     request_builder
         .build()
         .map_err(|e| anyhow::anyhow!("Failed to build CreateImageEditRequest: {}", e))
+}
+
+/// Builds the request for the first round of a turn.
+fn create_request(
+    text_generation_config: &TextGenerationConfig,
+    conversation: LLMConversation,
+    params: &TextGenerationParams,
+) -> anyhow::Result<CreateResponse> {
+    let prompt_text = params.system_prompt(text_generation_config.prompt.clone());
+
+    let prompt_message = if prompt_text.is_empty() {
+        None
+    } else {
+        Some(LLMMessage {
+            author: LLMAuthor::Prompt,
+            sender_id: None,
+            content: LLMMessageContent::Text(prompt_text),
+            timestamp: chrono::Utc::now(),
+        })
+    };
+
+    let mut conversation_messages = conversation.messages;
+
+    if params.context_management_enabled {
+        tracing::trace!("Shortening messages list to context size");
+
+        conversation_messages = shorten_messages_list_to_context_size(
+            TokenEstimate::Tiktoken(&text_generation_config.model_id),
+            &prompt_message,
+            conversation_messages,
+            Some(
+                text_generation_config.max_response_tokens.unwrap_or(0)
+                    + params.reserved_context_tokens,
+            ),
+            text_generation_config.max_context_tokens,
+        );
+
+        tracing::trace!("Finished shortening messages list to context size");
+    };
+
+    if let Some(prompt_message) = prompt_message {
+        conversation_messages.insert(0, prompt_message);
+    }
+
+    let input = super::utils::convert_llm_messages_to_openai_response_input(conversation_messages);
+
+    let messages_count = match &input {
+        async_openai::types::responses::InputParam::Items(items) => items.len(),
+        _ => 1,
+    };
+
+    let temperature = params
+        .temperature_override
+        .or(text_generation_config.temperature);
+
+    let mut request_builder = CreateResponseArgs::default();
+
+    request_builder
+        .model(&text_generation_config.model_id)
+        .input(input);
+
+    if let Some(temperature) = temperature {
+        request_builder.temperature(temperature);
+    }
+
+    let mut tools = Vec::new();
+    if text_generation_config.tools.web_search {
+        tools.push(Tool::WebSearch(WebSearchTool::default()));
+    }
+    if text_generation_config.tools.code_interpreter {
+        tools.push(Tool::CodeInterpreter(CodeInterpreterTool {
+            container: CodeInterpreterToolContainer::Auto(CodeInterpreterContainerAuto::default()),
+            allowed_callers: None,
+        }));
+    }
+
+    tools.extend(super::utils::function_tools(&params.tools));
+
+    if !tools.is_empty() {
+        request_builder.tools(tools);
+    }
+
+    if let Some(max_response_tokens) = text_generation_config.max_response_tokens {
+        request_builder.max_output_tokens(max_response_tokens);
+    } else if let Some(max_completion_tokens) = text_generation_config.max_completion_tokens {
+        request_builder.max_output_tokens(max_completion_tokens);
+    }
+
+    let request = request_builder.build()?;
+
+    if let Ok(request_as_json) = serde_json::to_string(&request) {
+        tracing::trace!(
+            model = format!("{:?}", request.model),
+            ?messages_count,
+            request = request_as_json,
+            "Sending OpenAI response API request"
+        );
+    }
+
+    Ok(request)
 }
 
 #[cfg(test)]

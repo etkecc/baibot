@@ -67,6 +67,10 @@ pub struct TextGenerationConfig {
 
     #[serde(default)]
     pub tools: ToolsConfig,
+
+    /// Whether the model may call the bot's tools (e.g. reading the room's recent messages).
+    #[serde(default = "default_bot_tools")]
+    pub bot_tools: bool,
 }
 
 impl Default for TextGenerationConfig {
@@ -79,8 +83,13 @@ impl Default for TextGenerationConfig {
             max_completion_tokens: Some(128_000),
             max_context_tokens: 400_000,
             tools: ToolsConfig::default(),
+            bot_tools: default_bot_tools(),
         }
     }
+}
+
+fn default_bot_tools() -> bool {
+    true
 }
 
 fn default_text_model_id() -> String {
@@ -232,6 +241,17 @@ mod tests {
             serde_yaml_ng::from_str("model_id: gpt-5.4\ntemperature: 1.0\n").unwrap();
         assert_eq!(existing.model_id, "gpt-5.4");
         assert_eq!(existing.temperature, Some(1.0));
+    }
+
+    #[test]
+    fn bot_tools_are_enabled_unless_turned_off() {
+        assert!(TextGenerationConfig::default().bot_tools);
+
+        let missing: TextGenerationConfig = serde_yaml_ng::from_str("{}\n").unwrap();
+        assert!(missing.bot_tools);
+
+        let disabled: TextGenerationConfig = serde_yaml_ng::from_str("bot_tools: false\n").unwrap();
+        assert!(!disabled.bot_tools);
     }
 
     #[test]

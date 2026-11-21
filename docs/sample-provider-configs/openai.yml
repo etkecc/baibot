@@ -13,6 +13,9 @@ text_generation:
   tools:
     web_search: false
     code_interpreter: false
+  # Lets the model call the bot's own tools (e.g. reading the room's recent messages).
+  # Turn it off for models which don't support function calling.
+  bot_tools: true
 speech_to_text:
   model_id: gpt-transcribe
 text_to_speech:
