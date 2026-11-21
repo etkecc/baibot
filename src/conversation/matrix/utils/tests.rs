@@ -377,6 +377,34 @@ fn latest_room_message_content_applies_bundled_edit() {
 }
 
 #[test]
+fn effective_room_message_content_applies_edits() {
+    // An original event with a bundled edit gets the edit's content (e.g. a "thinking…" notice that became the answer).
+    let event = room_message_event_with_replacement("@bot:example.com", "$original:example.com");
+    let (content, is_edited) = super::effective_room_message_content(&event);
+    assert!(is_edited);
+    assert_eq!(content.body(), "The answer");
+
+    // A standalone edit is taken for the content it sets (not its `* `-prefixed fallback body).
+    let event: mxlink::matrix_sdk::ruma::events::room::message::OriginalSyncRoomMessageEvent =
+        serde_json::from_value(serde_json::json!({
+            "type": "m.room.message",
+            "event_id": "$edit:example.com",
+            "sender": "@bot:example.com",
+            "origin_server_ts": 2,
+            "content": {
+                "msgtype": "m.text",
+                "body": "* The answer",
+                "m.new_content": { "msgtype": "m.text", "body": "The answer" },
+                "m.relates_to": { "rel_type": "m.replace", "event_id": "$original:example.com" },
+            },
+        }))
+        .unwrap();
+    let (content, is_edited) = super::effective_room_message_content(&event);
+    assert!(is_edited);
+    assert_eq!(content.body(), "The answer");
+}
+
+#[test]
 fn latest_room_message_content_ignores_invalid_edits() {
     // Edits by another sender are ignored.
     let event = room_message_event_with_replacement("@other:example.com", "$original:example.com");

@@ -1,10 +1,13 @@
+#[cfg(test)]
+mod tests;
+
 use mxlink::matrix_sdk::{
     Room,
     ruma::{
         OwnedEventId, OwnedUserId,
         events::{
             AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
-            room::message::Relation,
+            room::message::{OriginalSyncRoomMessageEvent, Relation},
         },
     },
 };
@@ -15,6 +18,7 @@ use mxlink::ThreadInfo;
 use tracing::Instrument;
 
 use crate::authorization::authorizer_for_room;
+use crate::conversation::matrix::effective_room_message_content;
 use crate::entity::{MessageContext, MessagePayload, RoomConfigContext, TriggerEventInfo};
 
 #[derive(Clone)]
@@ -128,11 +132,9 @@ impl Reacting {
 
         let reacted_to_event_id = &reaction_event_content.relates_to.event_id;
 
-        let reacted_to_event = self
-            .bot
-            .room_event_fetcher()
-            .fetch_event_in_room(reacted_to_event_id, &room)
-            .await;
+        // Fetched anew (not from the event cache), so we get what the message says now: the latest edit is bundled
+        // with it, while a cached copy may predate an edit (or still carry an edit which was redacted since).
+        let reacted_to_event = room.event(reacted_to_event_id, None).await;
 
         let reacted_to_event = match reacted_to_event {
             Ok(value) => value,
@@ -188,29 +190,14 @@ impl Reacting {
             return Ok(());
         };
 
-        let reacted_to_event_payload: Result<MessagePayload, String> =
-            reacted_to_event_room_message_original
-                .content
-                .msgtype
-                .clone()
-                .try_into();
-        let Ok(reacted_to_event_payload) = reacted_to_event_payload else {
+        let Some((reacted_to_event_payload, thread_root_event_id)) =
+            reacted_to_message(&reacted_to_event_room_message_original)
+        else {
             tracing::debug!(
                 msg_type = reacted_to_event_room_message_original.content.msgtype(),
                 "Ignoring reaction to message of unknown type",
             );
             return Ok(());
-        };
-
-        let thread_root_event_id = match reacted_to_event_room_message_original.content.relates_to {
-            Some(relation) => {
-                if let Relation::Thread(thread_id) = relation {
-                    thread_id.event_id.clone()
-                } else {
-                    reacted_to_event_id.clone()
-                }
-            }
-            None => reacted_to_event_id.clone(),
         };
 
         let thread_info = ThreadInfo::new(thread_root_event_id, reacted_to_event_id.clone());
@@ -254,4 +241,24 @@ impl Reacting {
 
         Ok(())
     }
+}
+
+/// Returns what the reacted-to message says now (its payload) and the root of the thread it's in
+/// (the message itself, if it's not in a thread), or `None` for unsupported message types.
+///
+/// Answers posted after a "thinking…" notice (and any edited message) only carry their text in the latest edit,
+/// which the server bundles with the original event.
+fn reacted_to_message(
+    event: &OriginalSyncRoomMessageEvent,
+) -> Option<(MessagePayload, OwnedEventId)> {
+    let (content, _) = effective_room_message_content(event);
+
+    let payload: MessagePayload = content.msgtype.clone().try_into().ok()?;
+
+    let thread_root_event_id = match &content.relates_to {
+        Some(Relation::Thread(thread)) => thread.event_id.clone(),
+        _ => event.event_id.clone(),
+    };
+
+    Some((payload, thread_root_event_id))
 }

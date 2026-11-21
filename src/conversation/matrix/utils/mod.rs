@@ -234,6 +234,22 @@ pub(crate) fn latest_room_message_content(
     (content, false)
 }
 
+/// Returns what the message currently says, and whether an edit was applied:
+/// the content it sets for a standalone edit (`m.replace` event), else the content with the latest edit applied
+/// (see [`latest_room_message_content`]).
+pub(crate) fn effective_room_message_content(
+    event: &OriginalSyncRoomMessageEvent,
+) -> (RoomMessageEventContent, bool) {
+    match &event.content.relates_to {
+        Some(Relation::Replacement(replacement)) => {
+            let mut content = event.content.clone();
+            content.apply_replacement(replacement.new_content.clone());
+            (content, true)
+        }
+        _ => latest_room_message_content(event),
+    }
+}
+
 /// Tells whether a message's text is an agent's configuration, as shown by the bot (see `agent details`),
 /// which may contain secrets (like API keys), so it must never become part of a conversation.
 ///
@@ -263,14 +279,7 @@ pub(crate) fn is_agent_configuration(text: &str) -> bool {
 pub(crate) fn conversation_message_content(
     event: &OriginalSyncRoomMessageEvent,
 ) -> Option<(RoomMessageEventContent, String, bool)> {
-    let (content, is_edited) = match &event.content.relates_to {
-        Some(Relation::Replacement(replacement)) => {
-            let mut content = event.content.clone();
-            content.apply_replacement(replacement.new_content.clone());
-            (content, true)
-        }
-        _ => latest_room_message_content(event),
-    };
+    let (content, is_edited) = effective_room_message_content(event);
 
     let (text, is_notice) = message_text(&content, is_edited)?;
 
