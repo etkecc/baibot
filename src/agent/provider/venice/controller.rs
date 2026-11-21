@@ -144,6 +144,13 @@ impl ControllerTrait for Controller {
             .and_then(|config| config.prompt.clone())
     }
 
+    fn text_generation_max_context_tokens(&self) -> Option<u32> {
+        self.config
+            .text_generation
+            .as_ref()
+            .map(|config| config.max_context_tokens)
+    }
+
     fn text_generation_temperature(&self) -> Option<f32> {
         self.config
             .text_generation

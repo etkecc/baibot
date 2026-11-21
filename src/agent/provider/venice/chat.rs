@@ -32,12 +32,7 @@ pub async fn generate_text(
         ));
     };
 
-    let prompt_text = params.prompt_variables.format(
-        params
-            .prompt_override
-            .unwrap_or(text_generation_config.prompt.clone().unwrap_or_default())
-            .trim(),
-    );
+    let prompt_text = params.system_prompt(text_generation_config.prompt.clone());
 
     // Prompt-cache routing key. Hash ONLY conversation-stable inputs: the rendered system prompt
     // and the conversation start time. Folding in anything per-turn (message content, the current
@@ -68,7 +63,10 @@ pub async fn generate_text(
             TokenEstimate::Approximate,
             &prompt_message,
             conversation_messages,
-            text_generation_config.max_response_tokens,
+            Some(
+                text_generation_config.max_response_tokens.unwrap_or(0)
+                    + params.reserved_context_tokens,
+            ),
             text_generation_config.max_context_tokens,
         );
     }
@@ -222,7 +220,7 @@ pub async fn generate_text(
         text_generation_config.show_reasoning,
     );
 
-    Ok(TextGenerationResult { text })
+    Ok(TextGenerationResult::text(text))
 }
 
 /// Builds the prompt-cache routing key from conversation-stable inputs. `DefaultHasher::new()` is a

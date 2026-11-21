@@ -19,6 +19,9 @@ pub trait ControllerTrait {
 
     fn text_generation_temperature(&self) -> Option<f32>;
 
+    /// The context size (in tokens) of the text-generation model, if known.
+    fn text_generation_max_context_tokens(&self) -> Option<u32>;
+
     fn text_to_speech_voice(&self) -> Option<String>;
 
     fn text_to_speech_speed(&self) -> Option<f32>;
@@ -89,6 +92,19 @@ impl ControllerTrait for ControllerType {
             ControllerType::OpenAICompat(controller) => controller.text_generation_prompt(),
             ControllerType::Anthropic(controller) => controller.text_generation_prompt(),
             ControllerType::Venice(controller) => controller.text_generation_prompt(),
+        }
+    }
+
+    fn text_generation_max_context_tokens(&self) -> Option<u32> {
+        match &self {
+            ControllerType::OpenAI(controller) => controller.text_generation_max_context_tokens(),
+            ControllerType::OpenAICompat(controller) => {
+                controller.text_generation_max_context_tokens()
+            }
+            ControllerType::Anthropic(controller) => {
+                controller.text_generation_max_context_tokens()
+            }
+            ControllerType::Venice(controller) => controller.text_generation_max_context_tokens(),
         }
     }
 

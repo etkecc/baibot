@@ -11,6 +11,7 @@ mod controller;
 mod conversation;
 mod entity;
 mod strings;
+mod tools;
 mod utils;
 
 pub use bot::{Bot, load_config};

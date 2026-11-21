@@ -98,12 +98,7 @@ impl ControllerTrait for Controller {
             ));
         };
 
-        let prompt_text = params.prompt_variables.format(
-            params
-                .prompt_override
-                .unwrap_or(self.text_generation_prompt().unwrap_or("".to_owned()))
-                .trim(),
-        );
+        let prompt_text = params.system_prompt(self.text_generation_prompt());
 
         let prompt_message = if prompt_text.is_empty() {
             None
@@ -125,7 +120,10 @@ impl ControllerTrait for Controller {
                 TokenEstimate::Approximate,
                 &prompt_message,
                 conversation_messages,
-                text_generation_config.max_response_tokens,
+                Some(
+                    text_generation_config.max_response_tokens.unwrap_or(0)
+                        + params.reserved_context_tokens,
+                ),
                 text_generation_config.max_context_tokens,
             );
 
@@ -186,7 +184,7 @@ impl ControllerTrait for Controller {
                 ));
             };
 
-            return Ok(TextGenerationResult { text });
+            return Ok(TextGenerationResult::text(text));
         }
 
         Err(anyhow::anyhow!(
@@ -398,6 +396,13 @@ impl ControllerTrait for Controller {
             .text_generation
             .as_ref()
             .and_then(|config| config.prompt.clone())
+    }
+
+    fn text_generation_max_context_tokens(&self) -> Option<u32> {
+        self.config
+            .text_generation
+            .as_ref()
+            .map(|config| config.max_context_tokens)
     }
 
     fn text_generation_temperature(&self) -> Option<f32> {

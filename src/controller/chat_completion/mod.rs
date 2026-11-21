@@ -645,10 +645,20 @@ async fn handle_stage_text_generation(
         None
     };
 
+    let context_management_enabled = message_context
+        .room_config_context()
+        .text_generation_context_management_enabled();
+
+    let executor = crate::tools::NoTools;
+    let offered_tools = vec![];
+
+    let (reserved_context_tokens, tool_limits) = crate::tools::tool_budget(
+        context_management_enabled,
+        controller.text_generation_max_context_tokens(),
+    );
+
     let params = TextGenerationParams {
-        context_management_enabled: message_context
-            .room_config_context()
-            .text_generation_context_management_enabled(),
+        context_management_enabled,
 
         prompt_override: message_context
             .room_config_context()
@@ -659,16 +669,26 @@ async fn handle_stage_text_generation(
             .text_generation_temperature_override(),
 
         prompt_variables,
+
+        reserved_context_tokens: if offered_tools.is_empty() {
+            0
+        } else {
+            reserved_context_tokens
+        },
+        tools: offered_tools,
+        tool_instructions: None,
+        continuation: None,
     };
+
+    let generation =
+        crate::tools::run_text_generation(controller, conversation, params, &executor, tool_limits)
+            .instrument(span);
 
     // When the thinking-notice is enabled, race generation against a timer that posts and then
     // periodically edits a "thinking…" placeholder. `biased;` makes generation win a tie, and the
     // loop exits the instant generation resolves, so there is no detached task and no late edit can
     // ever clobber the real answer. `placeholder` is the event we must finalize in every exit path.
     let (result, placeholder) = if let Some(notice_prompt_variables) = notice_prompt_variables {
-        let generation = controller
-            .generate_text(conversation, params)
-            .instrument(span);
         tokio::pin!(generation);
 
         let mut placeholder: Option<OwnedEventId> = None;
@@ -723,12 +743,7 @@ async fn handle_stage_text_generation(
 
         (result, placeholder)
     } else {
-        let result = controller
-            .generate_text(conversation, params)
-            .instrument(span)
-            .await;
-
-        (result, None)
+        (generation.await, None)
     };
 
     let duration = std::time::Instant::now().duration_since(start_time);
@@ -769,7 +784,7 @@ async fn handle_stage_text_generation(
         }
     };
 
-    let text = result.text.clone().trim().to_owned();
+    let text = result.trim().to_owned();
     if text.is_empty() {
         tracing::warn!(
             agent_id = agent.identifier().as_string(),
