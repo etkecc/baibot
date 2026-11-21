@@ -25,11 +25,13 @@ use crate::{
 };
 
 use super::Config;
-use super::utils::error_from_response;
+use super::config::TextGenerationConfig;
+use super::utils::{error_from_body, error_from_response};
 use super::wire::{
     ChatCompletionRequest, ChatCompletionResponse, ImageGenerationRequest, ImageGenerationResponse,
     SpeechRequest, TranscriptionResponse,
 };
+use crate::tools::ProviderState;
 
 #[derive(Debug, Clone)]
 pub struct Controller {
@@ -88,7 +90,7 @@ impl ControllerTrait for Controller {
     async fn generate_text(
         &self,
         conversation: LLMConversation,
-        params: TextGenerationParams,
+        mut params: TextGenerationParams,
     ) -> anyhow::Result<TextGenerationResult> {
         let Some(text_generation_config) = &self.config.text_generation else {
             return Err(anyhow::anyhow!(
@@ -98,68 +100,65 @@ impl ControllerTrait for Controller {
             ));
         };
 
-        let prompt_text = params.system_prompt(self.text_generation_prompt());
+        let base_url = &self.config.base_url;
+        let model_id = &text_generation_config.model_id;
 
-        let prompt_message = if prompt_text.is_empty() {
-            None
-        } else {
-            Some(LLMMessage {
-                author: LLMAuthor::Prompt,
-                sender_id: None,
-                content: LLMMessageContent::Text(prompt_text),
-                timestamp: chrono::Utc::now(),
-            })
-        };
-
-        let mut conversation_messages = conversation.messages;
-
-        if params.context_management_enabled {
-            tracing::trace!("Shortening messages list to context size");
-
-            conversation_messages = shorten_messages_list_to_context_size(
-                TokenEstimate::Approximate,
-                &prompt_message,
-                conversation_messages,
-                Some(
-                    text_generation_config.max_response_tokens.unwrap_or(0)
-                        + params.reserved_context_tokens,
-                ),
-                text_generation_config.max_context_tokens,
-            );
-
-            tracing::trace!("Finished shortening messages list to context size");
-        };
-
-        if let Some(prompt_message) = prompt_message {
-            conversation_messages.insert(0, prompt_message);
+        if !text_generation_config.bot_tools
+            || super::utils::model_rejects_tools(base_url, model_id)
+        {
+            params.tools.clear();
         }
 
-        let openai_conversation_messages =
-            super::utils::convert_llm_messages_to_openai_messages(conversation_messages);
+        let first_round = params.continuation.is_none();
 
-        let messages_count = openai_conversation_messages.len();
+        let mut request = match params.continuation.take() {
+            // The request so far already has everything else (system prompt, tools, the conversation and
+            // the model's tool calls), so only the results are added.
+            Some(continuation) => {
+                let mut request: ChatCompletionRequest = continuation.state.into_inner()?;
+                request
+                    .messages
+                    .extend(super::utils::tool_result_messages(continuation.results));
 
-        let temperature = params
-            .temperature_override
-            .unwrap_or(text_generation_config.temperature);
+                tracing::trace!(
+                    model = format!("{:?}", request.model),
+                    "Continuing an OpenAI-compat chat completion with tool results"
+                );
 
-        let request = ChatCompletionRequest {
-            model: text_generation_config.model_id.clone(),
-            messages: openai_conversation_messages,
-            temperature: Some(temperature),
-            max_tokens: text_generation_config.max_response_tokens,
+                request
+            }
+            None => create_request(text_generation_config, conversation, &params),
         };
 
-        if let Ok(request_as_json) = serde_json::to_string(&request) {
-            tracing::trace!(
-                model = format!("{:?}", request.model),
-                ?messages_count,
-                request = request_as_json,
-                "Sending OpenAI-compat chat completion API request"
+        let mut response = self.post("chat/completions").json(&request).send().await?;
+
+        // Many models behind OpenAI-compatible APIs don't support tools, and some providers reject requests
+        // offering them. Such models get none from then on.
+        if !response.status().is_success() && first_round && !request.tools.is_empty() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+
+            if !super::utils::is_tools_rejection(status, &body) {
+                return Err(error_from_body("chat completion", status, &body));
+            }
+
+            tracing::warn!(
+                %status,
+                body,
+                model_id,
+                "The model rejected a request with tools - retrying without them"
             );
+
+            without_tools(&mut request, &mut params, text_generation_config);
+            response = self.post("chat/completions").json(&request).send().await?;
+
+            // Only when it works without them, it's really about the tools.
+            if response.status().is_success() {
+                tracing::warn!(model_id, "Not offering tools to this model anymore");
+                super::utils::remember_model_rejects_tools(base_url, model_id);
+            }
         }
 
-        let response = self.post("chat/completions").json(&request).send().await?;
         if !response.status().is_success() {
             return Err(error_from_response("chat completion", response).await);
         }
@@ -171,25 +170,51 @@ impl ControllerTrait for Controller {
         );
 
         // We only request 1 result, so there should only be 1 choice.
-        if let Some(choice) = response.choices.into_iter().next() {
-            let Some(message) = choice.message else {
-                return Err(anyhow::anyhow!(
-                    "No response message in choice was returned from the OpenAI-compat chat completion API"
-                ));
-            };
+        let Some(choice) = response.choices.into_iter().next() else {
+            return Err(anyhow::anyhow!(
+                "No response messages choices were returned from the OpenAI-compat chat completion API"
+            ));
+        };
 
-            let Some(text) = message.content else {
-                return Err(anyhow::anyhow!(
-                    "No text content in the response message from the OpenAI-compat chat completion API"
-                ));
-            };
+        let Some(message) = choice.message else {
+            return Err(anyhow::anyhow!(
+                "No response message in choice was returned from the OpenAI-compat chat completion API"
+            ));
+        };
 
-            return Ok(TextGenerationResult::text(text));
+        // Providers differ in the finish reason they give for tool calls (e.g. `tool_calls` or `stop`), so it isn't relied on.
+        let has_tool_calls = message
+            .tool_calls
+            .as_ref()
+            .is_some_and(|calls| !calls.is_empty());
+
+        if has_tool_calls && !request.tools.is_empty() {
+            // A call cut off by the response limit can't run, and the text before it isn't an answer.
+            if choice.finish_reason.as_deref() == Some("length") {
+                return Err(anyhow::anyhow!(
+                    "The model used up all response tokens (`max_response_tokens`) while calling a tool"
+                ));
+            }
+
+            let text = message.text().filter(|text| !text.trim().is_empty());
+
+            let (calls, assistant_message) = super::utils::tool_calls(message);
+            request.messages.push(assistant_message);
+
+            return Ok(TextGenerationResult::ToolCalls {
+                text,
+                calls,
+                continuation: ProviderState::new(request),
+            });
         }
 
-        Err(anyhow::anyhow!(
-            "No response messages choices were returned from the OpenAI-compat chat completion API"
-        ))
+        let Some(text) = message.text() else {
+            return Err(anyhow::anyhow!(
+                "No text content in the response message from the OpenAI-compat chat completion API"
+            ));
+        };
+
+        Ok(TextGenerationResult::text(text))
     }
 
     async fn speech_to_text(
@@ -425,5 +450,172 @@ impl ControllerTrait for Controller {
         };
 
         Some(text_to_speech_config.speed)
+    }
+}
+
+/// Builds the request for the first round of a turn.
+fn create_request(
+    text_generation_config: &TextGenerationConfig,
+    conversation: LLMConversation,
+    params: &TextGenerationParams,
+) -> ChatCompletionRequest {
+    let prompt_text = params.system_prompt(text_generation_config.prompt.clone());
+
+    let prompt_message = if prompt_text.is_empty() {
+        None
+    } else {
+        Some(LLMMessage {
+            author: LLMAuthor::Prompt,
+            sender_id: None,
+            content: LLMMessageContent::Text(prompt_text),
+            timestamp: chrono::Utc::now(),
+        })
+    };
+
+    let mut conversation_messages = conversation.messages;
+
+    if params.context_management_enabled {
+        tracing::trace!("Shortening messages list to context size");
+
+        conversation_messages = shorten_messages_list_to_context_size(
+            TokenEstimate::Approximate,
+            &prompt_message,
+            conversation_messages,
+            Some(
+                text_generation_config.max_response_tokens.unwrap_or(0)
+                    + params.reserved_context_tokens,
+            ),
+            text_generation_config.max_context_tokens,
+        );
+
+        tracing::trace!("Finished shortening messages list to context size");
+    };
+
+    if let Some(prompt_message) = prompt_message {
+        conversation_messages.insert(0, prompt_message);
+    }
+
+    let openai_conversation_messages =
+        super::utils::convert_llm_messages_to_openai_messages(conversation_messages);
+
+    let messages_count = openai_conversation_messages.len();
+
+    let temperature = params
+        .temperature_override
+        .unwrap_or(text_generation_config.temperature);
+
+    let request = ChatCompletionRequest {
+        model: text_generation_config.model_id.clone(),
+        messages: openai_conversation_messages,
+        temperature: Some(temperature),
+        max_tokens: text_generation_config.max_response_tokens,
+        tools: super::utils::tools(&params.tools),
+    };
+
+    if let Ok(request_as_json) = serde_json::to_string(&request) {
+        tracing::trace!(
+            model = format!("{:?}", request.model),
+            ?messages_count,
+            request = request_as_json,
+            "Sending OpenAI-compat chat completion API request"
+        );
+    }
+
+    request
+}
+
+/// Takes the tools out of a first-round request, along with the tool instructions in its system prompt.
+fn without_tools(
+    request: &mut ChatCompletionRequest,
+    params: &mut TextGenerationParams,
+    text_generation_config: &TextGenerationConfig,
+) {
+    params.tools.clear();
+    request.tools.clear();
+
+    if request
+        .messages
+        .first()
+        .is_some_and(|message| message.role == "system")
+    {
+        let prompt_text = params.system_prompt(text_generation_config.prompt.clone());
+
+        if prompt_text.is_empty() {
+            request.messages.remove(0);
+        } else {
+            request.messages[0].content = Some(serde_json::Value::String(prompt_text));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tools::ToolDefinition;
+
+    fn params(tool_instructions: &str) -> TextGenerationParams {
+        TextGenerationParams {
+            tools: vec![ToolDefinition {
+                name: "room_history".to_owned(),
+                description: "Reads the room's recent messages.".to_owned(),
+                parameters: serde_json::json!({"type": "object", "properties": {}}),
+            }],
+            tool_instructions: Some(tool_instructions.to_owned()),
+            ..Default::default()
+        }
+    }
+
+    fn conversation() -> LLMConversation {
+        LLMConversation {
+            messages: vec![LLMMessage {
+                author: LLMAuthor::User,
+                sender_id: None,
+                content: LLMMessageContent::Text("Hi".to_owned()),
+                timestamp: chrono::Utc::now(),
+            }],
+        }
+    }
+
+    #[test]
+    fn without_tools_the_tool_instructions_go_too() {
+        let config = TextGenerationConfig {
+            prompt: Some("Be brief.".to_owned()),
+            ..Default::default()
+        };
+        let mut params = params("Use the tools.");
+
+        let mut request = create_request(&config, conversation(), &params);
+        assert_eq!(request.tools.len(), 1);
+        assert_eq!(
+            request.messages[0].content,
+            Some(serde_json::json!("Be brief.\n\nUse the tools."))
+        );
+
+        without_tools(&mut request, &mut params, &config);
+
+        assert!(request.tools.is_empty());
+        assert!(params.tools.is_empty());
+        assert_eq!(
+            request.messages[0].content,
+            Some(serde_json::json!("Be brief."))
+        );
+        assert_eq!(request.messages.len(), 2);
+    }
+
+    #[test]
+    fn without_tools_a_system_prompt_of_only_tool_instructions_goes() {
+        let config = TextGenerationConfig {
+            prompt: None,
+            ..Default::default()
+        };
+        let mut params = params("Use the tools.");
+
+        let mut request = create_request(&config, conversation(), &params);
+        assert_eq!(request.messages[0].role, "system");
+
+        without_tools(&mut request, &mut params, &config);
+
+        assert_eq!(request.messages.len(), 1);
+        assert_eq!(request.messages[0].role, "user");
     }
 }

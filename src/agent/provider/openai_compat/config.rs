@@ -61,6 +61,11 @@ pub struct TextGenerationConfig {
 
     #[serde(default)]
     pub max_context_tokens: u32,
+
+    /// Whether the model may call the bot's tools (e.g. reading the room's recent messages).
+    /// Models which reject requests with tools get none, even when this is on.
+    #[serde(default = "default_bot_tools")]
+    pub bot_tools: bool,
 }
 
 impl Default for TextGenerationConfig {
@@ -71,8 +76,13 @@ impl Default for TextGenerationConfig {
             temperature: super::super::default_temperature(),
             max_response_tokens: Some(4096),
             max_context_tokens: 128_000,
+            bot_tools: default_bot_tools(),
         }
     }
+}
+
+fn default_bot_tools() -> bool {
+    true
 }
 
 fn default_text_model_id() -> String {
@@ -174,4 +184,20 @@ fn default_image_size() -> Option<String> {
 
 fn default_image_quality() -> Option<String> {
     Some("standard".to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TextGenerationConfig;
+
+    #[test]
+    fn bot_tools_are_enabled_unless_turned_off() {
+        assert!(TextGenerationConfig::default().bot_tools);
+
+        let missing: TextGenerationConfig = serde_yaml_ng::from_str("{}\n").unwrap();
+        assert!(missing.bot_tools);
+
+        let disabled: TextGenerationConfig = serde_yaml_ng::from_str("bot_tools: false\n").unwrap();
+        assert!(!disabled.bot_tools);
+    }
 }
