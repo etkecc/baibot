@@ -89,10 +89,23 @@ async fn get_matrix_messages_in_reply_chain_native(
     let mut handled_event_ids: Vec<OwnedEventId> = Vec::new();
 
     while let Some(next_event_id_in_loop) = next_event_id {
-        let event = event_fetcher
+        let event = match event_fetcher
             .fetch_event_in_room(&next_event_id_in_loop, room)
             .await
-            .unwrap();
+        {
+            Ok(event) => event,
+            // An earlier message in the chain may be unavailable (e.g. sent before the bot could see the room's history),
+            // so we use the part of the chain we could fetch.
+            Err(err) if !messages.is_empty() => {
+                tracing::warn!(
+                    ?err,
+                    "Not following reply chain past event that could not be fetched: {}",
+                    next_event_id_in_loop
+                );
+                break;
+            }
+            Err(err) => return Err(err),
+        };
 
         if handled_event_ids.contains(&next_event_id_in_loop) {
             tracing::warn!(
