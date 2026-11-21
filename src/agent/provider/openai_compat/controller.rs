@@ -446,6 +446,10 @@ impl ControllerTrait for Controller {
             .map(|config| config.max_context_tokens)
     }
 
+    fn image_edit_max_images(&self) -> usize {
+        0
+    }
+
     fn text_generation_bot_tools_enabled(&self) -> bool {
         self.config
             .text_generation

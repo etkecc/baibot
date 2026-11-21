@@ -26,15 +26,21 @@ pub struct Message {
 pub struct ImageDetails {
     pub event_content: ImageMessageEventContent,
     pub mime: Mime,
-    pub data: Vec<u8>,
+    /// Shared, so that copies (e.g. kept for tools) are cheap.
+    pub data: std::sync::Arc<[u8]>,
 }
 
 impl ImageDetails {
-    pub fn new(event_content: ImageMessageEventContent, mime: Mime, data: Vec<u8>) -> Self {
+    /// `data` may be a slice or a `Vec` (both copied once into the shared buffer).
+    pub fn new(
+        event_content: ImageMessageEventContent,
+        mime: Mime,
+        data: impl Into<std::sync::Arc<[u8]>>,
+    ) -> Self {
         Self {
             event_content,
             mime,
-            data,
+            data: data.into(),
         }
     }
 
@@ -48,7 +54,7 @@ impl ImageDetails {
 
 impl From<ImageDetails> for ImageSource {
     fn from(value: ImageDetails) -> Self {
-        ImageSource::new(value.filename(), value.data.clone(), value.mime.clone())
+        ImageSource::new(value.filename(), value.data.to_vec(), value.mime.clone())
     }
 }
 

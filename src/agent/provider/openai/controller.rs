@@ -486,6 +486,15 @@ impl ControllerTrait for Controller {
             .map(|config| config.max_context_tokens)
     }
 
+    fn image_edit_max_images(&self) -> usize {
+        // The image edit API takes up to 16 images.
+        if self.config.image_generation.is_some() {
+            16
+        } else {
+            0
+        }
+    }
+
     fn text_generation_bot_tools_enabled(&self) -> bool {
         self.config
             .text_generation

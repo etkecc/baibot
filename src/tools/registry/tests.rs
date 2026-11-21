@@ -35,14 +35,22 @@ fn authorizer(room_rules: Vec<AccessRule>) -> Authorizer {
     Authorizer::new(&admin_regexes, &global_config).for_room(&room_rules, None)
 }
 
-/// A room with an image-generation agent.
+/// A room with an image-generation agent which can edit images.
 const WITH_IMAGES: RoomCapabilities = RoomCapabilities {
     image_generation: true,
+    image_editing: true,
+};
+
+/// A room with an image-generation agent which can't edit images.
+const WITHOUT_EDITING: RoomCapabilities = RoomCapabilities {
+    image_generation: true,
+    image_editing: false,
 };
 
 /// A room without agents for tools.
 const PLAIN: RoomCapabilities = RoomCapabilities {
     image_generation: false,
+    image_editing: false,
 };
 
 fn offered_ids(authorizer: &Authorizer, user_id: &str) -> Vec<&'static str> {
@@ -73,7 +81,11 @@ fn default_enabled_tools_are_offered_unless_denied() {
 
     assert_eq!(
         offered_ids(&authorizer, "@alice:example.com"),
-        ["builtin.image.generate", "builtin.room.history"]
+        [
+            "builtin.image.edit",
+            "builtin.image.generate",
+            "builtin.room.history"
+        ]
     );
 
     let bob = offer(&authorizer, &user("@bob:example.com"), PLAIN);
@@ -88,6 +100,10 @@ fn default_enabled_tools_are_offered_unless_denied() {
         unavailable,
         [
             (
+                "builtin.image.edit",
+                UnavailableReason::MissingCapability(Capability::ImageEditing)
+            ),
+            (
                 "builtin.image.generate",
                 UnavailableReason::MissingCapability(Capability::ImageGeneration)
             ),
@@ -99,7 +115,16 @@ fn default_enabled_tools_are_offered_unless_denied() {
     let admin_denied = authorizer_with_deny_for_everyone();
     assert_eq!(
         offered_ids(&admin_denied, "@admin:example.com"),
-        ["builtin.image.generate"]
+        ["builtin.image.edit", "builtin.image.generate"]
+    );
+
+    // Agents which can't edit images.
+    let alice = offer(&authorizer, &user("@alice:example.com"), WITHOUT_EDITING);
+    let offered: Vec<_> = alice.offered.iter().map(|tool| tool.info().id).collect();
+    assert_eq!(offered, ["builtin.image.generate", "builtin.room.history"]);
+    assert_eq!(
+        alice.unavailable[0].1,
+        UnavailableReason::MissingCapability(Capability::ImageEditing)
     );
 }
 
@@ -124,7 +149,11 @@ fn rules_name_tools_by_id_not_by_function_name() {
 
     assert_eq!(
         offered_ids(&authorizer, "@alice:example.com"),
-        ["builtin.image.generate", "builtin.room.history"]
+        [
+            "builtin.image.edit",
+            "builtin.image.generate",
+            "builtin.room.history"
+        ]
     );
 }
 
@@ -226,7 +255,14 @@ fn offered_definitions_use_function_names() {
     let definitions = offer(&authorizer, &user("@alice:example.com"), WITH_IMAGES).definitions();
 
     let names: Vec<_> = definitions.iter().map(|d| d.name.as_str()).collect();
-    assert_eq!(names, ["builtin_image_generate", "builtin_room_history"]);
+    assert_eq!(
+        names,
+        [
+            "builtin_image_edit",
+            "builtin_image_generate",
+            "builtin_room_history"
+        ]
+    );
     for definition in &definitions {
         assert_eq!(definition.parameters["type"], "object");
     }
@@ -268,7 +304,7 @@ fn instructions_list_unavailable_tools_only_alongside_offered_ones() {
     // A tool someone can't use (as if there were another one, not enabled by default).
     tools_offer
         .unavailable
-        .push((tools_offer.offered[1].info(), UnavailableReason::NotAllowed));
+        .push((tools_offer.offered[2].info(), UnavailableReason::NotAllowed));
     let text = instructions(&tools_offer, "!bai").unwrap();
     assert!(text.contains(
         "- builtin.room.history (read the room's recent messages): not allowed by any access rule (permission `tool:builtin.room.history`)"
@@ -287,6 +323,17 @@ fn instructions_list_unavailable_tools_only_alongside_offered_ones() {
         "- builtin.image.generate (create images): no agent for image generation is set up in this room"
     ));
     assert!(text.contains("`!bai config room set-handler`"));
+
+    // With an image agent which can't edit images.
+    let text = instructions(
+        &offer(&authorizer, &user("@alice:example.com"), WITHOUT_EDITING),
+        "!bai",
+    )
+    .unwrap();
+    assert!(text.contains(
+        "- builtin.image.edit (edit images): this room's image-generation agent can't edit images (or there is none)"
+    ));
+    assert!(!text.contains("- builtin.image.generate"));
 
     // Without the permission.
     let no_images = self::authorizer(vec![rule(
@@ -341,4 +388,43 @@ fn posted_messages_chain_replies_but_stay_in_threads() {
         ),
         MessageResponseType::InRoom
     ));
+}
+
+#[test]
+fn posted_images_join_the_conversation() {
+    use mxlink::matrix_sdk::ruma::events::room::message::ImageMessageEventContent;
+    use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedMxcUri};
+
+    use super::PostedMessages;
+    use crate::conversation::llm::ImageDetails;
+    use crate::tools::image::ConversationImage;
+
+    let posted = PostedMessages::default();
+    assert_eq!(posted.last(), None);
+    assert!(posted.images().is_empty());
+
+    let event_id = |id: &str| OwnedEventId::try_from(id).unwrap();
+
+    posted.push(event_id("$text:example.com"));
+    posted.push_image(
+        event_id("$image:example.com"),
+        ConversationImage {
+            sender_id: Some(user("@bot:example.com")),
+            image: ImageDetails::new(
+                ImageMessageEventContent::plain(
+                    "generated-image.png".to_owned(),
+                    OwnedMxcUri::from("mxc://example.com/abc"),
+                ),
+                mxlink::mime::IMAGE_PNG,
+                vec![1, 2, 3],
+            ),
+        },
+    );
+
+    assert_eq!(posted.last(), Some(event_id("$image:example.com")));
+
+    // Shared between the tool calls of a reply.
+    let images = posted.clone().images();
+    assert_eq!(images.len(), 1);
+    assert_eq!(images[0].image.filename(), "generated-image.png");
 }

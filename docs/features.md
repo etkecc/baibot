@@ -203,6 +203,8 @@ Image editing is the bot's ability to **edit images** based on a prompt and one 
 
 See a [🖼️ Screenshot of the Image Editing feature (manipulating a single image)](./screenshots/image-editing-single-image.webp) and a [🖼️ Screenshot of the Image Editing feature (manipulating multiple images)](./screenshots/image-editing-multiple-images.webp).
 
+💡 You can also edit images while chatting, by replying to an image with what to change (e.g. "make the bowl blue"), thanks to the `builtin.image.edit` tool (see [🧰 Bot Tools / 🎨 Image editing](./bot-tools.md#-image-editing)).
+
 You may also wish to see:
 
 - [🛠️ Configuration / 🖌️ Image Generation](./configuration/image-generation.md) for configuration options related to Image Generation

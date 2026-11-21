@@ -25,6 +25,9 @@ pub trait ControllerTrait {
     /// Tells whether the agent's text-generation model may be offered tools (`text_generation.bot_tools`).
     fn text_generation_bot_tools_enabled(&self) -> bool;
 
+    /// How many images [`ControllerTrait::create_image_edit`] can work with at once (0 when it can't edit images).
+    fn image_edit_max_images(&self) -> usize;
+
     fn text_to_speech_voice(&self) -> Option<String>;
 
     fn text_to_speech_speed(&self) -> Option<f32>;
@@ -108,6 +111,15 @@ impl ControllerTrait for ControllerType {
                 controller.text_generation_max_context_tokens()
             }
             ControllerType::Venice(controller) => controller.text_generation_max_context_tokens(),
+        }
+    }
+
+    fn image_edit_max_images(&self) -> usize {
+        match &self {
+            ControllerType::OpenAI(controller) => controller.image_edit_max_images(),
+            ControllerType::OpenAICompat(controller) => controller.image_edit_max_images(),
+            ControllerType::Anthropic(controller) => controller.image_edit_max_images(),
+            ControllerType::Venice(controller) => controller.image_edit_max_images(),
         }
     }
 

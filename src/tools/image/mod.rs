@@ -1,13 +1,21 @@
 //! Tools which create images with the room's image-generation agent and post them in the room.
 
+mod edit;
 mod generate;
 
+pub use edit::{ConversationImage, EditImageTool};
+
+/// The id of the tool which edits images.
+pub const EDIT_IMAGE_ID: &str = "builtin.image.edit";
 pub use generate::GenerateImageTool;
 
 use std::future::Future;
 use std::time::Duration;
 
+use mxlink::matrix_sdk::ruma::events::room::message::MessageType;
+
 use crate::agent::{AgentInstance, AgentPurpose, utils::get_effective_agent_for_purpose};
+use crate::conversation::llm::ImageDetails;
 use crate::utils::mime::get_file_extension;
 
 use super::registry::ToolContext;
@@ -35,7 +43,7 @@ fn step_deadline(
 }
 
 const GENERATION_TIMED_OUT: &str =
-    "Creating the image took too long, so it was given up. Nothing was posted.";
+    "The image model took too long, so it was given up. Nothing was posted.";
 
 /// Nothing was posted (the image wasn't uploaded, or not completely).
 const UPLOAD_FAILED: &str =
@@ -140,6 +148,14 @@ async fn post_image(
     let matrix_link = context.bot.matrix_link();
     let file_name = format!("{file_name_stem}.{}", get_file_extension(mime_type));
 
+    // Kept (shared), so that later calls in this reply can edit the image, when that's possible.
+    let (bytes, kept): (Vec<u8>, Option<std::sync::Arc<[u8]>>) = if context.keep_posted_images {
+        let kept: std::sync::Arc<[u8]> = std::sync::Arc::from(bytes.as_slice());
+        (bytes, Some(kept))
+    } else {
+        (bytes, None)
+    };
+
     let mut event_content = match tokio::time::timeout_at(
         deadline,
         matrix_link.media().upload_and_prepare_event_content(
@@ -184,9 +200,32 @@ async fn post_image(
         }
     };
 
-    context.posted_messages.push(response.event_id);
+    match (event_content.msgtype, kept) {
+        (MessageType::Image(image_content), Some(data)) => context.posted_messages.push_image(
+            response.event_id,
+            ConversationImage {
+                sender_id: Some(context.bot_user_id.clone()),
+                image: ImageDetails {
+                    event_content: image_content,
+                    mime: mime_type.clone(),
+                    data,
+                },
+            },
+        ),
+        _ => context.posted_messages.push(response.event_id),
+    }
 
     Ok(())
+}
+
+/// Reads a tool's arguments (a JSON object, as the model wrote it).
+fn parse_arguments<T: serde::de::DeserializeOwned>(arguments: &str) -> Result<T, String> {
+    serde_json::from_str(if arguments.trim().is_empty() {
+        "{}"
+    } else {
+        arguments
+    })
+    .map_err(|err| format!("Invalid arguments: {err}"))
 }
 
 /// Reads the `prompt` argument: what to draw (or change).
@@ -197,14 +236,14 @@ fn parse_prompt(arguments: &str) -> Result<String, String> {
         prompt: String,
     }
 
-    let arguments: Arguments = serde_json::from_str(if arguments.trim().is_empty() {
-        "{}"
-    } else {
-        arguments
-    })
-    .map_err(|err| format!("Invalid arguments: {err}"))?;
+    let arguments: Arguments = parse_arguments(arguments)?;
 
-    let prompt = arguments.prompt.trim();
+    validate_prompt(&arguments.prompt)
+}
+
+/// Checks a prompt the model wrote, returning it trimmed.
+fn validate_prompt(prompt: &str) -> Result<String, String> {
+    let prompt = prompt.trim();
 
     if prompt.is_empty() {
         return Err("The prompt is empty.".to_owned());

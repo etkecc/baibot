@@ -1,13 +1,17 @@
 //! Running the tools the model calls while answering a message.
 
+use std::sync::Arc;
+
 use mxlink::MessageResponseType;
 use mxlink::matrix_sdk::Room;
 use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedUserId};
 
 use crate::Bot;
+use crate::agent::ControllerTrait;
 use crate::agent::{AgentPurpose, utils::get_effective_agent_for_purpose};
 use crate::authorization::{Authorizer, room_power_levels};
 use crate::entity::RoomConfigContext;
+use crate::tools::image::ConversationImage;
 use crate::tools::registry::{self, PostedMessages, RoomCapabilities, Tool, ToolContext};
 use crate::tools::{ToolCall, ToolExecutor, ToolResult};
 
@@ -25,6 +29,8 @@ pub async fn room_capabilities(
 
     RoomCapabilities {
         image_generation: image_agent.is_ok(),
+        image_editing: image_agent
+            .is_ok_and(|info| info.instance.controller().image_edit_max_images() > 0),
     }
 }
 
@@ -41,6 +47,7 @@ pub struct BotToolExecutor<'a> {
     trigger_event_id: OwnedEventId,
     response_type: MessageResponseType,
     tools: Vec<&'static dyn Tool>,
+    conversation_images: Arc<[ConversationImage]>,
     posted_messages: PostedMessages,
 
     /// Receives a line for people about the call being run (see [`Tool::activity`]).
@@ -64,9 +71,16 @@ impl<'a> BotToolExecutor<'a> {
             trigger_event_id,
             response_type,
             tools,
+            conversation_images: Arc::new([]),
             posted_messages: PostedMessages::default(),
             activity,
         }
+    }
+
+    /// Gives the tools the images of the conversation being answered (see [`ToolContext::conversation_images`]).
+    pub fn with_conversation_images(mut self, images: Arc<[ConversationImage]>) -> Self {
+        self.conversation_images = images;
+        self
     }
 
     /// The last message tools posted while answering, if any.
@@ -165,6 +179,11 @@ impl ToolExecutor for BotToolExecutor<'_> {
             trigger_event_id: self.trigger_event_id.clone(),
             response_type: self.response_type.clone(),
             posted_messages: self.posted_messages.clone(),
+            initial_conversation_images: self.conversation_images.clone(),
+            keep_posted_images: self
+                .tools
+                .iter()
+                .any(|tool| tool.info().id == crate::tools::image::EDIT_IMAGE_ID),
             deadline,
             authorizer,
             room_config_context,

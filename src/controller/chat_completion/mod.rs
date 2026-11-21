@@ -657,6 +657,28 @@ async fn handle_stage_text_generation(
         crate::tools::registry::ToolOffer::none()
     };
     let offered_tools = tool_offer.definitions();
+
+    // Only kept when a tool may need them.
+    let conversation_images: std::sync::Arc<[crate::tools::image::ConversationImage]> =
+        if tool_offer
+            .offered
+            .iter()
+            .any(|tool| tool.info().id == crate::tools::image::EDIT_IMAGE_ID)
+        {
+            conversation
+                .messages
+                .iter()
+                .filter_map(|message| match &message.content {
+                    MessageContent::Image(image) => Some(crate::tools::image::ConversationImage {
+                        sender_id: message.sender_id.clone(),
+                        image: image.clone(),
+                    }),
+                    _ => None,
+                })
+                .collect()
+        } else {
+            std::sync::Arc::new([])
+        };
     let tool_instructions = crate::tools::registry::instructions(&tool_offer, bot.command_prefix());
 
     let (activity_sender, mut activity_receiver) = tokio::sync::watch::channel(None);
@@ -669,7 +691,8 @@ async fn handle_stage_text_generation(
         response_type.clone(),
         tool_offer.offered,
         activity_sender,
-    );
+    )
+    .with_conversation_images(conversation_images);
 
     let (reserved_context_tokens, tool_limits) = crate::tools::tool_budget(
         context_management_enabled,

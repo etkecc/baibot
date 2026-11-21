@@ -31,7 +31,7 @@ fn convert_bot_message(matrix_message: &MatrixMessage) -> Option<Message> {
             content: MessageContent::Image(ImageDetails::new(
                 image_content.clone(),
                 mime_type.clone(),
-                media_bytes.clone(),
+                media_bytes.as_slice(),
             )),
             timestamp: matrix_message.timestamp.to_owned(),
         }),
@@ -106,7 +106,7 @@ fn convert_user_message(matrix_message: &MatrixMessage) -> Option<Message> {
             content: MessageContent::Image(ImageDetails::new(
                 image_content.clone(),
                 mime_type.clone(),
-                media_bytes.clone(),
+                media_bytes.as_slice(),
             )),
             timestamp: matrix_message.timestamp.to_owned(),
         }),

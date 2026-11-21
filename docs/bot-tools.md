@@ -8,6 +8,7 @@ Bot tools run in the bot, so they work with every supported provider (see [☁�
 | --- | --- |
 | [📜 Room history](#-room-history) (`builtin.room.history`) | Reads the room's recent messages |
 | [🖌️ Image creation](#️-image-creation) (`builtin.image.generate`) | Creates an image and posts it in the room |
+| [🎨 Image editing](#-image-editing) (`builtin.image.edit`) | Edits an image and posts the result |
 
 
 ### 📜 Room history
@@ -32,10 +33,19 @@ The bot creates the image and posts it in the room. It's like the `!bai image cr
 The room needs an agent for image creation (see [🌟 Features / 🖌️ Image Creation](./features.md#️-image-creation)). Your provider may charge for each image.
 
 
+### 🎨 Image editing
+
+> Make the bowl blue.
+
+By default, the bot edits the most recent image in the thread or reply chain. You can also ask it to combine several images, if the room's image generation agent can (see [🌟 Features / 🎨 Image Editing](./features.md#-image-editing)).
+
+The room's image generation agent needs to support image editing. Images posted by people explicitly denied `image-generation` (by a deny rule) can't be edited.
+
+
 ### 💡 Things to keep in mind
 
 - Tools act on behalf of the person whose message the bot is answering, but everyone in the room sees the answer.
-- Room history goes to the text-generation agent's provider. Image prompts go to the image generation agent's provider.
+- Room history goes to the text-generation agent's provider. Image prompts and images to edit go to the image generation agent's provider.
 - With the thinking notice on, it shows what the tools are doing, e.g. "📜 Reading up to 10 messages" (see [🛠️ Configuration / 💬 Text Generation / 💭 Thinking Notice](./configuration/text-generation.md#-thinking-notice)).
 - Text from tools (like other people's messages) could steer the model. With provider tools that reach the internet (like web fetch), that could leak room content to a website.
 
@@ -48,6 +58,7 @@ Each tool is also a permission in the [🔒 Access](./access.md) rules: `tool:` 
 | --- | --- |
 | 📜 `tool:builtin.room.history` | `text-generation` |
 | 🖌️ `tool:builtin.image.generate` | `text-generation` + `image-generation` |
+| 🎨 `tool:builtin.image.edit` | `text-generation` + `image-generation` |
 
 Each built-in tool is allowed by default for people who have the feature permissions listed above. A deny rule turns the tool off. For example, to turn off room history in a room:
 
@@ -55,7 +66,7 @@ Each built-in tool is allowed by default for people who have the feature permiss
 !bai access room deny tool:builtin.room.history @*:*
 ```
 
-`tool:builtin.*` covers all built-in tools.
+`tool:builtin.image.*` covers both image tools, and `tool:builtin.*` covers all built-in tools.
 
 Only administrators can add or remove rules with tool permissions. These rules apply to administrators too.
 

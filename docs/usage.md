@@ -13,7 +13,7 @@ If there's a text-generation handler agent configured, the bot **may** respond t
 
 Some models also support vision and document understanding, so you may be able to mix text, images, and files (PDFs, text documents, etc.) in the same conversation.
 
-While chatting, you can also ask the bot to read the room's recent messages, or to create images. See [🧰 Bot Tools](./bot-tools.md).
+While chatting, you can also ask the bot to read the room's recent messages, or to create and edit images. See [🧰 Bot Tools](./bot-tools.md).
 
 See screenshots of:
 

@@ -15,6 +15,7 @@ use crate::entity::RoomConfigContext;
 
 use super::ToolDefinition;
 use super::catalog::ToolInfo;
+use super::image::ConversationImage;
 
 /// How long a tool may run, unless it says otherwise.
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -38,6 +39,13 @@ pub struct ToolContext {
     /// Messages tools posted while answering.
     pub posted_messages: PostedMessages,
 
+    /// Whether images tools post are kept for later calls (when a tool works with the conversation's images).
+    pub keep_posted_images: bool,
+
+    /// The images of the conversation being answered when the reply started (for tools which work with them),
+    /// oldest first. See [`ToolContext::conversation_images`] for these and the ones posted since.
+    pub initial_conversation_images: Arc<[ConversationImage]>,
+
     /// When the call runs out of time (see [`Tool::timeout`]), for tools which want to report
     /// which step didn't finish (otherwise, the call is just stopped).
     pub deadline: tokio::time::Instant,
@@ -54,16 +62,37 @@ impl ToolContext {
     pub fn response_type_for_new_message(&self) -> MessageResponseType {
         response_type_after(&self.response_type, self.posted_messages.last())
     }
+
+    /// The images of the conversation being answered, including those tools posted while answering, oldest first.
+    pub fn conversation_images(&self) -> Vec<ConversationImage> {
+        let mut images = self.initial_conversation_images.to_vec();
+        images.extend(self.posted_messages.images());
+        images
+    }
 }
 
 /// The messages tools posted while answering (e.g. images), so that what comes next can follow them.
 #[derive(Clone, Default)]
-pub struct PostedMessages(Arc<Mutex<Vec<OwnedEventId>>>);
+pub struct PostedMessages(Arc<Mutex<Posted>>);
+
+#[derive(Default)]
+struct Posted {
+    event_ids: Vec<OwnedEventId>,
+    images: Vec<ConversationImage>,
+}
 
 impl PostedMessages {
     pub fn push(&self, event_id: OwnedEventId) {
-        if let Ok(mut event_ids) = self.0.lock() {
-            event_ids.push(event_id);
+        if let Ok(mut posted) = self.0.lock() {
+            posted.event_ids.push(event_id);
+        }
+    }
+
+    /// Records a posted image, which then becomes part of the conversation (see [`ToolContext::conversation_images`]).
+    pub fn push_image(&self, event_id: OwnedEventId, image: ConversationImage) {
+        if let Ok(mut posted) = self.0.lock() {
+            posted.event_ids.push(event_id);
+            posted.images.push(image);
         }
     }
 
@@ -71,7 +100,14 @@ impl PostedMessages {
         self.0
             .lock()
             .ok()
-            .and_then(|event_ids| event_ids.last().cloned())
+            .and_then(|posted| posted.event_ids.last().cloned())
+    }
+
+    fn images(&self) -> Vec<ConversationImage> {
+        self.0
+            .lock()
+            .map(|posted| posted.images.clone())
+            .unwrap_or_default()
     }
 }
 
@@ -95,18 +131,23 @@ pub fn response_type_after(
 pub enum Capability {
     /// An agent which creates images.
     ImageGeneration,
+
+    /// An agent which edits images.
+    ImageEditing,
 }
 
 /// What the room's agents can do for tools (see [`Capability`]).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct RoomCapabilities {
     pub image_generation: bool,
+    pub image_editing: bool,
 }
 
 impl RoomCapabilities {
     pub fn has(&self, capability: Capability) -> bool {
         match capability {
             Capability::ImageGeneration => self.image_generation,
+            Capability::ImageEditing => self.image_editing,
         }
     }
 }
@@ -164,6 +205,7 @@ pub trait Tool: Send + Sync {
 
 /// The built-in tools, sorted by id.
 static BUILT_IN: &[&dyn Tool] = &[
+    &super::image::EditImageTool,
     &super::image::GenerateImageTool,
     &super::room_history::RoomHistoryTool,
 ];
@@ -339,6 +381,10 @@ pub fn instructions(offer: &ToolOffer, command_prefix: &str) -> Option<String> {
                 }
                 UnavailableReason::MissingCapability(Capability::ImageGeneration) => {
                     "no agent for image generation is set up in this room".to_owned()
+                }
+                UnavailableReason::MissingCapability(Capability::ImageEditing) => {
+                    "this room's image-generation agent can't edit images (or there is none)"
+                        .to_owned()
                 }
             };
 

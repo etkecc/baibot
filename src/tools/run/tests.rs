@@ -83,6 +83,10 @@ impl ControllerTrait for FakeController {
         None
     }
 
+    fn image_edit_max_images(&self) -> usize {
+        0
+    }
+
     fn text_generation_bot_tools_enabled(&self) -> bool {
         true
     }
