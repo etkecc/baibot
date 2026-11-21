@@ -102,6 +102,18 @@ fn determines_commands() {
             )),
         ),
         (
+            "room deny tool:builtin.room.history @*:example.com",
+            ControllerType::Access(AccessControllerType::AddRule(
+                RuleCommandScope::Room,
+                NewRule {
+                    effect: RuleEffect::Deny,
+                    permissions: strings(&["tool:builtin.room.history"]),
+                    users: strings(&["@*:example.com"]),
+                    min_power_level: None,
+                },
+            )),
+        ),
+        (
             "room remove k3vq",
             ControllerType::Access(AccessControllerType::RemoveRule(
                 RuleCommandScope::Room,
@@ -139,12 +151,26 @@ fn rejects_invalid_rule_commands() {
         "global allow invite @*:example.com min-power-level=50",
         "room allow text-generation @a:example.com min-power-level=1 min-power-level=2",
         "explain @a:example.com @b:example.com",
+        "room allow tool:room-histroy @a:example.com",
+        "room allow tool:* @a:example.com",
+        "room allow tool: @a:example.com",
     ] {
         assert!(
             matches!(determine(input), ControllerType::Error(_)),
             "{input}"
         );
     }
+}
+
+#[test]
+fn unknown_tools_are_reported_with_the_known_ones() {
+    let ControllerType::Error(message) = determine("room allow tool:room-histroy @a:example.com")
+    else {
+        panic!("expected an error");
+    };
+
+    assert!(message.contains("`tool:room-histroy`"), "{message}");
+    assert!(message.contains("`tool:builtin.room.history`"), "{message}");
 }
 
 #[test]
@@ -239,4 +265,14 @@ fn delegation_is_limited_to_held_features() {
 
     let holds_all_features = |permission: Permission| permission.is_feature();
     assert!(can_delegate(&strings(&["use"]), holds_all_features));
+
+    // Tool rules are for administrators only, even next to features they hold.
+    assert!(!can_delegate(
+        &strings(&["tool:builtin.room.history"]),
+        holds_all_features
+    ));
+    assert!(!can_delegate(
+        &strings(&["use", "tool:builtin.room.history"]),
+        holds_all_features
+    ));
 }

@@ -39,6 +39,19 @@ pub fn unknown_permission(command_prefix: &str, name: &str) -> String {
     )
 }
 
+pub fn unknown_tool(name: &str, known_tool_selectors: &[String]) -> String {
+    let known = known_tool_selectors
+        .iter()
+        .map(|selector| inline_code(selector))
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    format!(
+        "{} doesn't match any tool. Known tool permissions: {known}.",
+        inline_code(name)
+    )
+}
+
 pub fn invite_without_power_level() -> String {
     "The `invite` permission cannot have a power-level condition, because invitations happen before the bot is in a room.".to_owned()
 }
@@ -67,7 +80,7 @@ pub fn invalid_user_id(user_id: &str) -> String {
 }
 
 pub fn not_delegable() -> String {
-    "You can only add or remove rules in this room which consist of feature permissions (`use`, `text-generation`, `speech-to-text`, `text-to-speech`, `image-generation`) that you have yourself. Other rules are managed by administrators.".to_owned()
+    "You can only add or remove rules in this room which consist of feature permissions (`use`, `text-generation`, `speech-to-text`, `text-to-speech`, `image-generation`) that you have yourself. Other rules (including tool rules) are managed by administrators.".to_owned()
 }
 
 pub fn rule_not_found(command_prefix: &str, id: &str) -> String {
@@ -98,14 +111,38 @@ pub fn no_rules() -> &'static str {
 }
 
 pub fn rules_evaluation_note() -> &'static str {
-    "💡 Rule order doesn't matter. A permission is granted if a rule allows it and no rule denies it. Administrators can do anything regardless."
+    "💡 Rule order doesn't matter. A permission is granted if a rule allows it and no rule denies it. Built-in tools are allowed by default when you have the feature permissions they need. A deny rule turns a tool off. Administrators can do anything regardless, but tool rules apply to them too."
 }
 
 pub fn explain_admin(user_id: &str) -> String {
     format!(
-        "{} is an administrator and can do anything.",
+        "{} is an administrator and can do anything, but tool rules apply to them too.",
         inline_code(user_id)
     )
+}
+
+pub fn explain_tools_heading() -> &'static str {
+    "🧰 Bot tool permissions (using tools also needs 💬 `text-generation`):"
+}
+
+pub fn explain_tool_enabled_by_default(emoji: &str, selector: &str, summary: &str) -> String {
+    format!("- ✅ {emoji} `{selector}` ({summary}): allowed by default")
+}
+
+pub fn explain_tool_allowed(emoji: &str, selector: &str, summary: &str, rules: &str) -> String {
+    format!("- ✅ {emoji} `{selector}` ({summary}): allowed by {rules}")
+}
+
+pub fn explain_tool_denied(emoji: &str, selector: &str, summary: &str, rules: &str) -> String {
+    format!("- 🚫 {emoji} `{selector}` ({summary}): denied by {rules}")
+}
+
+pub fn explain_tool_not_allowed(emoji: &str, selector: &str, summary: &str) -> String {
+    format!("- ❌ {emoji} `{selector}` ({summary}): no rule allows it")
+}
+
+pub fn inactive_tool_selector_suffix() -> &'static str {
+    " (no such tool, ignored)"
 }
 
 pub fn explain_heading(user_id: &str) -> String {

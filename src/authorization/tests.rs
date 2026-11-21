@@ -5,8 +5,9 @@ use mxlink::matrix_sdk::ruma::room_version_rules::AuthorizationRules;
 use mxlink::matrix_sdk::ruma::{Int, OwnedUserId, UserId};
 
 use super::rule::{LEGACY_MANAGE_CONFIG_MIN_POWER_LEVEL, USE};
-use super::{AccessRule, Authorizer, Permission, RuleEffect};
+use super::{AccessRule, Authorizer, Permission, RuleEffect, RuleScope};
 use crate::entity::globalconfig::GlobalConfig;
+use crate::tools::catalog::ToolInfo;
 
 const ALL_PERMISSIONS: [Permission; 9] = [
     Permission::TextGeneration,
@@ -83,6 +84,15 @@ fn power_levels(users: &[(&str, i64)]) -> RoomPowerLevels {
             .insert(user(user_id), Int::new(*level).unwrap());
     }
     RoomPowerLevels::new(content.into(), &AuthorizationRules::V1, vec![])
+}
+
+fn tool(id: &'static str, default_enabled: bool) -> ToolInfo {
+    ToolInfo {
+        id,
+        emoji: "",
+        summary: "",
+        default_enabled,
+    }
 }
 
 fn allowed_permissions(authorizer: &Authorizer, user_id: &str) -> Vec<Permission> {
@@ -644,4 +654,151 @@ fn new_rule_ids_are_short_and_valid() {
     assert!(is_valid_rule_id("k7mq"));
     assert!(!is_valid_rule_id("a`b"));
     assert!(!is_valid_rule_id(""));
+}
+
+#[test]
+fn tools_follow_their_default_and_rules() {
+    let global_config = global_config_with_rules(vec![
+        rule("g1", RuleEffect::Allow, &[USE], &["@*:example.com"], None),
+        rule(
+            "g2",
+            RuleEffect::Allow,
+            &["tool:holmes.*"],
+            &["@ops:example.com"],
+            None,
+        ),
+    ]);
+    let room_rules = vec![
+        rule(
+            "r1",
+            RuleEffect::Deny,
+            &["tool:builtin.room.history"],
+            &["@bob:example.com"],
+            None,
+        ),
+        rule(
+            "r2",
+            RuleEffect::Deny,
+            &["tool:holmes.dangerous"],
+            &["@*:example.com"],
+            None,
+        ),
+    ];
+    let authorizer = Authorizer::new(&admin_regexes(), &global_config).for_room(&room_rules, None);
+
+    let alice = user("@alice:example.com");
+    let bob = user("@bob:example.com");
+    let ops = user("@ops:example.com");
+
+    // Enabled by default, unless denied.
+    assert!(authorizer.allows_tool(&alice, &tool("builtin.room.history", true)));
+    assert!(!authorizer.allows_tool(&bob, &tool("builtin.room.history", true)));
+    assert_eq!(
+        authorizer.matching_tool_rules(&bob, "builtin.room.history", RuleEffect::Deny),
+        [(RuleScope::Room, "r1".to_owned())]
+    );
+
+    // Not enabled by default: `use` doesn't cover tools, a rule must name them.
+    assert!(!authorizer.allows_tool(&alice, &tool("holmes.investigate", false)));
+    assert!(authorizer.allows_tool(&ops, &tool("holmes.investigate", false)));
+    assert!(!authorizer.allows_tool(&ops, &tool("holmes.dangerous", false)));
+    assert_eq!(
+        authorizer.matching_tool_rules(&ops, "holmes.investigate", RuleEffect::Allow),
+        [(RuleScope::Global, "g2".to_owned())]
+    );
+
+    // Tool rules don't grant other permissions, nor talking to the bot.
+    let tools_only = Authorizer::new(
+        &admin_regexes(),
+        &global_config_with_rules(vec![rule(
+            "g1",
+            RuleEffect::Allow,
+            &["tool:builtin.room.history"],
+            &["@*:example.com"],
+            None,
+        )]),
+    );
+    assert!(tools_only.allows_tool(&alice, &tool("builtin.room.history", false)));
+    assert!(allowed_permissions(&tools_only, "@alice:example.com").is_empty());
+    assert!(!tools_only.allows_anything_in_room(&alice));
+}
+
+#[test]
+fn tool_denies_apply_to_admins() {
+    let room_rules = vec![rule(
+        "r1",
+        RuleEffect::Deny,
+        &["tool:builtin.room.history"],
+        &["@*:*"],
+        None,
+    )];
+    let authorizer = Authorizer::new(&admin_regexes(), &global_config_with_rules(vec![]))
+        .for_room(&room_rules, None);
+
+    let admin = user("@admin:example.com");
+
+    assert!(authorizer.allows(&admin, Permission::TextGeneration));
+    assert!(!authorizer.allows_tool(&admin, &tool("builtin.room.history", true)));
+
+    // Admins get tools which aren't enabled by default only through rules, like everyone else.
+    assert!(!authorizer.allows_tool(&admin, &tool("holmes.investigate", false)));
+}
+
+#[test]
+fn tool_rules_with_power_level_conditions() {
+    let room_rules = vec![rule(
+        "r1",
+        RuleEffect::Allow,
+        &["tool:holmes.investigate"],
+        &["@*:example.com"],
+        Some(50),
+    )];
+
+    let moderator = user("@moderator:example.com");
+    let member = user("@member:example.com");
+
+    let authorizer = Authorizer::new(&admin_regexes(), &global_config_with_rules(vec![])).for_room(
+        &room_rules,
+        Some(power_levels(&[("@moderator:example.com", 50)])),
+    );
+    assert!(authorizer.allows_tool(&moderator, &tool("holmes.investigate", false)));
+    assert!(!authorizer.allows_tool(&member, &tool("holmes.investigate", false)));
+
+    // Without power levels, such rules don't match.
+    let authorizer = Authorizer::new(&admin_regexes(), &global_config_with_rules(vec![]))
+        .for_room(&room_rules, None);
+    assert!(!authorizer.allows_tool(&moderator, &tool("holmes.investigate", false)));
+}
+
+#[test]
+fn stored_rules_without_users_fail_closed() {
+    let global_config = global_config_with_rules(vec![
+        rule("r1", RuleEffect::Allow, &[USE], &["@*:example.com"], None),
+        rule("r2", RuleEffect::Allow, &["manage-config"], &[], None),
+        rule(
+            "r3",
+            RuleEffect::Deny,
+            &["image-generation", "tool:builtin.room.history"],
+            &[],
+            None,
+        ),
+    ]);
+    let authorizer = Authorizer::new(&admin_regexes(), &global_config);
+
+    assert_eq!(
+        allowed_permissions(&authorizer, "@someone:example.com"),
+        [
+            Permission::TextGeneration,
+            Permission::SpeechToText,
+            Permission::TextToSpeech,
+        ]
+    );
+    assert!(!authorizer.allows_tool(
+        &user("@someone:example.com"),
+        &tool("builtin.room.history", true)
+    ));
+    assert!(!authorizer.allows_tool(
+        &user("@admin:example.com"),
+        &tool("builtin.room.history", true)
+    ));
 }

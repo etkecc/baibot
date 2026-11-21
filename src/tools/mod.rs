@@ -5,6 +5,7 @@
 //! them and sends the results back, until the model answers (see [`run_text_generation`]).
 //! Provider adapters only translate between their wire format and the types here.
 
+pub mod catalog;
 mod run;
 
 pub use run::{ToolExecutor, run_text_generation, tool_budget};

@@ -21,12 +21,13 @@ pub fn permissions_list() -> String {
         "- 🤖 `manage-agents`: create, inspect and delete agents in the room",
         "- 🔒 `manage-access`: view and change the room's access rules",
         "- 👋 `invite`: invite the bot into rooms (only granted by global rules)",
+        "- 🧰 `tool:ID`: let the bot use a tool while chatting with you (e.g. `tool:builtin.room.history`). Built-in tools come with the features they use, so rules only turn them off. Only administrators manage tool rules",
     ]
     .join("\n")
 }
 
 pub fn permissions_outro() -> String {
-    "Anyone with any permission in a room (except 👋 `invite`) can talk to the bot there, see help and list agents. Messages from others are ignored.".to_owned()
+    "Anyone with any permission in a room (except 👋 `invite` and 🧰 tools) can talk to the bot there, see help and list agents. Messages from others are ignored.".to_owned()
 }
 
 pub fn rules_heading() -> String {
@@ -83,7 +84,7 @@ pub fn administrators_heading() -> String {
 }
 
 pub fn administrators_intro() -> String {
-    "Administrators can **do anything**, in any room, regardless of rules. Only they can manage the global configuration, global agents and global rules.".to_string()
+    "Administrators can **do anything**, in any room, regardless of rules (but tool rules apply to them too). Only they can manage the global configuration, global agents and global rules.".to_string()
 }
 
 pub fn administrators_now_match_patterns(patterns: &[String]) -> String {

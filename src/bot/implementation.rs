@@ -71,6 +71,15 @@ impl Bot {
         // Take some potentially problematic configuration values out of the config early on.
         // If we'd be failing, we'd like it to happen early, before we log in, etc.
 
+        let unknown_tool_permissions = config.initial_global_config.unknown_tool_permissions();
+        if !unknown_tool_permissions.is_empty() {
+            tracing::warn!(
+                ?unknown_tool_permissions,
+                known_tools = ?crate::authorization::rule::known_tool_selectors(),
+                "initial_global_config.access_rules names tools which don't exist - rules created from them ignore these tools"
+            );
+        }
+
         let initial_global_config: GlobalConfig =
             config.initial_global_config.clone().try_into()?;
 

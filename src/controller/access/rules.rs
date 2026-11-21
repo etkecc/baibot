@@ -2,7 +2,9 @@ use mxlink::MessageResponseType;
 use mxlink::matrix_sdk::ruma::UserId;
 
 use super::determination::{NewRule, RuleCommandScope, can_delegate};
-use crate::authorization::rule::{new_rule_id, permission_name_emoji};
+use crate::authorization::rule::{
+    TOOL_PREFIX, is_inactive_tool_selector, new_rule_id, permission_name_emoji,
+};
 use crate::authorization::{
     AccessRule, Authorizer, Permission, RuleEffect, RuleScope, room_power_levels,
 };
@@ -161,7 +163,10 @@ pub async fn handle_explain(
     let mut message = String::new();
 
     if authorizer.is_admin(&user_id) {
+        // Administrators can do anything, except that tools follow the rules for them too, so only tools need explaining.
         message.push_str(&strings::access::explain_admin(user_id.as_str()));
+        message.push_str("\n\n");
+        message.push_str(&explain_tools(authorizer, &user_id));
         reply(bot, message_context, &message, false).await;
         return Ok(());
     }
@@ -205,11 +210,47 @@ pub async fn handle_explain(
     }
 
     message.push('\n');
+    message.push_str(&explain_tools(authorizer, &user_id));
+    message.push_str("\n\n");
     message.push_str(strings::access::rules_evaluation_note());
 
     reply(bot, message_context, &message, false).await;
 
     Ok(())
+}
+
+/// Explains which of the known tools the user may use in the room, and why.
+fn explain_tools(authorizer: &Authorizer, user_id: &UserId) -> String {
+    let mut lines = vec![strings::access::explain_tools_heading().to_owned()];
+
+    for tool in crate::tools::catalog::known() {
+        let selector = format!("{TOOL_PREFIX}{}", tool.id);
+
+        let denied_by = authorizer.matching_tool_rules(user_id, tool.id, RuleEffect::Deny);
+        let allowed_by = authorizer.matching_tool_rules(user_id, tool.id, RuleEffect::Allow);
+
+        lines.push(if !denied_by.is_empty() {
+            strings::access::explain_tool_denied(
+                tool.emoji,
+                &selector,
+                tool.summary,
+                &format_rule_refs(&denied_by),
+            )
+        } else if !allowed_by.is_empty() {
+            strings::access::explain_tool_allowed(
+                tool.emoji,
+                &selector,
+                tool.summary,
+                &format_rule_refs(&allowed_by),
+            )
+        } else if tool.default_enabled {
+            strings::access::explain_tool_enabled_by_default(tool.emoji, &selector, tool.summary)
+        } else {
+            strings::access::explain_tool_not_allowed(tool.emoji, &selector, tool.summary)
+        });
+    }
+
+    lines.join("\n")
 }
 
 /// Changes the global rules or the target room's rules, persisting only if `change` changed them.
@@ -356,9 +397,18 @@ pub(super) fn format_rule(rule: &AccessRule) -> String {
     let permissions = rule
         .permissions
         .iter()
-        .map(|name| match permission_name_emoji(name) {
-            Some(emoji) => format!("{emoji} {}", inline_code(name)),
-            None => inline_code(name),
+        .map(|name| {
+            let mut text = match permission_name_emoji(name) {
+                Some(emoji) => format!("{emoji} {}", inline_code(name)),
+                None => inline_code(name),
+            };
+
+            // Rules may outlive the tools they name (e.g. ones an administrator no longer defines).
+            if is_inactive_tool_selector(name) {
+                text.push_str(strings::access::inactive_tool_selector_suffix());
+            }
+
+            text
         })
         .collect::<Vec<_>>()
         .join(", ");
@@ -472,6 +522,54 @@ mod tests {
             RuleCommandScope::Room,
             &strings(&["speech-to-text"])
         ));
+    }
+
+    #[test]
+    fn room_managers_cannot_change_tool_rules() {
+        let manager = UserId::parse("@manager:example.com").unwrap();
+        let rules = [rule(
+            "r1",
+            RuleEffect::Allow,
+            &["manage-access", "use"],
+            &["@manager:example.com"],
+        )];
+        let authorizer = authorizer(&rules);
+
+        assert!(!may_change_rule(
+            &authorizer,
+            &manager,
+            RuleCommandScope::Room,
+            &strings(&["tool:builtin.room.history"])
+        ));
+        assert!(!may_change_rule(
+            &authorizer,
+            &manager,
+            RuleCommandScope::Room,
+            &strings(&["text-generation", "tool:builtin.room.history"])
+        ));
+
+        let admin = UserId::parse("@admin:example.com").unwrap();
+        assert!(may_change_rule(
+            &authorizer,
+            &admin,
+            RuleCommandScope::Room,
+            &strings(&["tool:builtin.room.history"])
+        ));
+    }
+
+    #[test]
+    fn formatted_rules_mark_tools() {
+        let rule = rule(
+            "r4",
+            RuleEffect::Deny,
+            &["tool:builtin.room.history", "tool:removed-tool"],
+            &["@*:example.com"],
+        );
+
+        assert_eq!(
+            format_rule(&rule),
+            "🚫 `r4`: deny 🧰 `tool:builtin.room.history`, 🧰 `tool:removed-tool` (no such tool, ignored) for `@*:example.com`"
+        );
     }
 
     #[test]

@@ -7,6 +7,9 @@
 //! Everyone else gets permissions from access rules (see [`AccessRule`]),
 //! stored in the global configuration and in each room's configuration.
 //! A user has a permission if some allow rule matches and no deny rule does.
+//!
+//! Tools (see [`Authorizer::allows_tool`]) are the exception: rules decide about them for administrators too,
+//! so that a deny rule really turns a tool off.
 
 pub mod rule;
 
@@ -19,6 +22,7 @@ use mxlink::matrix_sdk::ruma::{Int, UserId};
 pub use rule::{AccessRule, RuleEffect};
 
 use crate::entity::globalconfig::GlobalConfig;
+use crate::tools::catalog::ToolInfo;
 
 /// Something a user may be allowed to do.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -184,12 +188,20 @@ impl Authorizer {
 
     /// Adds rules, compiling their user patterns.
     ///
-    /// Patterns are validated when rules are added, so invalid ones only come from damaged configuration.
-    /// Such rules fail closed: an allow rule matches nobody and a deny rule matches everyone
-    /// (except administrators, who are never affected by rules and can repair them).
+    /// Patterns are validated when rules are added, so invalid ones (or an empty list) only come from damaged
+    /// configuration. Such rules fail closed: an allow rule matches nobody and a deny rule matches everyone
+    /// (except administrators, who are only affected for tools and can repair them).
     fn add_rules(&mut self, scope: RuleScope, rules: &[AccessRule]) {
         for rule in rules {
             let user_regexes = match mxidwc::parse_patterns_vector(&rule.users) {
+                Ok(_) if rule.users.is_empty() => {
+                    tracing::error!(
+                        ?scope,
+                        rule_id = rule.id.as_str(),
+                        "An access rule has no user patterns - treating it as matching nobody (allow) or everyone (deny)"
+                    );
+                    None
+                }
                 Ok(regexes) => Some(regexes),
                 Err(err) => {
                     tracing::error!(
@@ -257,13 +269,61 @@ impl Authorizer {
         permission: Permission,
         effect: RuleEffect,
     ) -> Vec<(RuleScope, String)> {
+        self.rules_matching(user_id, effect, |compiled| {
+            // Only global rules may grant (or take away) invitations.
+            (permission != Permission::Invite || compiled.scope == RuleScope::Global)
+                && compiled.rule.covers(permission)
+        })
+    }
+
+    /// Tells whether the user may use the tool.
+    ///
+    /// Takes the tool's description (not just an id), so that callers check the rule id (`builtin.room.history`),
+    /// not the function name offered to the model (`builtin_room_history`), together with the tool's default.
+    ///
+    /// A tool enabled by default may be used unless a rule denies it. Other tools need a rule allowing them.
+    /// Unlike other permissions, this applies to administrators too.
+    ///
+    /// This is only about the tool itself: whoever offers tools to the model also checks that the user
+    /// may chat (see [`Permission::TextGeneration`]) and that the agent supports tools.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "used when offering tools, once there are some")
+    )]
+    pub fn allows_tool(&self, user_id: &UserId, tool: &ToolInfo) -> bool {
+        (tool.default_enabled
+            || !self
+                .matching_tool_rules(user_id, tool.id, RuleEffect::Allow)
+                .is_empty())
+            && self
+                .matching_tool_rules(user_id, tool.id, RuleEffect::Deny)
+                .is_empty()
+    }
+
+    /// Returns the rules (scope and id) with the given effect that apply to the user for a tool.
+    /// Used for evaluating, and for explaining decisions to users.
+    pub fn matching_tool_rules(
+        &self,
+        user_id: &UserId,
+        tool_id: &str,
+        effect: RuleEffect,
+    ) -> Vec<(RuleScope, String)> {
+        self.rules_matching(user_id, effect, |compiled| {
+            compiled.rule.covers_tool(tool_id)
+        })
+    }
+
+    fn rules_matching(
+        &self,
+        user_id: &UserId,
+        effect: RuleEffect,
+        covers: impl Fn(&CompiledRule) -> bool,
+    ) -> Vec<(RuleScope, String)> {
         self.rules
             .iter()
             .filter(|compiled| {
                 compiled.rule.effect == effect
-                    // Only global rules may grant (or take away) invitations.
-                    && (permission != Permission::Invite || compiled.scope == RuleScope::Global)
-                    && compiled.rule.covers(permission)
+                    && covers(compiled)
                     && compiled.matches_user(user_id)
                     && self.meets_power_level(user_id, compiled.rule.min_power_level)
             })

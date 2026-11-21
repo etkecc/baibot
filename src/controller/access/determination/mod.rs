@@ -2,7 +2,9 @@
 mod tests;
 
 use super::super::ControllerType;
-use crate::authorization::rule::{USE, is_valid_permission_name, is_valid_rule_id};
+use crate::authorization::rule::{
+    TOOL_PREFIX, USE, is_valid_permission_name, is_valid_rule_id, known_tool_selectors,
+};
 use crate::authorization::{Permission, RuleEffect};
 use crate::strings;
 
@@ -164,6 +166,10 @@ fn parse_new_rule(
 
     for name in &permissions {
         if !is_valid_permission_name(name) {
+            if name.starts_with(TOOL_PREFIX) {
+                return Err(strings::access::unknown_tool(name, &known_tool_selectors()));
+            }
+
             return Err(strings::access::unknown_permission(command_prefix, name));
         }
 
@@ -217,8 +223,13 @@ impl AccessControllerType {
 /// a room rule with the given permission names.
 ///
 /// They may only manage rules made of feature permissions (or `use`), and only of features they hold themselves.
+/// Tool rules (`tool:...`) are managed by administrators only, also when mixed with features.
 pub fn can_delegate(permissions: &[String], holds: impl Fn(Permission) -> bool) -> bool {
     permissions.iter().all(|name| {
+        if name.starts_with(TOOL_PREFIX) {
+            return false;
+        }
+
         if name == USE {
             return Permission::FEATURES.into_iter().all(&holds);
         }

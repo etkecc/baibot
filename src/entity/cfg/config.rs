@@ -8,7 +8,10 @@ use crate::{
     agent::{AgentDefinition, AgentPurpose, PublicIdentifier},
     authorization::{
         AccessRule, Permission, RuleEffect,
-        rule::{USE, is_valid_permission_name, new_rule_id},
+        rule::{
+            TOOL_PREFIX, USE, is_inactive_tool_selector, is_valid_permission_name,
+            is_well_formed_tool_selector, known_tool_selectors, new_rule_id,
+        },
     },
     entity::{globalconfig::GlobalConfig, roomconfig::RoomSettingsHandler},
 };
@@ -499,8 +502,23 @@ impl ConfigInitialAccessRule {
 
         for name in &self.permissions {
             if !is_valid_permission_name(name) {
+                if is_well_formed_tool_selector(name) {
+                    // Initial rules are validated on every start, but only used on the first one.
+                    // A later version may remove a tool they name, which shouldn't keep the bot from starting
+                    // (the stored rule is kept and ignored), so unknown tools only get a warning
+                    // (see `ConfigInitialGlobalConfig::unknown_tool_permissions`).
+                    continue;
+                }
+
+                if name.starts_with(TOOL_PREFIX) {
+                    return Err(anyhow::anyhow!(
+                        "{key}.permissions contains `{name}`, which is not a valid tool permission (`{TOOL_PREFIX}ID` or `{TOOL_PREFIX}NAMESPACE.*`). Known tool permissions: {}",
+                        known_tool_selectors().join(", "),
+                    ));
+                }
+
                 return Err(anyhow::anyhow!(
-                    "{key}.permissions contains an unknown permission: `{name}`. Known permissions: {}",
+                    "{key}.permissions contains an unknown permission: `{name}`. Known permissions: {}, or a tool (`{TOOL_PREFIX}ID`)",
                     known_permission_names().join(", "),
                 ));
             }
@@ -546,6 +564,17 @@ where
 }
 
 impl ConfigInitialGlobalConfig {
+    /// Returns the tool permissions in the initial access rules which match no known tool
+    /// (accepted by [`Self::validate`], so that removing a tool doesn't keep the bot from starting).
+    pub fn unknown_tool_permissions(&self) -> Vec<&str> {
+        self.access_rules
+            .iter()
+            .flat_map(|rule| &rule.permissions)
+            .filter(|name| is_inactive_tool_selector(name))
+            .map(String::as_str)
+            .collect()
+    }
+
     pub fn validate(self) -> anyhow::Result<()> {
         if self.removed_user_patterns_present {
             return Err(anyhow::anyhow!(

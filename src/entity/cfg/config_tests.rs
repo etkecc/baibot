@@ -166,7 +166,7 @@ access_rules:
     permissions: [use, invite]
     users: ["@*:example.com"]
   - effect: deny
-    permissions: [image-generation]
+    permissions: [image-generation, "tool:builtin.room.history"]
     users: ["@*:bridge.example.com"]
   - effect: allow
     permissions: [manage-config]
@@ -189,6 +189,10 @@ access_rules:
     assert_eq!(rules[0].min_power_level, None);
 
     assert_eq!(rules[1].effect, RuleEffect::Deny);
+    assert_eq!(
+        rules[1].permissions,
+        vec!["image-generation", "tool:builtin.room.history"]
+    );
     assert_eq!(rules[2].min_power_level, Some(50));
 
     for rule in &rules {
@@ -230,6 +234,9 @@ fn invalid_initial_access_rules_are_rejected() {
         // Unknown permission
         "[{effect: allow, permissions: [administer], users: ['@*:example.com']}]",
         "[{effect: allow, permissions: [usee], users: ['@*:example.com']}]",
+        // Malformed tool permissions
+        "[{effect: allow, permissions: ['tool:*'], users: ['@*:example.com']}]",
+        "[{effect: allow, permissions: ['tool:'], users: ['@*:example.com']}]",
         // No permissions or users
         "[{effect: allow, permissions: [], users: ['@*:example.com']}]",
         "[{effect: allow, permissions: [use], users: []}]",
@@ -260,4 +267,17 @@ fn invalid_initial_access_rules_are_rejected() {
             serde_yaml_ng::from_str(&format!("access_rules: {rules}"));
         assert!(result.is_err(), "{rules}");
     }
+}
+
+#[test]
+fn initial_access_rules_with_unknown_tools_only_warn() {
+    // Initial rules are validated on every start, and a later version may remove a tool they name.
+    let config = initial_global_config(
+        "access_rules: [{effect: deny, permissions: ['tool:removed-tool'], users: ['@*:example.com']}]",
+    );
+
+    assert_eq!(config.unknown_tool_permissions(), ["tool:removed-tool"]);
+    config
+        .validate()
+        .expect("unknown tools should not block startup");
 }
