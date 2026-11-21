@@ -374,13 +374,13 @@ impl Messaging {
 
         tracing::info!(?controller_type, "Determined controller");
 
-        // In rooms preferring replies, in-room replies (which carry a synthetic thread info) get a main-timeline receipt.
-        let receipt_thread =
-            if is_reply_style && !matches!(event.content.relates_to, Some(Relation::Thread(_))) {
-                ReceiptThread::Main
-            } else {
-                interaction_context.thread_info.clone().into()
-            };
+        // The receipt goes to the thread the event is actually in.
+        // We don't derive it from `interaction_context.thread_info`, because in-room replies carry a synthetic one
+        // (rooted at the replied-to event), although they are part of the main timeline.
+        let receipt_thread = match &event.content.relates_to {
+            Some(Relation::Thread(thread)) => ReceiptThread::Thread(thread.event_id.clone()),
+            _ => ReceiptThread::Main,
+        };
 
         let _ = room
             .send_single_receipt(ReceiptType::Read, receipt_thread, event.event_id.clone())
