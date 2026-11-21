@@ -87,6 +87,9 @@ pub struct PreparedConversation {
 /// Context is kept free for tools (`params.reserved_context_tokens`) only when tools are offered.
 /// When even the latest message wouldn't fit next to that, the tools are dropped from `params`
 /// (the model answers without them), rather than the message.
+///
+/// Images and files the bot posted are sent as the user's (see [`media_as_user_content`]), after trimming:
+/// trimming starts the kept messages at a user's turn, which such media isn't (and some providers drop media).
 pub fn prepare_conversation(
     params: &mut TextGenerationParams,
     agent_prompt: Option<String>,
@@ -114,7 +117,7 @@ pub fn prepare_conversation(
         return PreparedConversation {
             prompt_text,
             prompt_message,
-            messages,
+            messages: media_as_user_content(messages),
         };
     }
 
@@ -159,15 +162,37 @@ pub fn prepare_conversation(
         return PreparedConversation {
             prompt_text,
             prompt_message,
-            messages,
+            messages: media_as_user_content(messages),
         };
     }
 
     PreparedConversation {
         prompt_text,
         prompt_message,
-        messages: trimmed,
+        messages: media_as_user_content(trimmed),
     }
+}
+
+/// Turns images and files the bot posted (like images it created) into user content.
+///
+/// Providers only accept text from the assistant (OpenAI and Anthropic reject images in assistant turns),
+/// so a conversation with an image the bot posted would fail otherwise.
+fn media_as_user_content(messages: Vec<Message>) -> Vec<Message> {
+    messages
+        .into_iter()
+        .map(|mut message| {
+            if message.author == Author::Assistant
+                && matches!(
+                    message.content,
+                    MessageContent::Image(_) | MessageContent::File(_)
+                )
+            {
+                message.author = Author::User;
+            }
+
+            message
+        })
+        .collect()
 }
 
 impl TextGenerationResult {
@@ -248,6 +273,93 @@ mod tests {
         // The prompt no longer mentions tools.
         assert_eq!(prepared.prompt_text, "");
         assert!(prepared.prompt_message.is_none());
+    }
+
+    /// An image or file the bot posted.
+    fn bot_media(file: bool) -> Message {
+        use crate::conversation::llm::{FileDetails, ImageDetails};
+        use mxlink::matrix_sdk::ruma::OwnedMxcUri;
+        use mxlink::matrix_sdk::ruma::events::room::message::{
+            FileMessageEventContent, ImageMessageEventContent,
+        };
+
+        let source = OwnedMxcUri::from("mxc://example.com/abc");
+
+        let content = if file {
+            MessageContent::File(FileDetails::new(
+                FileMessageEventContent::plain("notes.pdf".to_owned(), source),
+                mxlink::mime::APPLICATION_PDF,
+                vec![1, 2, 3],
+            ))
+        } else {
+            MessageContent::Image(ImageDetails::new(
+                ImageMessageEventContent::plain("generated-image.png".to_owned(), source),
+                mxlink::mime::IMAGE_PNG,
+                vec![1, 2, 3],
+            ))
+        };
+
+        Message {
+            author: Author::Assistant,
+            sender_id: None,
+            content,
+            timestamp: chrono::Utc::now(),
+        }
+    }
+
+    fn authors(params: &mut TextGenerationParams, messages: Vec<Message>) -> Vec<Author> {
+        prepare_conversation(
+            params,
+            None,
+            messages,
+            TokenEstimate::Approximate,
+            100,
+            1000,
+        )
+        .messages
+        .into_iter()
+        .map(|message| message.author)
+        .collect()
+    }
+
+    #[test]
+    fn media_the_bot_posted_is_sent_as_user_content() {
+        let bot_text = Message {
+            author: Author::Assistant,
+            ..message(1)
+        };
+
+        for file in [false, true] {
+            for context_management_enabled in [false, true] {
+                let mut params = TextGenerationParams {
+                    context_management_enabled,
+                    ..Default::default()
+                };
+
+                assert_eq!(
+                    authors(
+                        &mut params,
+                        vec![message(1), bot_text.clone(), bot_media(file)]
+                    ),
+                    [Author::User, Author::Assistant, Author::User]
+                );
+            }
+
+            // When the message which started a turn doesn't fit, the bot's media doesn't start the kept messages
+            // (providers which can't take it would drop it, leaving the bot's reply first).
+            let mut params = TextGenerationParams {
+                context_management_enabled: true,
+                ..Default::default()
+            };
+
+            assert_eq!(
+                authors(
+                    &mut params,
+                    vec![message(900), bot_media(file), bot_text.clone(), message(1)]
+                ),
+                [Author::User]
+            );
+        }
     }
 
     fn tool() -> ToolDefinition {
