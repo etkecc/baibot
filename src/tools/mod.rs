@@ -81,22 +81,8 @@ impl ToolResult {
 ///
 /// Each provider adapter stores its own type and gets it back with [`Self::into_inner`].
 #[derive(Clone)]
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "provider adapters use this once they support function calling"
-    )
-)]
 pub struct ProviderState(Arc<dyn Any + Send + Sync>);
 
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "provider adapters use this once they support function calling"
-    )
-)]
 impl ProviderState {
     pub fn new<T: Any + Send + Sync>(state: T) -> Self {
         Self(Arc::new(state))
@@ -121,13 +107,6 @@ impl std::fmt::Debug for ProviderState {
 
 /// What a provider needs to continue a turn after the bot ran the tools the model called.
 #[derive(Clone, Debug)]
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "provider adapters use this once they support function calling"
-    )
-)]
 pub struct ToolContinuation {
     pub state: ProviderState,
 

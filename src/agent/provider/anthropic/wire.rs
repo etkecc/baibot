@@ -2,10 +2,10 @@
 //! uses. Request types are `Serialize`-only and response types are `Deserialize`-only, as in
 //! `venice/wire.rs`.
 //!
-//! Response content blocks are kept as raw JSON, so a paused turn (`pause_turn`) can be sent back
-//! unchanged. They are read through `ResponseContentBlock`, where blocks other than `text`
-//! (`thinking`, server tool blocks, ...) become `Other`, so a new block type never fails the whole
-//! response.
+//! Response content blocks are kept as raw JSON, so a paused turn (`pause_turn`) or a turn with tool
+//! calls can be sent back unchanged. They are read through `ResponseContentBlock`, where blocks other
+//! than `text` and `tool_use` (`thinking`, server tool blocks, ...) become `Other`, so a new block type
+//! never fails the whole response.
 
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 /// This version rejects `temperature`, `top_p` and `top_k` on every model, so none are sent.
 pub const API_VERSION: &str = "2026-10-21";
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct MessagesRequest {
     pub model: String,
 
@@ -34,33 +34,45 @@ pub struct MessagesRequest {
     pub container: Option<String>,
 }
 
-/// A server tool, which Anthropic runs on its side (e.g. `web_search_20260209`).
-#[derive(Debug, Serialize)]
-pub struct Tool {
-    #[serde(rename = "type")]
-    pub kind: &'static str,
+#[derive(Clone, Debug, Serialize)]
+#[serde(untagged)]
+pub enum Tool {
+    /// A server tool, which Anthropic runs on its side (e.g. `web_search_20260209`).
+    Server {
+        #[serde(rename = "type")]
+        kind: &'static str,
 
-    pub name: &'static str,
+        name: &'static str,
 
-    /// The most times the model may use this tool in one request.
-    pub max_uses: u32,
+        /// The most times the model may use this tool in one request.
+        max_uses: u32,
+    },
+
+    /// A client tool (function), which the bot runs.
+    Client {
+        name: String,
+
+        description: String,
+
+        input_schema: serde_json::Value,
+    },
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Message {
     pub role: Role,
 
     pub content: Vec<ContentBlock>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Role {
     User,
     Assistant,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ContentBlock {
     Text {
@@ -70,12 +82,19 @@ pub enum ContentBlock {
         source: ImageSource,
     },
 
-    /// A response block sent back unchanged, to continue a paused turn.
+    /// The result of a client tool call (`tool_use`).
+    ToolResult {
+        tool_use_id: String,
+        content: String,
+        is_error: bool,
+    },
+
+    /// A response block sent back unchanged, to continue a paused turn or one with tool calls.
     #[serde(untagged)]
     Raw(serde_json::Value),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ImageSource {
     Base64 { media_type: String, data: String },
@@ -105,6 +124,13 @@ pub enum ResponseContentBlock {
 
         #[serde(default)]
         citations: Option<Vec<Citation>>,
+    },
+
+    /// A client tool call, which the bot runs. (Server tool calls are `server_tool_use` blocks.)
+    ToolUse {
+        id: String,
+        name: String,
+        input: serde_json::Value,
     },
 
     #[serde(other)]

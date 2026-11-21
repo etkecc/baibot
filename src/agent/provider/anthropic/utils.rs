@@ -1,8 +1,11 @@
-use super::wire::{ContentBlock, ErrorResponse, ImageSource, Message, ResponseContentBlock, Role};
+use super::wire::{
+    ContentBlock, ErrorResponse, ImageSource, Message, ResponseContentBlock, Role, Tool,
+};
 
 use crate::conversation::llm::{
     Author as LLMAuthor, Message as LLMMessage, MessageContent as LLMMessageContent,
 };
+use crate::tools::{ToolCall, ToolDefinition, ToolResult};
 use crate::utils::text::render_sources_list;
 
 pub(super) fn create_anthropic_messages(llm_messages: Vec<LLMMessage>) -> Vec<Message> {
@@ -42,6 +45,48 @@ pub(super) fn create_anthropic_messages(llm_messages: Vec<LLMMessage>) -> Vec<Me
     messages
 }
 
+/// Turns the functions offered to the model into client tools.
+pub(super) fn client_tools(definitions: &[ToolDefinition]) -> Vec<Tool> {
+    definitions
+        .iter()
+        .map(|definition| Tool::Client {
+            name: definition.name.clone(),
+            description: definition.description.clone(),
+            input_schema: definition.parameters.clone(),
+        })
+        .collect()
+}
+
+/// The client tool calls (`tool_use` blocks) in the response content, in order.
+pub(super) fn tool_calls(content: &[serde_json::Value]) -> Vec<ToolCall> {
+    content
+        .iter()
+        .filter_map(|block| match ResponseContentBlock::from_value(block) {
+            ResponseContentBlock::ToolUse { id, name, input } => Some(ToolCall {
+                id,
+                name,
+                arguments: input.to_string(),
+            }),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The user message which answers the tool calls of the previous (assistant) message.
+pub(super) fn tool_results_message(results: Vec<ToolResult>) -> Message {
+    Message {
+        role: Role::User,
+        content: results
+            .into_iter()
+            .map(|result| ContentBlock::ToolResult {
+                tool_use_id: result.call_id,
+                content: result.content,
+                is_error: result.is_error,
+            })
+            .collect(),
+    }
+}
+
 /// Turns the response content blocks into the reply text, or an error if there is none.
 ///
 /// Web search splits a sentence into several text blocks around its citations, so adjacent text
@@ -53,6 +98,18 @@ pub(super) fn response_text(
     content: &[serde_json::Value],
     stop_reason: Option<&str>,
 ) -> anyhow::Result<String> {
+    // A tool call cut off by the response limit can't run, and the text before it (e.g. "Let me check") isn't an answer.
+    // Checked by type alone, since a cut-off block may lack its fields.
+    if stop_reason == Some("max_tokens")
+        && content
+            .iter()
+            .any(|block| block.get("type").and_then(|kind| kind.as_str()) == Some("tool_use"))
+    {
+        return Err(anyhow::anyhow!(
+            "The model used up all response tokens (`max_response_tokens`) while calling a tool"
+        ));
+    }
+
     let mut text = String::new();
     let mut sources: Vec<(String, String)> = vec![];
     let mut new_paragraph = false;
@@ -189,6 +246,26 @@ mod tests {
     }
 
     #[test]
+    fn a_tool_call_cut_off_by_the_response_limit_is_an_error() {
+        let response = parse(
+            r#"{
+                "content": [
+                    {"type": "text", "text": "Let me check the room."},
+                    {"type": "tool_use", "id": "toolu_01", "name": "room_history"}
+                ],
+                "stop_reason": "max_tokens"
+            }"#,
+        );
+
+        assert!(
+            text_of(response)
+                .unwrap_err()
+                .to_string()
+                .contains("while calling a tool")
+        );
+    }
+
+    #[test]
     fn web_search_reply_joins_split_text_and_lists_sources() {
         // Shaped like the web search example in Anthropic's docs.
         let content = json!([
@@ -238,6 +315,85 @@ mod tests {
         assert_eq!(
             response_text(content.as_array().unwrap(), None).unwrap(),
             "Fetched."
+        );
+    }
+
+    #[test]
+    fn functions_become_client_tools_next_to_server_tools() {
+        let tools = [
+            Tool::Server {
+                kind: "web_search_20260209",
+                name: "web_search",
+                max_uses: 5,
+            },
+            client_tools(&[ToolDefinition {
+                name: "room_history".to_owned(),
+                description: "Reads the room's recent messages.".to_owned(),
+                parameters: json!({"type": "object", "properties": {"limit": {"type": "integer"}}}),
+            }])
+            .remove(0),
+        ];
+
+        assert_eq!(
+            serde_json::to_value(tools).unwrap(),
+            json!([
+                {"type": "web_search_20260209", "name": "web_search", "max_uses": 5},
+                {"name": "room_history", "description": "Reads the room's recent messages.", "input_schema": {"type": "object", "properties": {"limit": {"type": "integer"}}}}
+            ])
+        );
+    }
+
+    #[test]
+    fn only_client_tool_calls_are_returned() {
+        // Shaped like the tool use example in Anthropic's docs, with a server tool call too.
+        let response = parse(
+            r#"{
+                "content": [
+                    {"type": "text", "text": "Let me check the room."},
+                    {"type": "server_tool_use", "id": "srvtoolu_1", "name": "web_search", "input": {"query": "x"}},
+                    {"type": "tool_use", "id": "toolu_01", "name": "room_history", "input": {"limit": 5}},
+                    {"type": "tool_use", "id": "toolu_02", "name": "room_history", "input": {}}
+                ],
+                "stop_reason": "tool_use"
+            }"#,
+        );
+
+        assert_eq!(
+            tool_calls(&response.content),
+            [
+                ToolCall {
+                    id: "toolu_01".to_owned(),
+                    name: "room_history".to_owned(),
+                    arguments: r#"{"limit":5}"#.to_owned(),
+                },
+                ToolCall {
+                    id: "toolu_02".to_owned(),
+                    name: "room_history".to_owned(),
+                    arguments: "{}".to_owned(),
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn tool_results_answer_the_calls_in_a_user_message() {
+        let call = |id: &str| ToolCall {
+            id: id.to_owned(),
+            name: "room_history".to_owned(),
+            arguments: "{}".to_owned(),
+        };
+
+        let message = tool_results_message(vec![
+            ToolResult::success(&call("toolu_01"), "Alice: hi".to_owned()),
+            ToolResult::error(&call("toolu_02"), "Timed out"),
+        ]);
+
+        assert_eq!(
+            serde_json::to_value(&message).unwrap(),
+            json!({"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": "toolu_01", "content": "Alice: hi", "is_error": false},
+                {"type": "tool_result", "tool_use_id": "toolu_02", "content": "Timed out", "is_error": true}
+            ]})
         );
     }
 

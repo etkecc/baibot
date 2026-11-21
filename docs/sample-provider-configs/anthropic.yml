@@ -9,3 +9,6 @@ text_generation:
   tools:
     web_search: false
     web_fetch: false
+  # Lets the model call the bot's own tools (e.g. reading the room's recent messages).
+  # Turn it off for models which don't support function calling.
+  bot_tools: true

@@ -59,13 +59,6 @@ pub enum TextGenerationResult {
     /// The model wants the bot to run some tools before it answers.
     ///
     /// Every call needs a result (see [`ToolContinuation`]), which is sent back along with `continuation`.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "provider adapters construct this once they support function calling"
-        )
-    )]
     ToolCalls {
         /// Text the model wrote before calling the tools, if any.
         text: Option<String>,

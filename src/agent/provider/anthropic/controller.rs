@@ -15,8 +15,9 @@ use crate::conversation::llm::{
     MessageContent as LLMMessageContent, TokenEstimate, shorten_messages_list_to_context_size,
 };
 use crate::strings;
+use crate::tools::ProviderState;
 
-use super::config::Config;
+use super::config::{Config, TextGenerationConfig};
 use super::wire::{
     API_VERSION, ContentBlock, Message, MessagesRequest, MessagesResponse, Role, Tool,
 };
@@ -143,7 +144,7 @@ impl ControllerTrait for Controller {
     async fn generate_text(
         &self,
         conversation: LLMConversation,
-        params: TextGenerationParams,
+        mut params: TextGenerationParams,
     ) -> anyhow::Result<TextGenerationResult> {
         let Some(text_generation_config) = &self.config.text_generation else {
             return Err(anyhow::anyhow!(
@@ -153,82 +154,29 @@ impl ControllerTrait for Controller {
             ));
         };
 
-        let prompt_text = params.system_prompt(self.text_generation_prompt());
+        if !text_generation_config.bot_tools {
+            params.tools.clear();
+        }
 
-        let prompt_message = if prompt_text.is_empty() {
-            None
-        } else {
-            Some(LLMMessage {
-                author: LLMAuthor::Prompt,
-                sender_id: None,
-                content: LLMMessageContent::Text(prompt_text),
-                timestamp: chrono::Utc::now(),
-            })
+        let mut request = match params.continuation.take() {
+            // The request so far already has everything else (system prompt, tools, the conversation and
+            // the model's tool calls), so only the results are added.
+            Some(continuation) => {
+                let mut request: MessagesRequest = continuation.state.into_inner()?;
+                request
+                    .messages
+                    .push(super::utils::tool_results_message(continuation.results));
+
+                tracing::trace!(
+                    model = format!("{:?}", request.model),
+                    results_count = request.messages.last().map_or(0, |m| m.content.len()),
+                    "Continuing an Anthropic turn with tool results"
+                );
+
+                request
+            }
+            None => create_request(text_generation_config, conversation, &params),
         };
-
-        let mut conversation_messages = conversation.messages;
-
-        if params.context_management_enabled {
-            tracing::trace!("Shortening messages list to context size");
-
-            conversation_messages = shorten_messages_list_to_context_size(
-                TokenEstimate::Approximate,
-                &prompt_message,
-                conversation_messages,
-                Some(text_generation_config.max_response_tokens + params.reserved_context_tokens),
-                text_generation_config.max_context_tokens,
-            );
-
-            tracing::trace!("Finished shortening messages list to context size");
-        };
-
-        let messages_count = conversation_messages.len();
-
-        // The Messages API no longer accepts a temperature, so a room's override can't apply.
-        if params.temperature_override.is_some() {
-            tracing::debug!("Ignoring the temperature override, which Anthropic does not support");
-        }
-
-        let system = prompt_message.and_then(|message| match message.content {
-            LLMMessageContent::Text(text) => Some(text),
-            _ => None,
-        });
-
-        // The `_20260209` versions filter results with code execution before they reach the
-        // context. They need Claude Opus 4.6 / Sonnet 4.6 or later.
-        let mut tools = vec![];
-        if text_generation_config.tools.web_search {
-            tools.push(Tool {
-                kind: "web_search_20260209",
-                name: "web_search",
-                max_uses: SERVER_TOOL_MAX_USES,
-            });
-        }
-        if text_generation_config.tools.web_fetch {
-            tools.push(Tool {
-                kind: "web_fetch_20260209",
-                name: "web_fetch",
-                max_uses: SERVER_TOOL_MAX_USES,
-            });
-        }
-
-        let mut request = MessagesRequest {
-            model: text_generation_config.model_id.clone(),
-            max_tokens: text_generation_config.max_response_tokens,
-            messages: super::utils::create_anthropic_messages(conversation_messages),
-            system,
-            tools,
-            container: None,
-        };
-
-        if let Ok(request_as_json) = serde_json::to_string(&request) {
-            tracing::trace!(
-                model = format!("{:?}", request.model),
-                ?messages_count,
-                request = request_as_json,
-                "Sending Anthropic create message API request"
-            );
-        }
 
         let mut content = vec![];
         let mut stop_reason;
@@ -241,6 +189,11 @@ impl ControllerTrait for Controller {
             content.extend(response.content);
             stop_reason = response.stop_reason;
 
+            // Server tools (e.g. web search) may run in a container, which the rest of the turn reuses.
+            if let Some(container) = response.container {
+                request.container = Some(container.id);
+            }
+
             if stop_reason.as_deref() != Some("pause_turn")
                 || continuation == MAX_PAUSE_TURN_CONTINUATIONS
             {
@@ -249,25 +202,39 @@ impl ControllerTrait for Controller {
             continuation += 1;
 
             // Server tools (e.g. many web searches) hit the API's per-request limit. Sending the
-            // partial turn back as-is lets the model continue it, in the same container.
-            if let Some(container) = response.container {
-                request.container = Some(container.id);
-            }
+            // partial turn back as-is lets the model continue it.
             if continuation > 1 {
                 request.messages.pop();
             }
-            request.messages.push(Message {
-                role: Role::Assistant,
-                content: content.iter().cloned().map(ContentBlock::Raw).collect(),
-            });
+            request.messages.push(assistant_message(&content));
 
             tracing::debug!(continuation, "Continuing a paused Anthropic turn");
         }
 
-        Ok(TextGenerationResult::text(super::utils::response_text(
-            &content,
-            stop_reason.as_deref(),
-        )?))
+        let calls = if stop_reason.as_deref() == Some("tool_use") && !params.tools.is_empty() {
+            super::utils::tool_calls(&content)
+        } else {
+            vec![]
+        };
+
+        if calls.is_empty() {
+            return Ok(TextGenerationResult::text(super::utils::response_text(
+                &content,
+                stop_reason.as_deref(),
+            )?));
+        }
+
+        // The whole turn (replacing the partial one sent back when it paused) is sent back along with the results.
+        if continuation > 0 {
+            request.messages.pop();
+        }
+        request.messages.push(assistant_message(&content));
+
+        Ok(TextGenerationResult::ToolCalls {
+            text: super::utils::response_text(&content, stop_reason.as_deref()).ok(),
+            calls,
+            continuation: ProviderState::new(request),
+        })
     }
 
     async fn speech_to_text(
@@ -345,5 +312,100 @@ impl ControllerTrait for Controller {
 
     fn text_to_speech_speed(&self) -> Option<f32> {
         None
+    }
+}
+
+/// Builds the request for the first round of a turn.
+fn create_request(
+    config: &TextGenerationConfig,
+    conversation: LLMConversation,
+    params: &TextGenerationParams,
+) -> MessagesRequest {
+    let prompt_text = params.system_prompt(config.prompt.clone());
+
+    let prompt_message = if prompt_text.is_empty() {
+        None
+    } else {
+        Some(LLMMessage {
+            author: LLMAuthor::Prompt,
+            sender_id: None,
+            content: LLMMessageContent::Text(prompt_text),
+            timestamp: chrono::Utc::now(),
+        })
+    };
+
+    let mut conversation_messages = conversation.messages;
+
+    if params.context_management_enabled {
+        tracing::trace!("Shortening messages list to context size");
+
+        conversation_messages = shorten_messages_list_to_context_size(
+            TokenEstimate::Approximate,
+            &prompt_message,
+            conversation_messages,
+            Some(config.max_response_tokens + params.reserved_context_tokens),
+            config.max_context_tokens,
+        );
+
+        tracing::trace!("Finished shortening messages list to context size");
+    };
+
+    let messages_count = conversation_messages.len();
+
+    // The Messages API no longer accepts a temperature, so a room's override can't apply.
+    if params.temperature_override.is_some() {
+        tracing::debug!("Ignoring the temperature override, which Anthropic does not support");
+    }
+
+    let system = prompt_message.and_then(|message| match message.content {
+        LLMMessageContent::Text(text) => Some(text),
+        _ => None,
+    });
+
+    // The `_20260209` versions filter results with code execution before they reach the
+    // context. They need Claude Opus 4.6 / Sonnet 4.6 or later.
+    let mut tools = vec![];
+    if config.tools.web_search {
+        tools.push(Tool::Server {
+            kind: "web_search_20260209",
+            name: "web_search",
+            max_uses: SERVER_TOOL_MAX_USES,
+        });
+    }
+    if config.tools.web_fetch {
+        tools.push(Tool::Server {
+            kind: "web_fetch_20260209",
+            name: "web_fetch",
+            max_uses: SERVER_TOOL_MAX_USES,
+        });
+    }
+    tools.extend(super::utils::client_tools(&params.tools));
+
+    let request = MessagesRequest {
+        model: config.model_id.clone(),
+        max_tokens: config.max_response_tokens,
+        messages: super::utils::create_anthropic_messages(conversation_messages),
+        system,
+        tools,
+        container: None,
+    };
+
+    if let Ok(request_as_json) = serde_json::to_string(&request) {
+        tracing::trace!(
+            model = format!("{:?}", request.model),
+            ?messages_count,
+            request = request_as_json,
+            "Sending Anthropic create message API request"
+        );
+    }
+
+    request
+}
+
+/// The model's (partial) turn, sent back as-is.
+fn assistant_message(content: &[serde_json::Value]) -> Message {
+    Message {
+        role: Role::Assistant,
+        content: content.iter().cloned().map(ContentBlock::Raw).collect(),
     }
 }
