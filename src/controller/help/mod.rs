@@ -65,6 +65,17 @@ pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Resu
     ));
     message.push_str("\n\n");
 
+    // Managing rooms remotely
+    message.push_str(&format!(
+        "## {}",
+        strings::help::remote::remote_management_heading()
+    ));
+    message.push_str("\n\n");
+    message.push_str(&strings::help::remote::remote_management(
+        bot.command_prefix(),
+    ));
+    message.push_str("\n\n");
+
     // Usage
     message.push_str(&format!("## {}", strings::help::usage::heading()));
     message.push_str("\n\n");

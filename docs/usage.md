@@ -114,3 +114,13 @@ The difference from [creating images](#️-creating-images) is that the bot will
 - post the image directly to the room (as a reply to your message), without starting a threaded conversation
 
 For [OpenAI](./providers.md#openai) agents, stickers use `gpt-image-1-mini`, and an explicitly configured `high`, `xhigh`, or `max` quality is reduced to `low`. These choices keep sticker generation inexpensive.
+
+
+### 🛰️ Managing rooms remotely
+
+Rooms can also be managed from any other room where you can use the bot (for example, a private room with the bot), using `config`, `agent` and `access` commands. Replies are sent to the room the command was sent in.
+
+This works for rooms you are a member of, with the permissions you have there. Administrators can manage any room the bot is in.
+
+- **List** the rooms you can manage: `!bai room list`
+- **Run** a command in another room: `!bai in ROOM_ID_OR_ALIAS COMMAND`, for example `!bai in #room:example.com config status` or `!bai in !abc123:example.com access room allow speech-to-text @*:bridge.example.com`

@@ -11,7 +11,6 @@ pub async fn handle(bot: &Bot, message_context: &MessageContext) -> anyhow::Resu
         build_section_rules(command_prefix, bot.homeserver_name(), message_context),
         build_section_joining_rooms(),
         build_section_administrators(bot.admin_patterns()),
-        build_section_remote_management(command_prefix),
     ];
 
     bot.messaging()
@@ -100,13 +99,5 @@ fn build_section_administrators(admin_patterns: &[String]) -> String {
         strings::help::access::administrators_intro(),
         strings::help::access::administrators_now_match_patterns(admin_patterns),
         strings::help::access::administrators_outro(),
-    )
-}
-
-fn build_section_remote_management(command_prefix: &str) -> String {
-    format!(
-        "### {}\n\n{}",
-        strings::help::access::remote_management_heading(),
-        strings::help::access::remote_management(command_prefix),
     )
 }

@@ -2,6 +2,7 @@ pub mod access;
 pub mod agent;
 pub mod cfg;
 pub mod provider;
+pub mod remote;
 pub mod usage;
 
 pub fn heading_introduction() -> String {

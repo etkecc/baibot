@@ -101,13 +101,3 @@ Administrators can **do anything**, in any room, regardless of rules. Only they 
 The bot can be administrated by users that match some [statically](./configuration/README.md#static-configuration) configured [Matrix user ID](https://spec.matrix.org/v1.11/#users) patterns.
 
 Administrators cannot be changed without adjusting the bot's configuration on the server.
-
-
-### 🛰️ Managing rooms remotely
-
-Rooms can also be managed from any other room (for example, a private room with the bot), using `config`, `agent` and `access` commands. Replies are sent to the room the command was sent in.
-
-This works for rooms you are a member of, with the permissions you have there. Administrators can manage any room the bot is in.
-
-- **List** the rooms you can manage: `!bai room list`
-- **Run** a command in another room: `!bai in ROOM_ID_OR_ALIAS COMMAND`, for example `!bai in #room:example.com config status` or `!bai in !abc123:example.com access room allow speech-to-text @*:bridge.example.com`

@@ -98,16 +98,6 @@ pub fn administrators_outro() -> String {
         .to_string()
 }
 
-pub fn remote_management_heading() -> String {
-    "🛰️ Managing rooms remotely".to_owned()
-}
-
-pub fn remote_management(command_prefix: &str) -> String {
-    format!(
-        "Rooms can also be managed from any other room (for example, a private room with the bot), with `config`, `agent` and `access` commands. This works for rooms you are a member of (administrators: any room the bot is in), with the permissions you have there:\n- **List** the rooms you can manage: `{command_prefix} room list`\n- **Run** a command in another room: `{command_prefix} in ROOM_ID_OR_ALIAS COMMAND`, for example `{command_prefix} in #room:example.com config status`"
-    )
-}
-
 pub fn agent_management_security_warning() -> String {
     "Letting regular users create agents (🤖 `manage-agents`) which contact arbitrary network services **may be a security issue**.".to_string()
 }
