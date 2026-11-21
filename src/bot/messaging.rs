@@ -247,6 +247,17 @@ impl Messaging {
         matrix_link_messaging.on_actionable_room_message(|event, room| async move {
             this.on_actionable_message(event, room).await
         });
+
+        // Cached events don't reflect later edits (servers bundle the latest edit with the event when it's fetched),
+        // so we drop edited events from the cache. This includes edits sent by the bot itself (e.g. of "thinking…" notices).
+        let room_event_fetcher = self.bot.room_event_fetcher();
+        self.bot.matrix_link().client().add_event_handler(
+            move |event: OriginalSyncRoomMessageEvent, room: Room| async move {
+                if let Some(Relation::Replacement(replacement)) = &event.content.relates_to {
+                    room_event_fetcher.forget(room.room_id(), &replacement.event_id);
+                }
+            },
+        );
     }
 
     #[tracing::instrument(name = "bot_on_actionable_message", skip_all, fields(room_id = room.room_id().as_str(), event_id = event.event_id.as_str()))]

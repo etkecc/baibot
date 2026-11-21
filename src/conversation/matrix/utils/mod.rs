@@ -8,8 +8,7 @@ use mxlink::matrix_sdk::{
     Room,
     deserialized_responses::TimelineEvent,
     ruma::events::{
-        AnyMessageLikeEventContent, AnySyncMessageLikeEvent, AnySyncTimelineEvent,
-        SyncMessageLikeEvent,
+        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
         relation::Thread,
         room::message::{
             MessageType, OriginalSyncRoomMessageEvent, Relation, RoomMessageEventContent,
@@ -209,36 +208,73 @@ fn is_message_from_allowed_sender(
     matrix_message.sender_id == *bot_user_id || sender_filter.allows(&matrix_message.sender_id)
 }
 
-pub async fn convert_matrix_native_event_to_matrix_message(
-    matrix_link: &MatrixLink,
-    matrix_native_event: &AnySyncMessageLikeEvent,
-) -> Result<Option<MatrixMessage>, mxlink::matrix_sdk::Error> {
-    let Some(content) = matrix_native_event.original_content() else {
-        // Redacted message
-        return Ok(None);
-    };
+/// Returns the message's content with the latest edit (if any) applied, and whether an edit was applied.
+///
+/// Edits are `m.replace` events, which we don't fetch separately.
+/// Instead, we rely on the server bundling the latest one in the original event's `unsigned` data (Matrix v1.7+).
+/// Only the new message type and mentions are taken from the edit, so the original's relations (thread, reply) remain.
+///
+/// This matters for messages edited after being sent, such as the bot's "thinking…" notices,
+/// which only become the actual answer via an edit.
+fn latest_room_message_content(
+    event: &OriginalSyncRoomMessageEvent,
+) -> (RoomMessageEventContent, bool) {
+    let mut content = event.content.clone();
 
-    let AnyMessageLikeEventContent::RoomMessage(room_message) = content else {
-        // Some state event, etc.
-        return Ok(None);
-    };
+    if let Some(replacement_event) = &event.unsigned.relations.replace
+        // Only the original sender may edit a message.
+        && replacement_event.sender == event.sender
+        && let Some(Relation::Replacement(replacement)) = &replacement_event.content.relates_to
+        && replacement.event_id == event.event_id
+    {
+        content.apply_replacement(replacement.new_content.clone());
+        return (content, true);
+    }
 
+    (content, false)
+}
+
+/// Returns the message's text and whether it's a notice, or `None` for unsupported message types.
+///
+/// The fallback for rich replies is stripped from the original body of replies.
+/// Edited content (`m.new_content`) carries no such fallback, so it's left as is.
+fn message_text(room_message: &RoomMessageEventContent, is_edited: bool) -> Option<(String, bool)> {
     let (text, is_notice) = match &room_message.msgtype {
         MessageType::Text(text_content) => (text_content.body.clone(), false),
         MessageType::Notice(notice_content) => (notice_content.body.clone(), true),
         MessageType::Image(image_content) => (image_content.body.clone(), false),
         MessageType::File(file_content) => (file_content.body.clone(), false),
-        _ => return Ok(None),
+        _ => return None,
     };
 
     let is_reply = matches!(room_message.relates_to, Some(Relation::Reply { .. }));
 
-    let text = if is_reply {
+    let text = if is_reply && !is_edited {
         // For regular replies, we need to strip the fallback-for-rich replies part.
         // See: https://spec.matrix.org/v1.11/client-server-api/#fallbacks-for-rich-replies
         remove_plain_reply_fallback(&text).to_owned()
     } else {
         text
+    };
+
+    Some((text, is_notice))
+}
+
+pub async fn convert_matrix_native_event_to_matrix_message(
+    matrix_link: &MatrixLink,
+    matrix_native_event: &AnySyncMessageLikeEvent,
+) -> Result<Option<MatrixMessage>, mxlink::matrix_sdk::Error> {
+    let AnySyncMessageLikeEvent::RoomMessage(SyncMessageLikeEvent::Original(original)) =
+        matrix_native_event
+    else {
+        // Redacted message, some other event type, etc.
+        return Ok(None);
+    };
+
+    let (room_message, is_edited) = latest_room_message_content(original);
+
+    let Some((text, is_notice)) = message_text(&room_message, is_edited) else {
+        return Ok(None);
     };
 
     let timestamp = chrono::DateTime::<chrono::Utc>::from(

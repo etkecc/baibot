@@ -101,3 +101,21 @@ async fn failed_fetches_are_not_cached() {
     assert_eq!(body_of(&event), "found");
     assert_eq!(fetch_count.load(Ordering::SeqCst), 1);
 }
+
+#[tokio::test]
+async fn forgotten_events_are_fetched_again() {
+    let fetcher = RoomEventFetcher::new(Some(10));
+    let fetch_count = AtomicUsize::new(0);
+
+    let room_id = OwnedRoomId::try_from("!a:example.com").unwrap();
+    let event_id = OwnedEventId::try_from("$event:example.com").unwrap();
+
+    let event = fetch(&fetcher, &room_id, &event_id, "original", &fetch_count).await;
+    assert_eq!(body_of(&event), "original");
+
+    fetcher.forget(&room_id, &event_id);
+
+    let event = fetch(&fetcher, &room_id, &event_id, "edited", &fetch_count).await;
+    assert_eq!(body_of(&event), "edited");
+    assert_eq!(fetch_count.load(Ordering::SeqCst), 2);
+}

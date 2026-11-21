@@ -321,3 +321,98 @@ fn create_list_of_bot_user_prefixes_to_strip() {
         ]
     );
 }
+
+fn room_message_event_with_replacement(
+    replacement_sender: &str,
+    replaced_event_id: &str,
+) -> mxlink::matrix_sdk::ruma::events::room::message::OriginalSyncRoomMessageEvent {
+    serde_json::from_value(serde_json::json!({
+        "type": "m.room.message",
+        "event_id": "$original:example.com",
+        "sender": "@bot:example.com",
+        "origin_server_ts": 1,
+        "content": {
+            "msgtype": "m.text",
+            "body": "thinking…",
+            "m.relates_to": {
+                "rel_type": "m.thread",
+                "event_id": "$root:example.com",
+                "is_falling_back": true,
+                "m.in_reply_to": { "event_id": "$root:example.com" },
+            },
+        },
+        "unsigned": {
+            "m.relations": {
+                "m.replace": {
+                    "type": "m.room.message",
+                    "event_id": "$edit:example.com",
+                    "sender": replacement_sender,
+                    "origin_server_ts": 2,
+                    "content": {
+                        "msgtype": "m.text",
+                        "body": "* The answer",
+                        "m.new_content": { "msgtype": "m.text", "body": "The answer" },
+                        "m.relates_to": { "rel_type": "m.replace", "event_id": replaced_event_id },
+                    },
+                },
+            },
+        },
+    }))
+    .unwrap()
+}
+
+#[test]
+fn latest_room_message_content_applies_bundled_edit() {
+    let event = room_message_event_with_replacement("@bot:example.com", "$original:example.com");
+
+    let (content, is_edited) = super::latest_room_message_content(&event);
+
+    assert!(is_edited);
+    assert_eq!(content.body(), "The answer");
+    // The original's relations are kept.
+    assert_eq!(
+        content.thread().map(|thread| thread.event_id.as_str()),
+        Some("$root:example.com")
+    );
+}
+
+#[test]
+fn latest_room_message_content_ignores_invalid_edits() {
+    // Edits by another sender are ignored.
+    let event = room_message_event_with_replacement("@other:example.com", "$original:example.com");
+    let (content, is_edited) = super::latest_room_message_content(&event);
+    assert!(!is_edited);
+    assert_eq!(content.body(), "thinking…");
+
+    // Edits of another event are ignored.
+    let event = room_message_event_with_replacement("@bot:example.com", "$another:example.com");
+    let (content, is_edited) = super::latest_room_message_content(&event);
+    assert!(!is_edited);
+    assert_eq!(content.body(), "thinking…");
+}
+
+#[test]
+fn message_text_strips_reply_fallback_only_from_unedited_replies() {
+    let reply: mxlink::matrix_sdk::ruma::events::room::message::RoomMessageEventContent =
+        serde_json::from_value(serde_json::json!({
+            "msgtype": "m.text",
+            "body": "> <@alice:example.com> quoted text\n\nThe reply",
+            "m.relates_to": { "m.in_reply_to": { "event_id": "$parent:example.com" } },
+        }))
+        .unwrap();
+
+    // The original body of a reply may include a fallback, which is stripped.
+    assert_eq!(
+        super::message_text(&reply, false),
+        Some(("The reply".to_owned(), false))
+    );
+
+    // Edited content has no fallback, so a quote it starts with is kept.
+    assert_eq!(
+        super::message_text(&reply, true),
+        Some((
+            "> <@alice:example.com> quoted text\n\nThe reply".to_owned(),
+            false
+        ))
+    );
+}

@@ -5,7 +5,7 @@ use std::future::Future;
 
 use mxlink::matrix_sdk::Room;
 use mxlink::matrix_sdk::deserialized_responses::TimelineEvent;
-use mxlink::matrix_sdk::ruma::{OwnedEventId, OwnedRoomId};
+use mxlink::matrix_sdk::ruma::{EventId, OwnedEventId, OwnedRoomId, RoomId};
 
 use quick_cache::sync::Cache;
 
@@ -34,6 +34,16 @@ impl RoomEventFetcher {
             room.event(event_id, None)
         })
         .await
+    }
+
+    /// Removes the given event from the cache, so that it's fetched anew next time.
+    ///
+    /// Call this when an event changes (e.g. when it gets edited), because the cached copy
+    /// (including the latest edit bundled with it) would be outdated.
+    pub fn forget(&self, room_id: &RoomId, event_id: &EventId) {
+        if let Some(lru_cache) = &self.lru_cache {
+            lru_cache.remove(&(room_id.to_owned(), event_id.to_owned()));
+        }
     }
 
     async fn get_or_fetch<F, Fut, E>(
