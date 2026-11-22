@@ -202,7 +202,7 @@ This provider is just as featureful as the [OpenAI](#openai) provider, but is mo
 
 - 🆔 Identifier: `venice`
 - 🔗 Links: [🏠 Home page](https://venice.ai/chat?ref=kpXDe6), [👤 Sign up](https://venice.ai/chat?ref=kpXDe6), [📋 Models list](https://docs.venice.ai/models/overview)
-- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation) (incl. editing, via the native knob-rich `/image/generate` and `/image/edit` endpoints), [💬 text-generation](./features.md#-text-generation) (incl. vision, file inputs like PDF and DOCX, and prompt caching; native web search via the `venice_parameters` config), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
+- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation) (incl. editing, via the native knob-rich `/image/generate` and `/image/edit` endpoints), [💬 text-generation](./features.md#-text-generation) (incl. vision, file inputs like PDF and DOCX, prompt caching, and [🛠️ provider tools](./features.md#️-provider-tools) like web search), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local venice my-venice-agent`
   - create a global agent: `!bai agent create-global venice my-venice-agent`

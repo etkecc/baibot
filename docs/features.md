@@ -60,11 +60,21 @@ The [Anthropic provider](./providers.md#anthropic) supports these provider tools
 
 - [🌐 Web Fetch](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool) (`web_fetch`): allows the model to read web pages and PDFs from links that users post in the room or that web search finds
 
-These tools are **disabled by default** and need to be explicitly enabled in the agent's `text_generation.tools` configuration. See the [OpenAI sample configuration](https://github.com/etkecc/baibot/blob/c70387b0c38d8d0f30bba2179a2a21a3710dbeaf/docs/sample-provider-configs/openai.yml#L12-L15) and the [Anthropic sample configuration](./sample-provider-configs/anthropic.yml) for reference.
+The [Venice provider](./providers.md#venice) supports these provider tools:
 
-To enable tools on an existing dynamically-created agent, you need to [update the agent](./agents.md#updating-agents) to re-create it with the `text_generation.tools` section added and enable the tools you need
+- 🔍 Web Search (`enable_web_search`): allows the model to search the web for up-to-date information
 
-💡 **Note**: These tools run on the provider's infrastructure and may incur additional costs. Web search results include citations that are incorporated into the response (for Anthropic, as a list of sources at the end).
+- 🌐 Web Scraping (`enable_web_scraping`): allows the model to read web pages from links in the user's message
+
+- 🐦 X Search (`enable_x_search`): allows the model to search X (Twitter)
+
+Venice's tools are set in the agent's `text_generation.venice_parameters` configuration (see [Venice / Chat Completions / venice_parameters](https://docs.venice.ai/api-reference/endpoint/chat/completions#body-venice-parameters)). The [Venice sample configuration](./sample-provider-configs/venice.yml) sets web search to `auto` (the model decides) and leaves the others unset.
+
+The OpenAI and Anthropic tools are **disabled by default** and need to be explicitly enabled in the agent's `text_generation.tools` configuration. See the [OpenAI sample configuration](https://github.com/etkecc/baibot/blob/c70387b0c38d8d0f30bba2179a2a21a3710dbeaf/docs/sample-provider-configs/openai.yml#L12-L15) and the [Anthropic sample configuration](./sample-provider-configs/anthropic.yml) for reference.
+
+To enable tools on an existing dynamically-created agent, you need to [update the agent](./agents.md#updating-agents) to re-create it with the tools you need
+
+💡 **Note**: These tools run on the provider's infrastructure and may incur additional costs. Web search results include citations that are incorporated into the response (for Anthropic and Venice, as a list of sources at the end).
 
 💡 **Note**: The Anthropic tools need Claude Opus 4.6 / Sonnet 4.6 or a later model. They filter search and page results with code execution before the model reads them, but a single reply that searches or fetches several pages can still use tens of thousands of input tokens. Each tool may be used up to 5 times per request.
 
