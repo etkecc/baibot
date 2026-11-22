@@ -73,7 +73,7 @@ impl AgentProvider {
                 models_list_url: Some("https://docs.anthropic.com/en/docs/about-claude/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: true,
-                text_generation_supports_tools: true,
+                text_generation_supports_provider_tools: true,
             },
             Self::Groq => AgentProviderInfo {
                 id: Self::Groq.to_static_str(),
@@ -85,7 +85,7 @@ impl AgentProvider {
                 models_list_url: Some("https://console.groq.com/docs/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration, AgentPurpose::SpeechToText],
                 text_generation_supports_vision: false,
-                text_generation_supports_tools: false,
+                text_generation_supports_provider_tools: false,
             },
             Self::LocalAI => AgentProviderInfo {
                 id: Self::LocalAI.to_static_str(),
@@ -101,7 +101,7 @@ impl AgentProvider {
                     AgentPurpose::SpeechToText,
                 ],
                 text_generation_supports_vision: false,
-                text_generation_supports_tools: false,
+                text_generation_supports_provider_tools: false,
             },
             Self::Mistral => AgentProviderInfo {
                 id: Self::Mistral.to_static_str(),
@@ -113,7 +113,7 @@ impl AgentProvider {
                 models_list_url: Some("https://docs.mistral.ai/getting-started/models/"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: false,
-                text_generation_supports_tools: false,
+                text_generation_supports_provider_tools: false,
             },
             Self::Ollama => AgentProviderInfo {
                 id: Self::Ollama.to_static_str(),
@@ -125,7 +125,7 @@ impl AgentProvider {
                 models_list_url: Some("https://ollama.com/library"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: false,
-                text_generation_supports_tools: false,
+                text_generation_supports_provider_tools: false,
             },
             Self::OpenAI => AgentProviderInfo {
                 id: Self::OpenAI.to_static_str(),
@@ -142,7 +142,7 @@ impl AgentProvider {
                     AgentPurpose::SpeechToText,
                 ],
                 text_generation_supports_vision: true,
-                text_generation_supports_tools: true,
+                text_generation_supports_provider_tools: true,
             },
             Self::OpenAICompat => AgentProviderInfo {
                 id: Self::OpenAICompat.to_static_str(),
@@ -159,7 +159,7 @@ impl AgentProvider {
                     AgentPurpose::SpeechToText,
                 ],
                 text_generation_supports_vision: false,
-                text_generation_supports_tools: false,
+                text_generation_supports_provider_tools: false,
             },
             Self::OpenRouter => AgentProviderInfo {
                 id: Self::OpenRouter.to_static_str(),
@@ -171,7 +171,7 @@ impl AgentProvider {
                 models_list_url: Some("https://openrouter.ai/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: false,
-                text_generation_supports_tools: false,
+                text_generation_supports_provider_tools: false,
             },
             Self::TogetherAI => AgentProviderInfo {
                 id: Self::TogetherAI.to_static_str(),
@@ -183,12 +183,12 @@ impl AgentProvider {
                 models_list_url: Some("https://api.together.xyz/models"),
                 supported_purposes: vec![AgentPurpose::TextGeneration],
                 text_generation_supports_vision: false,
-                text_generation_supports_tools: false,
+                text_generation_supports_provider_tools: false,
             },
             Self::Venice => AgentProviderInfo {
                 id: Self::Venice.to_static_str(),
                 name: "Venice",
-                description: "Venice AI runs inference on Venice-controlled GPUs or zero-data-retention partner infrastructure and stores no prompts or responses. It serves frontier proprietary and open-source models with text-generation (including vision), speech-to-text, text-to-speech, native image generation and editing, and native web search.",
+                description: "Venice AI runs inference on Venice-controlled GPUs or zero-data-retention partner infrastructure and stores no prompts or responses. It serves frontier proprietary and open-source models with text-generation (including vision), speech-to-text, text-to-speech, native image generation and editing, and native web search, web scraping, and X (Twitter) search.",
                 homepage_url: Some("https://venice.ai"),
                 wiki_url: None,
                 sign_up_url: Some("https://venice.ai"),
@@ -200,9 +200,8 @@ impl AgentProvider {
                     AgentPurpose::SpeechToText,
                 ],
                 text_generation_supports_vision: true,
-                // Venice does native web search via `venice_parameters`, NOT baibot's built-in
-                // tools mechanism (the OpenAI web_search/code_interpreter block), so this is false.
-                text_generation_supports_tools: false,
+                // Venice takes web search, web scraping, and X search as `venice_parameters` knobs.
+                text_generation_supports_provider_tools: true,
             },
         }
     }
@@ -224,5 +223,7 @@ pub struct AgentProviderInfo {
     pub models_list_url: Option<&'static str>,
     pub supported_purposes: Vec<AgentPurpose>,
     pub text_generation_supports_vision: bool,
-    pub text_generation_supports_tools: bool,
+
+    /// Whether the provider has provider tools (like web search), configured per provider.
+    pub text_generation_supports_provider_tools: bool,
 }

@@ -117,10 +117,10 @@ pub fn help_provider_details(id: &str, info: &AgentProviderInfo) -> String {
                 extras.push("no vision");
             }
 
-            if info.text_generation_supports_tools {
-                extras.push("incl. tools");
+            if info.text_generation_supports_provider_tools {
+                extras.push("incl. provider tools");
             } else {
-                extras.push("no tools");
+                extras.push("no provider tools");
             }
 
             purpose_line = format!("{} ({})", purpose_line, extras.join(", "));

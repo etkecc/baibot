@@ -60,15 +60,25 @@ The [Anthropic provider](./providers.md#anthropic) supports these provider tools
 
 - [🌐 Web Fetch](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool) (`web_fetch`): allows the model to read web pages and PDFs from links that users post in the room or that web search finds
 
-These tools are **disabled by default** and need to be explicitly enabled in the agent's `text_generation.tools` configuration. See the [OpenAI sample configuration](https://github.com/etkecc/baibot/blob/c70387b0c38d8d0f30bba2179a2a21a3710dbeaf/docs/sample-provider-configs/openai.yml#L12-L15) and the [Anthropic sample configuration](./sample-provider-configs/anthropic.yml) for reference.
+The [Venice provider](./providers.md#venice) supports these provider tools (set in `text_generation.venice_parameters` rather than in `text_generation.tools`, because Venice runs them as request parameters instead of as tools the model calls):
 
-To enable tools on an existing dynamically-created agent, you need to [update the agent](./agents.md#updating-agents) to re-create it with the `text_generation.tools` section added and enable the tools you need
+- [🔍 Web Search](https://docs.venice.ai/guides/tools/cited-web-answers) (`enable_web_search`): allows the model to search the web for up-to-date information; `auto` (the model decides), `on`, or `off`
 
-💡 **Note**: These tools run on the provider's infrastructure and may incur additional costs. Web search results include citations that are incorporated into the response (for Anthropic, as a list of sources at the end).
+- [🌐 Web Scraping](https://docs.venice.ai/guides/tools/web-retrieval) (`enable_web_scraping`): allows the model to read pages linked in the user's message. When that message contains URLs, scraping replaces web search for the request
+
+- [🐦 X Search](https://docs.venice.ai/api-reference/endpoint/chat/completions) (`enable_x_search`): uses xAI's native web and X (Twitter) search instead of Venice's own search, on models which support it (e.g. `grok-4-20`)
+
+The OpenAI and Anthropic tools are **disabled by default** and need to be explicitly enabled in the agent's `text_generation.tools` configuration. See the [OpenAI sample configuration](https://github.com/etkecc/baibot/blob/c70387b0c38d8d0f30bba2179a2a21a3710dbeaf/docs/sample-provider-configs/openai.yml#L12-L15) and the [Anthropic sample configuration](./sample-provider-configs/anthropic.yml) for reference. Venice's web search, by contrast, ships as `auto` in the [Venice sample configuration](./sample-provider-configs/venice.yml), so a new Venice agent searches the web out of the box, while scraping and X search stay off until you set them.
+
+To enable tools on an existing dynamically-created agent, you need to [update the agent](./agents.md#updating-agents) to re-create it with the tools you need: the `text_generation.tools` section for OpenAI and Anthropic, or the `text_generation.venice_parameters` knobs for Venice
+
+💡 **Note**: These tools run on the provider's infrastructure and may incur additional costs. Web search results include citations that are incorporated into the response (as a list of sources at the end, for Anthropic and Venice).
 
 💡 **Note**: The Anthropic tools need Claude Opus 4.6 / Sonnet 4.6 or a later model. They filter search and page results with code execution before the model reads them, but a single reply that searches or fetches several pages can still use tens of thousands of input tokens. Each tool may be used up to 5 times per request.
 
-⚠️ **Warning**: With web fetch enabled, anyone who can talk to the bot can make it fetch URLs posted in the room, and text on a fetched page could steer the model into fetching further URLs that carry data from the conversation. Only enable it for agents used in rooms whose members you trust.
+💡 **Note**: Venice's X search needs a model which supports xAI search, such as `grok-4-20`; other models ignore it.
+
+⚠️ **Warning**: With web fetch (Anthropic) or web scraping (Venice) enabled, anyone who can talk to the bot can make it fetch URLs posted in the room, and text on a fetched page could steer the model into fetching further URLs that carry data from the conversation. Only enable it for agents used in rooms whose members you trust.
 
 
 #### 🧰 Bot Tools
