@@ -29,29 +29,20 @@ text_generation:
   # Venice-specific request parameters. Only the keys present below are sent to Venice; omit a
   # key to fall back to Venice's own default. Omitting a knob is NOT the same as setting it to
   # `false` — `false` actively sends `false`.
-  #
-  # Provider tools (see docs/features.md): Venice takes web search, web scraping, and X search as
-  # request parameters in this bag; other providers use a `text_generation.tools` section instead.
   venice_parameters:
-    # Web search: "auto" (model decides), "on" (always), or "off". Answers which searched get a
-    # `Sources:` list of links appended.
+    # Web search: "auto" (model decides), "on" (always), or "off".
     enable_web_search: "auto"
     # Strip <think></think> blocks from reasoning models so the user sees only the answer.
     strip_thinking_response: true
     # Run in TEE-only mode instead of end-to-end encryption (works across all models).
     enable_e2ee: false
     # Other available knobs — uncomment to override Venice's default:
-    # Ask the model to mark its sources with ^1^ superscripts; the bot renders them as [1].
     # enable_web_citations: true
-    # Scrape up to 5 pages linked in the user's message. When the message has URLs, scraping
-    # replaces web search for that request.
     # enable_web_scraping: true
-    # Use xAI's native web + X (Twitter) search instead of Venice's own search. Grok models only
-    # (e.g. grok-4-20); other models ignore it. Replaces web search; billed per search.
-    # enable_x_search: true
     # include_venice_system_prompt: false
     # include_search_results_in_stream: true
     # return_search_results_as_documents: true
+    # enable_x_search: true
     # disable_thinking: true
     # Response verbosity for models that support it: low, medium, high.
     # verbosity: medium

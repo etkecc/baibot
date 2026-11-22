@@ -149,7 +149,7 @@ The [gemma3:1b](https://ollama.com/library/gemma3:1b) model was chosen as a defa
 
 ###### OpenAI
 
-[OpenAI](./providers.md#openai) supports all [🌟 features](./features.md) of the bot, except the provider tools only Venice has (web scraping and X search).
+[OpenAI](./providers.md#openai) supports all [🌟 features](./features.md) of the bot.
 
 If you decided to go with [OpenAI](./providers.md#openai):
 

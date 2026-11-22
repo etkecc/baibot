@@ -188,7 +188,7 @@ impl AgentProvider {
             Self::Venice => AgentProviderInfo {
                 id: Self::Venice.to_static_str(),
                 name: "Venice",
-                description: "Venice AI runs inference on Venice-controlled GPUs or zero-data-retention partner infrastructure and stores no prompts or responses. It serves frontier proprietary and open-source models with text-generation (including vision), speech-to-text, text-to-speech, native image generation and editing, and native web search, web scraping, and X (Twitter) search.",
+                description: "Venice AI runs inference on Venice-controlled GPUs or zero-data-retention partner infrastructure and stores no prompts or responses. It serves frontier proprietary and open-source models with text-generation (including vision), speech-to-text, text-to-speech, native image generation and editing, and native web search.",
                 homepage_url: Some("https://venice.ai"),
                 wiki_url: None,
                 sign_up_url: Some("https://venice.ai"),
@@ -200,7 +200,7 @@ impl AgentProvider {
                     AgentPurpose::SpeechToText,
                 ],
                 text_generation_supports_vision: true,
-                // Venice takes web search, web scraping, and X search as `venice_parameters` knobs.
+                // Venice's provider tools are set in `venice_parameters`, not in `text_generation.tools`.
                 text_generation_supports_provider_tools: true,
             },
         }
@@ -223,7 +223,6 @@ pub struct AgentProviderInfo {
     pub models_list_url: Option<&'static str>,
     pub supported_purposes: Vec<AgentPurpose>,
     pub text_generation_supports_vision: bool,
-
-    /// Whether the provider has provider tools (like web search), configured per provider.
+    /// Whether the provider has provider tools, like web search (not bot tools, which work with any provider).
     pub text_generation_supports_provider_tools: bool,
 }

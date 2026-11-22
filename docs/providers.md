@@ -24,7 +24,7 @@ The list of supported providers is below.
 
 ### How to choose a provider
 
-If you're not sure which provider to start with, **we recommend [Venice](#venice)**: it's the most capable provider baibot supports (covering [💬 text-generation](./features.md#-text-generation) with vision, file inputs, prompt caching, and the widest set of [🛠️ provider tools](./features.md#️-provider-tools): web search, web scraping, and X/Twitter search, plus [🖌️ image-generation](./features.md#️-image-creation) incl. editing, [🦻 speech-to-text](./features.md#-speech-to-text), and [🗣️ text-to-speech](./features.md#️-text-to-speech)) and the only one that runs inference with no logging and no training on your data. If you'd rather start with the most widely-used option, [OpenAI](#openai) is a solid, well-supported choice too.
+If you're not sure which provider to start with, **we recommend [Venice](#venice)**: it's the most capable provider baibot supports (covering [💬 text-generation](./features.md#-text-generation) with vision, file inputs, prompt caching, and native web search, plus [🖌️ image-generation](./features.md#️-image-creation) incl. editing, [🦻 speech-to-text](./features.md#-speech-to-text), and [🗣️ text-to-speech](./features.md#️-text-to-speech)) and the only one that runs inference with no logging and no training on your data. If you'd rather start with the most widely-used option, [OpenAI](#openai) is a solid, well-supported choice too.
 
 To let the bot use [🧰 Bot Tools](./bot-tools.md) (like reading the room's recent messages), choose a text-generation model which supports function calling.
 
@@ -202,14 +202,14 @@ This provider is just as featureful as the [OpenAI](#openai) provider, but is mo
 
 - 🆔 Identifier: `venice`
 - 🔗 Links: [🏠 Home page](https://venice.ai/chat?ref=kpXDe6), [👤 Sign up](https://venice.ai/chat?ref=kpXDe6), [📋 Models list](https://docs.venice.ai/models/overview)
-- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation) (incl. editing, via the native knob-rich `/image/generate` and `/image/edit` endpoints), [💬 text-generation](./features.md#-text-generation) (incl. vision, file inputs like PDF and DOCX, prompt caching, and [🛠️ provider tools](./features.md#️-provider-tools): web search, web scraping, and X search via the `venice_parameters` config), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
+- 🌟 Capabilities: [🖌️ image-generation](./features.md#️-image-creation) (incl. editing, via the native knob-rich `/image/generate` and `/image/edit` endpoints), [💬 text-generation](./features.md#-text-generation) (incl. vision, file inputs like PDF and DOCX, prompt caching, and [🛠️ provider tools](./features.md#️-provider-tools) like web search), [🗣️ text-to-speech](./features.md#️-text-to-speech), [🦻 speech-to-text](./features.md#-speech-to-text)
 - 🗲 Quick start:
   - create a room-local agent: `!bai agent create-room-local venice my-venice-agent`
   - create a global agent: `!bai agent create-global venice my-venice-agent`
 
 💡 When creating an agent, the bot will show you an up-to-date sample configuration for this provider which looks [like this](./sample-provider-configs/venice.yml).
 
-Unlike the [OpenAI Compatible](#openai-compatible) provider (which can talk to Venice but drops images, can't reach its audio or native image endpoints, and can't turn on its web search, web scraping, or X search, which need the `venice_parameters` bag it never sends), this is a first-class Venice integration that exposes Venice's full parameter set. Image generation uses the native `/image/generate` endpoint rather than the OpenAI-compatible `/images/generations` shim, so every Venice-specific knob below is available.
+Unlike the [OpenAI Compatible](#openai-compatible) provider (which can talk to Venice but drops images and can't reach its audio or native image endpoints), this is a first-class Venice integration that exposes Venice's full parameter set. Image generation uses the native `/image/generate` endpoint rather than the OpenAI-compatible `/images/generations` shim, so every Venice-specific knob below is available.
 
 #### Configuration reference
 
@@ -229,16 +229,14 @@ Every parameter below is optional unless marked otherwise. Omitting a knob lets 
 
 **`text_generation.venice_parameters`** — Venice-specific request knobs sent in the `venice_parameters` bag. Set any of them to override Venice's behavior. The `Default` column shows the value baibot's sample config ships; a `—` means the knob is left unset, so Venice's own default applies.
 
-**Provider tools.** The search knobs at the top of the table below are Venice's [🛠️ provider tools](./features.md#️-provider-tools). They run on Venice's infrastructure rather than in the bot (they're separate from [🧰 Bot Tools](./bot-tools.md)), and they go in this bag instead of the `text_generation.tools` section other providers use, because Venice runs them as request parameters rather than as tools the model calls. When web search is active, the bot asks for structured search results (`return_search_results_as_documents`, unless you set it yourself), so it can append a `Sources:` list of links to the answer and rewrite the model's `^n^` citation markers into readable `[n]` references.
-
 | Knob | What it does | Default |
 |------|--------------|---------|
 | `enable_web_search` | Web search mode: `auto` (model decides), `on` (always), or `off`. | `auto` |
-| `enable_web_citations` | Ask the model to mark the sources it used with `^n^` superscripts (`^1^`, `^1,2^`), which the bot renders as `[n]`. The `Sources:` list appears either way. | — |
-| `enable_web_scraping` | Scrape up to 5 pages linked in the user's latest message (via Firecrawl). When that message contains URLs, scraping replaces web search for the request. | — |
-| `enable_x_search` | Use xAI's native web and X (Twitter) search instead of Venice's own web search. Only models which support xAI search honor it (e.g. `grok-4-20`); others ignore it. Billed per search. | — |
+| `enable_web_citations` | Append source citations to web-search answers. | — |
+| `enable_web_scraping` | Allow the model to scrape page contents during web search. | — |
+| `enable_x_search` | Include X (Twitter) in web search. | — |
 | `include_search_results_in_stream` | Stream search results back as they arrive. | — |
-| `return_search_results_as_documents` | Also return search results as structured documents. baibot switches it on when web search is active (unless you set it), because the readable `Sources:` list is built from them. | — |
+| `return_search_results_as_documents` | Return search results as structured documents. | — |
 | `include_venice_system_prompt` | Prepend Venice's own system prompt alongside yours. | — |
 | `character_slug` | Use a public Venice character by its slug. | — |
 | `strip_thinking_response` | Strip `<think></think>` blocks from reasoning models so the user sees only the answer. | `true` |

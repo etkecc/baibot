@@ -47,7 +47,7 @@ The room's image generation agent needs to support image editing. Images posted 
 - Tools act on behalf of the person whose message the bot is answering, but everyone in the room sees the answer.
 - Room history goes to the text-generation agent's provider. Image prompts and images to edit go to the image generation agent's provider.
 - With the thinking notice on, it shows what the tools are doing, e.g. "📜 Reading up to 10 messages" (see [🛠️ Configuration / 💬 Text Generation / 💭 Thinking Notice](./configuration/text-generation.md#-thinking-notice)).
-- Text from tools (like other people's messages) could steer the model. With provider tools that reach the internet (like web fetch or web scraping), that could leak room content to a website.
+- Text from tools (like other people's messages) could steer the model. With provider tools that reach the internet (like web fetch), that could leak room content to a website.
 
 
 ### 🔒 Tool permissions
